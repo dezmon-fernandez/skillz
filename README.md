@@ -35,3 +35,10 @@ skills/
 ```
 
 Add a new skill by creating `skills/<name>/SKILL.md` and adding a row to the table above.
+
+## Maintaining copies in other repos
+
+`/sync-skills` (a repo-local skill in `.claude/skills/`) pushes the base out to the repos
+listed in `.claude/skills/sync-skills/targets.md` and harvests generalizable improvements
+back. `targets.md` is gitignored since it holds local paths; start from
+`targets.example.md`.
