@@ -1,5 +1,9 @@
 ---
-description: Prime agent with codebase understanding
+name: prime
+description: >-
+  Load project context at the start of a session by reading the tree, the docs, and the
+  recent history — and consume a pending .agents/handover.md if one exists. Use when
+  asked to "prime", "get up to speed", or at the start of a resumed session.
 ---
 
 # Prime: Load Project Context
@@ -120,6 +124,7 @@ Then the same-page check:
   flagged, disproven ones stated as disproven. Anything left running that must be stopped.
 - **Next task(s)** — the Task's first move, then what Where we left off says moves it.
 - **Open decisions** — the Explore section: research directions and what each settles,
+  referenced material by its exact path or URL (open it directly, don't re-derive it),
   and calls only the operator can make, with what each unblocks.
 
 Current State describes the repository as it stands; this describes the work in motion.
