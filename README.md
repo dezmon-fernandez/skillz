@@ -27,6 +27,8 @@ is the feature loop; each step reads what the previous one wrote.
 | Agent | Purpose |
 |-------|---------|
 | `code-reviewer` | Read-only reviewer. Checks a finished implementation against its plan and execution report, and judges the design now that the code exists. Spawned by `review-code`. |
+| `plan-reviewer` | Read-only reviewer. Reads a plan cold, verifies its claims against the code, and returns blocking issues, the smallest design that meets the goal, and the decisions the operator should confirm. Spawned by `review-plan`. |
+| `code-quality-pragmatist` | Reviews recent code for over-engineering and unnecessary complexity relative to the project's actual needs, and recommends simplifications. Invoked by hand. |
 
 ## Hooks
 
@@ -77,7 +79,6 @@ adding a row to the table above.
 
 ## Maintaining copies in other repos
 
-`/sync-skills` (a repo-local skill in `.claude/skills/`) pushes the base out to the repos
-listed in `.claude/skills/sync-skills/targets.md` and harvests generalizable improvements
-back. `targets.md` is gitignored since it holds local paths; start from
-`targets.example.md`.
+`/sync-skills` (a repo-local skill in `.claude/skills/`) pushes the base out to a project
+repo and harvests generalizable improvements back. It keeps no list of repos — name the
+path when you invoke it, so no local paths are stored in this repo.

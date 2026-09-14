@@ -56,7 +56,7 @@ operator stated the scope, quote them.>
 <Finished and proven, each with the check behind it. Outcomes, not narrative: what
 stands now, not the steps taken.>
 - ❌ `refactored the config service`
-- ✅ `config.service.ts reads environment from runtime config; npm test green (74 passing)`
+- ✅ `config.service.ts reads environment from runtime config; <test-runner> green (74 passing)`
 - <changes outside the repo count too: packages installed, system files written,
   dotfiles edited — each with its path>
 

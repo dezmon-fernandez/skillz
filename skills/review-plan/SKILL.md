@@ -31,6 +31,8 @@ learn something it should have told you, stop and name the gap.
 
 ## What to look for
 
+For each section of the plan, analyze for:
+
 1. **Untestable criteria**
    - Criteria stated as "works as expected" rather than an observable outcome
    - Criteria with no task that delivers them

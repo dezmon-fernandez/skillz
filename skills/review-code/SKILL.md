@@ -53,8 +53,17 @@ Save the agent's report to `.agents/code-reviews/<plan-slug>.md` and print it.
 - **minor** — fix it yourself and say what you changed
 - **questions** — put them to the developer, one at a time. They are not findings
 
-A finding against the plan rather than the code is always raised, never fixed quietly.
-Changing the design is the developer's call, whatever its severity.
+Then route each finding by its `fix goes` field, which is a separate question from severity:
+
+- **code** — fix it in this change.
+- **plan** — the plan produced this defect. Say so, and say what the plan should have said.
+  Changing the design is the developer's call, whatever its severity, so this is always raised
+  and never fixed quietly.
+- **standards** — the project has no convention governing this, so the same defect will come
+  back. Report it as a standards change for the developer to make.
+
+A fix applied only to this change, when the defect came from the plan or from a missing
+convention, leaves the next change to reproduce it.
 
 Fix nothing blocking without the developer's approval.
 

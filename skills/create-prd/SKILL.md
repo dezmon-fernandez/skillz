@@ -32,7 +32,7 @@ silently replacing one destroys decisions nobody recorded anywhere else.
    and it gets reported in step 5. If a *critical* gap would make the PRD wrong rather than
    merely thin — who the user is, what the MVP must do — ask before writing.
 3. **Write** the sections below. Adapt their depth to what you actually know; a section
-   padded to look complete is worse than a short one, because the next session believes it.
+   padded to look complete is worse than a short one.
 4. **Check** against the quality list.
 5. **Report** the path, a short summary, every assumption you made, and the next step.
 
