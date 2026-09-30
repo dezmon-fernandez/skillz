@@ -1,145 +1,149 @@
 ---
 name: generate-plan
 description: >-
-  Turn a feature request, the current conversation, or a tracker ticket into a context-rich
-  implementation plan through codebase analysis, external research, and a decision gate that
-  settles every open question with the operator. The plan states the contract and a pseudocode
-  sketch, not literal implementation code. Use before writing any code for a feature, or when
-  asked to "plan this", "write a plan", or "plan the feature".
+  Turn a feature request, the current conversation, or a tracker ticket into an
+  implementation plan full of context. It works through codebase analysis, external
+  research, and a decision gate that settles every open question with the developer. The
+  plan states the contract and a pseudocode sketch, not literal implementation code. Use
+  before writing any code for a feature, or when asked to "plan this", "write a plan", or
+  "plan the feature".
 argument-hint: "[a ticket key or URL, a feature description, or empty to plan from the conversation]"
 ---
 
-# generate-plan — the plan an executor can finish in one pass
+# generate-plan: the plan an executor can finish in one pass
 
 ## Feature: $ARGUMENTS
 
-**No code is written in this phase.** The output is a plan rich enough that an executor
-with no memory of this conversation succeeds on the first attempt.
+**Write no code here.** The output is a plan. An executor with no memory of this
+conversation must be able to finish it on the first try.
 
 Resolve the input first:
 
-- **A free-form description** → plan directly from it.
-- **Chat context** (`$ARGUMENTS` is empty or points at the conversation) → the feature
-  lives in this session, which the executor never sees. Restate it in your own words,
-  confirm the restatement with the operator, then plan from that.
-- **A ticket** (a key like `ABC-123`, or an issue URL) → **fetch it before planning**,
-  using whatever tracker tool this project has. Read its summary, acceptance criteria,
-  and context, then follow its links up to the parent epic and any architecture document,
-  and inherit those decisions rather than re-deciding them. Never plan from a bare key.
+- **A description:** plan from it.
+- **Chat context** (`$ARGUMENTS` is empty or points at the conversation): the executor
+  never sees this session. Restate the feature in your own words, confirm it with the
+  developer, then plan from that.
+- **A ticket** (a key like `ABC-123`, or an issue URL): **fetch it first** with the
+  project's tracker tool. Read its summary, acceptance criteria, and context. Follow its
+  links up to the parent epic and any architecture document. Inherit their decisions.
+  Never plan from a bare key.
 
-## The line between spec and code
+## Spec versus code
 
-The plan specifies the **contract** — signatures, types, behavioral rules, edge cases —
-and a **pseudocode sketch** of the implementation. Pseudocode, examples, and specs are
-encouraged; paste-ready code is not.
+Give the **contract** (signatures, types, behavioral rules, edge cases) and a **pseudocode
+sketch**. Pseudocode, examples, and specs are good. Paste-ready code is not.
 
-**Litmus:** if the executor could paste it and be done, it is code — back off to pseudocode.
+**The test:** if the executor could paste it and be done, it is code. Write pseudocode
+instead.
 
-**The exception is data models.** A schema or type *is* its own spec, so state those as
-real code, exactly as they will be written.
+**The exception is data models.** A schema or type *is* its own spec. Write it as real
+code, exactly as it will be written.
 
 ## Process
 
-### Phase 1 — Understand the feature
+### Phase 1: Understand the feature
 
-Extract the core problem, the user value, the feature type (new capability, enhancement,
-refactor, bug fix), and the complexity. Write the user story, or refine the one you were
-given.
+Pull out the core problem, the user value, the feature type (new capability, enhancement,
+refactor, bug fix), and the complexity. Write the user story, or refine the one you have.
 
-### Phase 2 — Codebase intelligence
+### Phase 2: Codebase intelligence
 
 - **Structure**: languages, frameworks, runtime versions, directory layout, component
-  boundaries, configuration files, build process.
-- **Patterns**: search for similar implementations already in the tree. Extract naming
-  conventions, file organization, error handling, and logging patterns. Note the
-  anti-patterns to avoid. Read the project's rules file for its conventions.
-- **Dependencies**: the libraries relevant to this feature, how they are already
-  integrated, their versions, and any local documentation about them.
+  boundaries, config files, build process.
+- **Patterns**: find similar code. Note its naming, file layout, error handling, and
+  logging, and the anti-patterns to avoid. Read the project's rules file.
+- **Dependencies**: the libraries this feature touches, how they are used now, their
+  versions, and any local docs.
 - **Testing**: the framework, the structure, a similar test to mirror, coverage standards.
-- **Integration points**: the existing files that need updating, the new files to create
-  and where they go, the registration/routing patterns, the auth patterns if relevant.
+- **Integration points**: files to update, new files and where they go, registration and
+  routing patterns, auth patterns if relevant.
 
-**Collect open questions as you go — do not ask yet.** Note every ambiguity, unstated
-preference, and unresolved architecture choice. They are all resolved at the Decision Gate,
-after research has armed you to ask each one well. The only exception is an ambiguity that
-blocks the research itself, when you cannot tell which subsystem to investigate.
+**Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
+preference, and open architecture choice. Resolve them all at the Decision Gate, after
+research has taught you how to ask each one well. The one exception is an ambiguity that
+blocks the research itself, such as not knowing which subsystem to study.
 
-### Phase 3 — External research
+### Phase 3: External research
 
-Find the official documentation for the libraries involved, with **section anchors**, not
-just a homepage. Look for implementation examples, known gotchas, breaking changes, and
-migration guides. Note performance and security considerations. Record each reference with
-*why* the executor needs it.
+Find the official docs for the libraries involved. Link to **section anchors**, not a
+homepage. Look for examples, pitfalls, breaking changes, and migration guides. Note
+performance and security concerns. Record each reference with *why* the executor needs it.
 
-### Phase 3.5 — Decision Gate (mandatory)
+### Phase 3.5: Decision Gate (mandatory)
 
-**Never write the plan while an open question remains.** Open questions are operator
-policy wearing an architecture costume: the codebase cannot answer them, and a plan that
-guesses decides for the operator.
+**Never write the plan while an open question remains.** Open questions are policy choices
+that look like architecture questions. The codebase cannot answer them. A plan that guesses
+makes the developer's decision for them.
 
-1. **Collect** every unresolved decision — from the feature request, from Phase 2, and any
-   scope, default, cost, surface, or cadence choice research surfaced.
-2. **Sort.** If the codebase, an existing standard, or a prior operator decision answers
-   it, resolve it yourself and record the resolution. Never ask what you can verify.
-3. **Recommend before asking.** For each remaining item, form a recommendation, verify it
-   is feasible in the code, and attach the concrete trade-off — cost, blast radius,
-   maintenance — the operator needs in order to choose well.
-4. **Ask** in batches of up to four, recommended option first and labeled "(Recommended)",
-   every option's description carrying its consequence.
-5. **Loop.** Read each answer as an answer *and* as new input. An answer may raise a new
-   question, contradict an assumption, or ask you something back — fact-check it against
-   the code, answer it, and repeat until the set is empty.
+1. **Collect** every unresolved decision: from the request, from Phase 2, and any choice
+   research raised about scope, defaults, cost, where the feature appears, or how often it
+   runs.
+2. **Sort.** If the codebase, a standard, or an earlier developer decision answers it,
+   resolve it and record how. Never ask what you can verify.
+3. **Recommend before asking.** For each remaining item, form a recommendation and check
+   it works in the code. Attach the trade-off: cost, how much of the system it touches,
+   and upkeep.
+4. **Ask** in batches of up to four. Put the recommended option first, labeled
+   "(Recommended)". Each option's description states its consequence.
+5. **Loop.** Read each answer as an answer *and* as new input. It may raise a question,
+   contradict an assumption, or ask you something back. Check it against the code, answer
+   it, and repeat until nothing is left.
 
 **Done when** zero open questions remain and every decision appears in the plan as a
-settled fact — never as an option list. The executor holds only the plan, not this
-conversation.
+settled fact, never an option list. The executor holds only the plan.
 
-### Phase 4 — Strategic thinking
+### Phase 4: Strategic thinking
 
-How does this fit the existing architecture? What is the critical order of operations?
-What could go wrong — edge cases, race conditions, error paths? How is it tested
-comprehensively? What are the performance and security implications? Is this maintainable?
+- How does this fit the architecture?
+- What is the critical order of operations?
+- What could go wrong (edge cases, race conditions, error paths)?
+- How will it be fully tested?
+- What are the performance and security effects?
+- Can it be maintained?
 
-Choose between alternative approaches with a stated rationale. A **new** operator-owned
-decision surfaced here goes back through the Decision Gate; decisions already settled
-there stay settled.
+Choose between approaches and state why. A **new** decision that belongs to the developer
+goes back through the Decision Gate. Settled decisions stay settled.
 
-### Phase 5 — Write the plan
+### Phase 5: Write the plan
 
 Fill in the template at `references/plan-template.md`. Every section is there because an
-executor stalled without it.
+executor got stuck without it.
 
-**Output**: `.agents/plans/<kebab-case-descriptive-name>.md` — create the directory if it
-does not exist.
+**Output**: `.agents/plans/<kebab-case-descriptive-name>.md`. Create the directory if
+missing.
 
 ## Quality criteria
 
 **Context complete**
-- [ ] Every pattern the executor must follow is identified, with `file:line`
-- [ ] External library usage is documented with anchored links, each with a *why*
-- [ ] Integration points are mapped; gotchas and anti-patterns are captured
+- [ ] Every pattern to follow is named, with `file:line`
+- [ ] Library usage has anchored links, each with a *why*
+- [ ] Integration points are mapped, and pitfalls and anti-patterns noted
 
 **Implementation ready**
-- [ ] Tasks are ordered by dependency and can be executed top to bottom
-- [ ] Each task is atomic, independently testable, and carries an executable `VALIDATE`
+- [ ] Tasks are ordered by dependency and run top to bottom
+- [ ] Each task is atomic, testable alone, and has an executable `VALIDATE`
 - [ ] Each task traces to an acceptance criterion
 
 **Information dense**
-- [ ] No generic references — everything specific and actionable
-- [ ] Task descriptions use the codebase's own vocabulary
-- [ ] Validation commands are non-interactive and executable as written
+- [ ] No generic references. Everything is specific and actionable
+- [ ] Tasks use the codebase's own words
+- [ ] Validation commands are non-interactive and run as written
 
 **Decisions settled**
-- [ ] The Decision Gate ran: every open question was resolved with the operator or
+- [ ] The Decision Gate ran. Every open question was settled with the developer or
       verified against the code
 - [ ] No section hands the executor an option list or an unanswered question
 
-**The No Prior Knowledge test:** someone unfamiliar with this codebase could implement the
-feature from the plan's content alone. If they would have to come ask, the plan is not done.
+**The No Prior Knowledge test:** someone who does not know this codebase could build the
+feature from the plan alone. If they would have to ask, the plan is not done.
 
 ## Report
 
-After writing the plan, report: the feature and approach in short; each decision settled at
-the Decision Gate and what was chosen; the full path to the plan; the complexity assessment;
-the key implementation risks; and a confidence score out of 10 that execution succeeds on
-the first attempt.
+After writing the plan, report:
+
+- the feature and approach, briefly
+- each decision settled at the Decision Gate, and what was chosen
+- the full path to the plan
+- the complexity assessment
+- the key implementation risks
+- a confidence score out of 10 that execution succeeds on the first try
