@@ -95,6 +95,9 @@ condition, not a task. Say plainly: **do not execute this plan until it holds.**
 - [Doc link](https://example.com/doc#section)
   - Specific section: authentication setup
   - Why: required for the secure endpoint
+- `.agents/documentation/<name>.md`
+  - Specific section: <heading>
+  - Why: the decision this project already made about X
 
 ### Patterns to follow
 
@@ -172,8 +175,8 @@ Write each one as `condition: what must happen`. **Every line here becomes a nam
 **Interface Sketch**
 
     ArchiveButton (NEW)
-      in  record   : required, the row this button acts on
-      out archived : emitted after a successful archive, so the parent can offer undo
+      input  record   : required, the row this button acts on
+      output  archived : emitted after a successful archive, so the parent can offer undo
       needs RecordService   (owns the list this mutates)
       needs ConfirmService  (owns the confirmation prompt)
 

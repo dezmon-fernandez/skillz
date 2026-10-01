@@ -41,12 +41,27 @@ code, exactly as it will be written.
 
 ## Process
 
-### Phase 1: Understand the feature
+### Phase 1: Feature Understanding
 
-Pull out the core problem, the user value, the feature type (new capability, enhancement,
-refactor, bug fix), and the complexity. Write the user story, or refine the one you have.
+**Deep Feature Analysis:**
+
+- Extract the core problem being solved
+- Identify user value and business impact
+- Determine feature type: New Capability/Enhancement/Refactor/Bug Fix
+- Assess complexity: Low/Medium/High
+- Map affected systems and components
+
+**Create User Story Format Or Refine If Story Was Provided By The User:**
+
+```
+As a <type of user>
+I want to <action/goal>
+So that <benefit/value>
+```
 
 ### Phase 2: Codebase intelligence
+
+Find what you must read in the codebase, across five areas:
 
 - **Structure**: languages, frameworks, runtime versions, directory layout, component
   boundaries, config files, build process.
@@ -54,20 +69,64 @@ refactor, bug fix), and the complexity. Write the user story, or refine the one 
   logging, and the anti-patterns to avoid. Read the project's rules file.
 - **Dependencies**: the libraries this feature touches, how they are used now, their
   versions, and any local docs.
-- **Testing**: the framework, the structure, a similar test to mirror, coverage standards.
+- **Testing**: the framework, the structure, a similar test to mirror, coverage standards,
+  and the lint, type-check, and test commands as the project defines them.
 - **Integration points**: files to update, new files and where they go, registration and
-  routing patterns, auth patterns if relevant.
+  routing patterns, auth patterns if relevant. Existing code to reuse. For anything that
+  changes, its callers and the tests and fakes that cover it.
+
+Dispatch `codebase-research-agent` instances to cover them.
+
+1. Search the codebase for the key nouns from Phase 1 (entities, routes, screens, commands).
+   Note which directories the hits fall in. Do not open the files.
+2. Group the hits into subsystems: a package, service, module, or layer with its own
+   directory and conventions. One with only a hit or two joins its nearest neighbor.
+3. Send one agent per subsystem, all in one message so they run in parallel.
+
+An agent sees neither this conversation nor the ticket. Give each the feature in full, the
+decisions already settled, its slice, and your search hits in it.
+
+Each report lists the `Files to Read`, each with why, and covers the five areas.
+
+- Read every file on that list yourself, in full.
+- A report is a lead, not a fact. A `file:line` goes in the plan only after you have seen it
+  in the file.
+- Do not re-explore what the reports cover.
+- Settle every gap and `Unverified` item the plan depends on now. Read the file if you know
+  which one. Otherwise send the question back to the agent that holds that slice. Never
+  carry it into the plan as a risk or a hedge.
+
+Skip the dispatch only when the hits are so few that you would read every one anyway. Then
+cover the five areas yourself.
 
 **Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
-preference, and open architecture choice. Resolve them all at the Decision Gate, after
-research has taught you how to ask each one well. The one exception is an ambiguity that
-blocks the research itself, such as not knowing which subsystem to study.
+preference, and open architecture choice, and add each report's `Open Choices`. Resolve them
+all at the Decision Gate, after research has taught you how to ask each one well. The one
+exception is an ambiguity that blocks the research itself, such as not knowing which
+subsystem to study.
 
 ### Phase 3: External research
 
-Find the official docs for the libraries involved. Link to **section anchors**, not a
-homepage. Look for examples, pitfalls, breaking changes, and migration guides. Note
-performance and security concerns. Record each reference with *why* the executor needs it.
+List what the feature needs from outside the codebase, one topic each: a library, an
+external API or service, a standard or protocol, a technique the codebase has no example of,
+or a function or option of an installed library that the codebase does not call yet.
+
+Dispatch `external-research-agent` instances, one per topic, all in one message. Give each
+the topic, the version Phase 2 found in use for a library, what the feature needs from it,
+and where the code uses it now as `file:line`.
+
+Each report lists references, pitfalls, and breaking changes. A reference is a
+section-anchored link with the exact thing it documents and why.
+
+- Open the few references that decide a design choice.
+- Do not re-research what the reports cover.
+- Where sources disagree with each other or with the code, the report lists it under
+  `Open Choices`. Take it to the Decision Gate.
+- Record each reference in the plan with *why* the executor needs it.
+
+Research is the default. Skip a topic only when you can name the `file:line` where the
+codebase already calls the exact API the feature will use. An installed library is not a
+reason to skip. When unsure, dispatch.
 
 ### Phase 3.5: Decision Gate (mandatory)
 
@@ -75,9 +134,9 @@ performance and security concerns. Record each reference with *why* the executor
 that look like architecture questions. The codebase cannot answer them. A plan that guesses
 makes the developer's decision for them.
 
-1. **Collect** every unresolved decision: from the request, from Phase 2, and any choice
-   research raised about scope, defaults, cost, where the feature appears, or how often it
-   runs.
+1. **Collect** every unresolved decision: from the request, from Phase 2, from every
+   `Open Choices` section in the reports, and any choice research raised about scope,
+   defaults, cost, where the feature appears, or how often it runs.
 2. **Sort.** If the codebase, a standard, or an earlier developer decision answers it,
    resolve it and record how. Never ask what you can verify.
 3. **Recommend before asking.** For each remaining item, form a recommendation and check
@@ -116,7 +175,7 @@ missing.
 
 **Context complete**
 - [ ] Every pattern to follow is named, with `file:line`
-- [ ] Library usage has anchored links, each with a *why*
+- [ ] Every outside reference is an anchored link with a *why*
 - [ ] Integration points are mapped, and pitfalls and anti-patterns noted
 
 **Implementation ready**
@@ -143,7 +202,15 @@ After writing the plan, report:
 
 - the feature and approach, briefly
 - each decision settled at the Decision Gate, and what was chosen
+- each outside topic you did not research, and the `file:line` that made the skip safe
 - the full path to the plan
 - the complexity assessment
 - the key implementation risks
 - a confidence score out of 10 that execution succeeds on the first try
+
+## Note
+
+Phase 2 uses the `codebase-research-agent` agent and Phase 3 uses the
+`external-research-agent` agent, both installed alongside this skill. If you dispatch and an
+agent is missing, say so and stop. Researching in this session instead defeats the point of
+the agent while still looking like success.

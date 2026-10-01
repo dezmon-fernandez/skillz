@@ -29,6 +29,8 @@ is the feature loop; each step reads what the previous one wrote.
 |-------|---------|
 | `code-reviewer` | Read-only reviewer. Checks a finished implementation against its plan and execution report, and judges the design now that the code exists. Spawned by `review-code`. |
 | `plan-reviewer` | Read-only reviewer. Reads a plan cold, verifies its claims against the code, and returns blocking issues, the smallest design that meets the goal, and the decisions the operator should confirm. Spawned by `review-plan`. |
+| `codebase-research-agent` | Read-only explorer. Investigates one slice of the codebase and reports the files to read, each with why, plus its findings and `file:line` citations. Spawned in parallel by `generate-plan`, one per subsystem. |
+| `external-research-agent` | Read-only researcher. Researches one topic from outside the codebase (a library, an external API, a standard, or a technique), local docs first, and reports section-anchored links and local paths, each with why, plus pitfalls and breaking changes. Spawned in parallel by `generate-plan`, one per topic. |
 | `code-quality-pragmatist` | Reviews recent code for over-engineering and unnecessary complexity relative to the project's actual needs, and recommends simplifications. Invoked by hand. |
 
 ## Hooks
