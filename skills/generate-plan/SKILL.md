@@ -98,8 +98,8 @@ the file, and why.
 - Read in full each file the plan changes. For a file to mirror, reuse, match, or follow as
   a test, read the cited range, and widen it when it does not show what the report claims.
   Reading every listed file in full refills the context the agents kept clear.
-- A report is a lead, not a fact. A `file:line` goes in the plan only after you have seen it
-  in the file.
+- A report is a lead, not a fact. Read the file with the read tool to quote its lines, and
+  copy each `file:line` number from that output.
 - Do not re-explore what the reports cover.
 - Settle every gap and `Unverified` item the plan depends on now. Read the file if you know
   which one. Otherwise resume the agent that holds that slice and ask it. A new agent starts
