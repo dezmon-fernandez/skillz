@@ -81,6 +81,30 @@ Commit here only when asked. Show the diff first.
 - `identical` → skip.
 - `diverged` → overwrite, then **re-apply that copy's project-specific hunks** on top. The result should be: new base + that repo's local adaptations, nothing else. Verify with a final diff against the base: every remaining hunk should be one you classified project-specific in step 2.
 
+**Re-apply each adaptation as its own block**: a whole paragraph, bullet, or section, set off by blank lines, placed after the base passage it adapts. Never weave it back into a base sentence, even when that is where the copy had it. A woven line reaches the next push as a changed base line, and nothing on it says which half is the adaptation and which half is stale.
+
+The copy before the push, with its command inside a sentence the base has since rewritten:
+
+```markdown
+Run `make test` and fix what fails before moving on.
+```
+
+The base now:
+
+```markdown
+Run the whole suite, not the one file you touched. A green file and a red suite look identical from inside the file.
+```
+
+The final diff, base against the pushed copy:
+
+```diff
+ Run the whole suite, not the one file you touched. A green file and a red suite look identical from inside the file.
++
++The suite here is `make test`.
+```
+
+Every base line is context and every hunk is `+` lines only. A `-` line means the copy edited base text: lift the adaptation out into a block and restore the line. The one exception is a slot the copy fills, below, where the line differs by the placeholder's value and nothing else.
+
 A pushed `<placeholder>` is a slot, not text to install:
 
 - The copy already fills that slot with a concrete command or path → **keep the copy's**. Overwriting a working command with `<test-runner>` is a regression, and step 2 would only harvest it back next time.
@@ -103,3 +127,4 @@ One table, target × skill, with the state found and the action taken. Then, sep
 - Never edit a target's other skills or commands, even when a base skill references a command the target names differently (`/<command>` vs `/<plugin>:<command>`). Report the mismatch; the rename is the operator's call.
 - The base must not accumulate stack-conditional text ("if this is a Python project…"). If a hunk only makes sense conditionally, it is project-specific.
 - New base skills are pushed only when the operator asks for them by name. Adding a skill to `skills/` does not opt every target into it.
+- **A dependency goes with the skill that names it.** When a pushed skill names a base agent (`agents/<name>.md`, copied to the target's `.claude/agents/`) or a sibling base skill the target lacks, push that too, and whatever it names in turn. A skill pushed without its agent stops at its first step. An agent the target already has under the same name is synced like a skill, steps 1 to 4. One under a different name is not a substitute: push the base one, leave theirs alone, and report both.
