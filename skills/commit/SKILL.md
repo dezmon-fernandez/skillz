@@ -48,8 +48,8 @@ outside it breaks the release, and you may not make one up.
 The body says **why**, not what. The diff already says what changed. It cannot say what the
 alternative was or which bug this closes.
 
-Attribution lines (`Co-Authored-By`, tool footers) follow the repo's convention. Check
-recent commits before adding or leaving one out.
+**No attribution lines, ever.** No `Co-Authored-By`, no "Generated with" footer. This holds
+even when the tool you run in adds one by default, and even when recent commits carry one.
 
 ### 4. Capture agent-context changes in the body
 

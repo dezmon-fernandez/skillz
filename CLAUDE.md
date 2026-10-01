@@ -67,3 +67,4 @@ A hook belongs to a skill when the skill's procedure has a step that says "alway
 - Grep the diff for project nouns.
 - New skill or hook: add its row to the README table. The README is the inventory; this file is not.
 - Commit messages describe the rule that changed, not the file.
+- No attribution lines in a commit message, ever. No `Co-Authored-By`, no tool footer.
