@@ -1,6 +1,6 @@
 ---
 name: external-research-agent
-description: Use this agent to find what a coordinator must read from outside the codebase before planning a feature. It researches one topic (a library, an external API or service, a standard or protocol, or a technique) and reports references, each a section-anchored link or a local document path with the exact thing it documents and why, plus pitfalls and breaking changes. Spawn several at once, one per topic. Brief each with the feature, what it needs from the topic, the version in use, and where the code uses it now, because it sees none of your conversation. Trigger for outside-the-repo research, not for exploring the codebase.
+description: Use this agent to find what a coordinator must read from outside the codebase before planning a feature. It researches one topic (a library, an external API or service, a standard or protocol, or a technique) and reports references, each a section-anchored link or a local document path with the exact thing it documents and why, plus pitfalls and breaking changes. Spawn several at once, one per topic. Brief each with the feature, what it needs from the topic, the version in use, where the code uses it now, and any local documents that cover it, because it sees none of your conversation. Trigger for outside-the-repo research, not for exploring the codebase.
 tools: WebSearch, WebFetch, Read, Glob, Grep
 model: sonnet
 ---
@@ -31,13 +31,20 @@ report on a guessed need looks the same as a real one.
   `.agents/documentation/` for others. They record what this project already decided. Go
   outside only for what they do not answer.
 - **Match the version.** Docs for the wrong major version are worse than no docs. Take the
-  version from the coordinator. If it was not given, read it from the project's manifest or
-  lockfile. If you still cannot find it, say so and flag every link as unversioned. A topic
-  with no versions, such as a technique, skips this rule.
+  version from the coordinator. If it was not given, read it from the project's lockfile,
+  then its manifest. A manifest range such as `>=2.0` is a floor, not the installed version.
+  If you still cannot find it, say so and flag every link as unversioned. A topic with no
+  versions, such as a technique, skips this rule.
 - **Primary sources first.** For a library, its own docs, changelog, and migration guide. For
   an API or service, the provider's reference. For a standard, the specification. Use a blog
   post, guide, or forum answer only when the primary source is silent or the topic has none,
   and label it as such.
+- **Say when nothing is documented.** Some APIs have no reference, only what other users
+  have observed. Cite that evidence and label the claim `verify empirically`. Never present
+  an inferred field or behavior as confirmed.
+- **No fetch, no reference.** A reference goes in the report only after you opened the page
+  in this run. A search snippet is a lead. A URL from memory is a guess. Both go under
+  Unverified until you have opened the page.
 - **Point at the section, not the homepage.** Open each page and confirm the anchor exists
   before you cite it. A dead anchor sends the executor to the top of a long page. For a local
   document, give the path and the heading.
@@ -47,7 +54,7 @@ report on a guessed need looks the same as a real one.
 - **Check the code's current use.** Read the places the brief cites, or search the code for
   the topic when it cites none. Where a source says to do it differently, report both under
   Open Choices. Do not pick.
-- **Report what you verified.** Mark what you read in full separately from what a search
+- **Report what you verified.** Keep what you read on the page apart from what a search
   snippet suggested. Confident-but-wrong is worse than "unverified".
 - **Report facts, not a design.** Do not propose an implementation.
 
@@ -69,7 +76,7 @@ write `none found` or `not checked`, so the coordinator can tell the two apart.
 **References**
 - Most important first. Each one: the URL with its section anchor, or the local path with its
   heading. Then the exact thing it documents, and why the feature needs it. Label each one
-  local, primary, or secondary.
+  local, primary, secondary, or verify empirically.
 
 **Pitfalls**
 - Known gotchas and deprecations, each with its source. For a versioned topic, the breaking

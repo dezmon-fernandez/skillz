@@ -61,43 +61,49 @@ So that <benefit/value>
 
 ### Phase 2: Codebase intelligence
 
-Find what you must read in the codebase, across five areas:
-
-- **Structure**: languages, frameworks, runtime versions, directory layout, component
-  boundaries, config files, build process.
-- **Patterns**: find similar code. Note its naming, file layout, error handling, and
-  logging, and the anti-patterns to avoid. Read the project's rules file.
-- **Dependencies**: the libraries this feature touches, how they are used now, their
-  versions, and any local docs.
-- **Testing**: the framework, the structure, a similar test to mirror, coverage standards,
-  and the lint, type-check, and test commands as the project defines them.
-- **Integration points**: files to update, new files and where they go, registration and
-  routing patterns, auth patterns if relevant. Existing code to reuse. For anything that
-  changes, its callers and the tests and fakes that cover it.
-
-Dispatch `codebase-research-agent` instances to cover them.
+`codebase-research-agent` instances find what you must read. Each one reports on five areas
+of its slice: structure, patterns, dependencies, testing, and integration points. The agent
+holds what each area covers.
 
 1. Search the codebase for the key nouns from Phase 1 (entities, routes, screens, commands).
    Note which directories the hits fall in. Do not open the files.
 2. Group the hits into subsystems: a package, service, module, or layer with its own
    directory and conventions. One with only a hit or two joins its nearest neighbor.
-3. Send one agent per subsystem, all in one message so they run in parallel.
+3. Send one agent per subsystem, all in one message so they run in parallel. A small feature
+   gets one agent, never none. More than five means the grouping is too fine. Merge
+   neighbors until it is five or fewer.
 
-An agent sees neither this conversation nor the ticket. Give each the feature in full, the
-decisions already settled, its slice, and your search hits in it.
+An agent sees neither this conversation nor the ticket. Give each:
 
-Each report lists the `Files to Read`, each with why, and covers the five areas.
+- the feature in full, and the decisions already settled
+- its slice, and the slices the other agents hold
+- your search hits in its slice
+- the questions the plan must answer about its slice, when you have any
 
-- Read every file on that list yourself, in full.
+❌ `We want to add archiving. Look at how records are deleted.`
+
+✅ The same request as a brief:
+
+```
+Feature: an owner archives a record from the list. The row leaves once the server confirms.
+Settled: archive is a soft delete on the server.
+Your slice: record/. Other slices: list/, api/.
+Hits: record/record-service:40, record/record-service:112.
+Answer: what does delete() do to the cached list?
+```
+
+Each report opens with `Files to Read`. Each entry has a line range, what you will do with
+the file, and why.
+
+- Read in full each file the plan changes. For a file to mirror, reuse, match, or follow as
+  a test, read the cited range, and widen it when it does not show what the report claims.
+  Reading every listed file in full refills the context the agents kept clear.
 - A report is a lead, not a fact. A `file:line` goes in the plan only after you have seen it
   in the file.
 - Do not re-explore what the reports cover.
 - Settle every gap and `Unverified` item the plan depends on now. Read the file if you know
-  which one. Otherwise send the question back to the agent that holds that slice. Never
-  carry it into the plan as a risk or a hedge.
-
-Skip the dispatch only when the hits are so few that you would read every one anyway. Then
-cover the five areas yourself.
+  which one. Otherwise resume the agent that holds that slice and ask it. A new agent starts
+  with nothing. Never carry the gap into the plan as a risk or a hedge.
 
 **Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
 preference, and open architecture choice, and add each report's `Open Choices`. Resolve them
@@ -111,15 +117,26 @@ List what the feature needs from outside the codebase, one topic each: a library
 external API or service, a standard or protocol, a technique the codebase has no example of,
 or a function or option of an installed library that the codebase does not call yet.
 
-Dispatch `external-research-agent` instances, one per topic, all in one message. Give each
-the topic, the version Phase 2 found in use for a library, what the feature needs from it,
-and where the code uses it now as `file:line`.
+Dispatch `external-research-agent` instances, one per topic, all in one message. Two needs
+from the same library are one topic. Past five topics, send the five a design choice hangs
+on first and the rest after.
+
+An agent sees neither this conversation nor the Phase 2 reports. Give each:
+
+- the feature, and what it needs from the topic
+- the topic, and for a library the version Phase 2 found in use
+- where the code uses it now, as `file:line`
+- the local documents Phase 2 found that cover it, as paths
 
 Each report lists references, pitfalls, and breaking changes. A reference is a
 section-anchored link with the exact thing it documents and why.
 
 - Open the few references that decide a design choice.
 - Do not re-research what the reports cover.
+- Settle every `Unverified` item the plan depends on. Resume the agent that reported it and
+  ask. Never cite it in the plan as fact.
+- A reference labeled `verify empirically`, and any item reading cannot settle, becomes a
+  check in the plan's `## Prerequisite` section.
 - Where sources disagree with each other or with the code, the report lists it under
   `Open Choices`. Take it to the Decision Gate.
 - Record each reference in the plan with *why* the executor needs it.
