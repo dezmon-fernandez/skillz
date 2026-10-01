@@ -28,6 +28,11 @@ Keep the reason behind a rule only where a reader would assume the opposite.
 
 **Name what the skill depends on.** A skill that needs an agent, a sibling skill, or a hook says so, and says what to do when the dependency is missing. Stop and report. Do not improvise a substitute. When the `code-reviewer` agent is missing, `review-code` says so and stops, because reviewing the diff in the same context defeats the skill while still looking like success.
 
+**The agent does the work, the skill triages it.** When a skill has an agent, the agent holds the checks and runs them in its own context, briefed with only what the job needs. The skill gathers that brief, starts the agent, and takes what comes back to the developer. Do not write the checks into the skill as well. Two copies drift, and the session runs its own and never starts the agent.
+
+- ❌ `review-plan` lists five checks and runs them in the session.
+- ✅ `review-plan` gives `plan-reviewer` the plan path, then sorts its findings and puts the decisions to the developer.
+
 **Verbatim beats paraphrase.** Where a skill quotes the operator, prints a banner, or carries a constraint into a file, mark it verbatim and keep it verbatim.
 
 **Every `!` command must be safe to fail.** Injected shell runs before the model sees anything. Guard it (`2>/dev/null || echo "(none)"`) so a missing file reads as a fact, not an error.

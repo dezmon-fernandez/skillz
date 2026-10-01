@@ -11,7 +11,7 @@ into a project and adapted there.
 | `handover` | Distill the live session into `.agents/handover.md` so a fresh session can resume via `/prime`. |
 | `create-prd` | Turn a conversation or notes into `.agents/PRD.md`, the source of truth `/prime` reads. |
 | `generate-plan` | Turn a feature request, ticket, or conversation into a context-rich implementation plan, settling every open question with the operator first. |
-| `review-plan` | Poke holes in a plan before any code is written, checking its claims against the real code. |
+| `review-plan` | Gate before `execute-plan`: delegate the cold read to the `plan-reviewer` agent, relay every finding, and settle the decisions with the developer before revising the plan. |
 | `execute-plan` | Implement a plan task by task, validating each one, and write the execution report. |
 | `review-code` | Gate after `execute-plan`: delegate to the `code-reviewer` agent, save the report, triage the findings. |
 | `commit` | Stage the current work and write one atomic commit in the repo's own convention. |
