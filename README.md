@@ -11,6 +11,7 @@ into a project and adapted there.
 | `handover` | Distill the live session into `.agents/handover.md` so a fresh session can resume via `/prime`. |
 | `create-prd` | Turn a conversation or notes into `.agents/PRD.md`, the source of truth `/prime` reads. |
 | `generate-plan` | Turn a feature request, ticket, or conversation into a context-rich implementation plan, settling every open question with the operator first. |
+| `walk-plan` | Render a developer's walkthrough of a plan so the design can be judged before anything is built: what gets built, the entry points, the data, the decisions, the call path, every function and model, and the rules traced on one worked value. Read-only. |
 | `review-plan` | Gate before `execute-plan`: delegate the cold read to the `plan-reviewer` agent, relay every finding, and settle the decisions with the developer before revising the plan. |
 | `execute-plan` | Implement a plan task by task, validating each one, and write the execution report. |
 | `review-code` | Gate after `execute-plan`: delegate to the `code-reviewer` agent, save the report, triage the findings. |
@@ -22,6 +23,9 @@ into a project and adapted there.
 
 `create-prd` → `generate-plan` → `review-plan` → `execute-plan` → `review-code` → `commit`
 is the feature loop; each step reads what the previous one wrote.
+
+`walk-plan` sits beside the loop. Run it after `generate-plan` or after a plan is revised.
+It writes nothing.
 
 ## Agents
 
