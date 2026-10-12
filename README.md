@@ -10,6 +10,7 @@ into a project and adapted there.
 | `prime` | Load project context at the start of a session. Consumes a pending `.agents/handover.md` if one exists. |
 | `handover` | Distill the live session into `.agents/handover.md` so a fresh session can resume via `/prime`. |
 | `create-prd` | Turn a conversation or notes into `.agents/PRD.md`, the source of truth `/prime` reads. |
+| `decompose-feature` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: dependency-ordered slices, one architecture decision each, with the background and working rules that carry the effort across context clears. |
 | `generate-plan` | Turn a feature request, ticket, or conversation into a context-rich implementation plan, settling every open question with the operator first. |
 | `walk-plan` | Render a developer's walkthrough of a plan so the design can be judged before anything is built: what gets built, the entry points, the data, the decisions, the call path, every function and model, and the rules traced on one worked value. Read-only. |
 | `review-plan` | Gate before `execute-plan`: delegate the cold read to the `plan-reviewer` agent, relay every finding, and settle the decisions with the developer before revising the plan. |
@@ -23,6 +24,9 @@ into a project and adapted there.
 
 `create-prd` → `generate-plan` → `review-plan` → `execute-plan` → `review-code` → `commit`
 is the feature loop; each step reads what the previous one wrote.
+
+`decompose-feature` comes before the loop when a feature is too large for one plan. It
+writes a roadmap of slices, and each slice enters the loop at `generate-plan`.
 
 `walk-plan` sits beside the loop. Run it after `generate-plan` or after a plan is revised.
 It writes nothing.
