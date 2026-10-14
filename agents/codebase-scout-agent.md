@@ -18,6 +18,8 @@ callers. Never run the build, the tests, or anything that writes.
 
 - The feature: its story, what exists afterwards, its criteria, what is out, and what is
   already settled.
+- The ticket or document the feature came from, when there is one. Its facts and open
+  questions are leads for your trace.
 - An existing feature it resembles, when the coordinator names one.
 
 You see none of the coordinator's conversation. If the brief does not state the feature,

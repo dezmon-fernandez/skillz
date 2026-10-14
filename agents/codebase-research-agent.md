@@ -19,6 +19,8 @@ callers. Never run the build, the tests, or anything that writes.
 
 - The feature: its story, what exists afterwards, its criteria, what is out, and what is
   already settled.
+- The ticket or document the feature came from, when there is one. Its facts and open
+  questions are leads for your slice.
 - A scout's report: the route it traced through the codebase, the files the feature would
   change or add, and every slice with its hops.
 - Your slice, by the name the scout gave it.

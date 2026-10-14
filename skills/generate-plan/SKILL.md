@@ -40,9 +40,13 @@ Settled: <a decision the input or a document it links to already made, or none>
 - Write outcomes, with no file, function, or type name. You have read no code, so a name
   here is a guess.
 - Where the input states the story or a criterion, keep its words.
-- Where the input is silent and the feature needs an answer, write your reading and mark
-  it `(assumed)`. Do not ask. The developer corrects a line faster than they answer a
+- Where the input says nothing and the feature needs an answer, write your reading and
+  mark it `(assumed)`. Do not ask. The developer corrects a line faster than they answer a
   question.
+- Where the input names an open question, leave it open. Research answers it or Phase 3
+  asks it. An assumed answer here closes it before anyone has looked.
+- `Settled` holds decisions only. A fact from the input stays in the input, which the
+  research agents receive.
 - Write only the criteria the input gives you or forces you to assume. Research adds the
   rest.
 
@@ -58,9 +62,10 @@ agreed it. A line they agreed changes only in Phase 3.
 Agents do the reading, so your context stays clear for the plan. Do not search the codebase
 yourself first.
 
-1. **Scout.** Send one `codebase-scout-agent` the Phase 1 block, word for word. Its report
-   gives the route through the code, the files the feature would change or add, and the
-   slices that need a researcher.
+1. **Scout.** Send one `codebase-scout-agent` the Phase 1 block, word for word, and the
+   ticket or document it came from, whole, if there is one. Its report gives the route
+   through the code, the files the feature would change or add, and the slices that need a
+   researcher.
 2. **Size the work** from the scout's file counts. A mechanical change, such as a rename,
    counts as one file.
    - **About five or fewer:** it needs no plan. Say so, name the files and any decision
@@ -72,7 +77,7 @@ yourself first.
 3. **Research each slice.** Send one `codebase-research-agent` per slice the scout named,
    and skip none. Send them all in one message so they run in parallel. Give each these,
    whole, because a summary drops whatever you did not think mattered:
-   - the Phase 1 block
+   - the Phase 1 block, and the ticket or document it came from
    - the scout's report
    - its slice, by the name the scout gave it
    - any other question the plan must answer about its slice
