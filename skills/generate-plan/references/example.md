@@ -1,8 +1,10 @@
-# Walkthrough: repeat-order-discount
+# Feature: repeat-order-discount
 
-A format sample for an invented plan in an invented shop. It shows the level of
-detail each section takes. Its code is Python and SQL; write a real walkthrough
-in the plan's own language.
+A sample Design part for an invented plan in an invented shop. It shows the level of
+detail each section takes. Its code is Python and SQL; write a real plan in the
+codebase's own language.
+
+# DESIGN
 
 Size: 2 entry points, 1 table, 6 functions, 2 models
 
@@ -10,6 +12,14 @@ Size: 2 entry points, 1 table, 6 functions, 2 models
 
 A shopper who has ordered before gets a discount when their cart is priced. A
 price quote now stops being honored 30 minutes after it is issued.
+
+As a returning shopper, I want my earlier orders to lower my price, so that
+buying here again is worth it.
+
+## Out of scope
+
+- Renewing a quote that has expired: the shopper asks for a new one.
+- A discount by coupon or by lifetime spend: each waits for its own plan.
 
 ## Surface
 
@@ -51,12 +61,12 @@ Relies on   the customer_order index (customer_id, placed_at)
 
 ## Decisions
 
-- **Discount by orders this year**, not by lifetime spend. A count is one
-  indexed read, and spend needs a sum over every order.
-- **The expiry is stored on the quote**, not worked out from when it was
-  made. Changing the 30 minutes later must not move quotes already issued.
-- **Out of stock refuses the whole quote**, not a partial one. A shopper
-  never pays for a cart they cannot receive.
+- Developer, 2025-03-04: **Discount by orders this year**, not by lifetime
+  spend. A count is one indexed read, and spend needs a sum over every order.
+- Developer, 2025-03-04: **Out of stock refuses the whole quote**, not a
+  partial one. A shopper never pays for a cart they cannot receive.
+- Planner: **The expiry is stored on the quote**, not worked out from when it
+  was made. Changing the 30 minutes later must not move quotes already issued.
 
 ## The path
 
@@ -87,14 +97,19 @@ Reuses: fetch_quote
 
 # Route handler. Loads the cart, runs the three steps below, and returns
 # the quote.
-def create_cart_quote(...) -> QuoteResponse
+def create_cart_quote(cart_id: int, context: AppContext) -> QuoteResponse
 
 # One SQL statement. Counts the customer's orders placed since January 1.
-def count_orders_this_year(...) -> int
+def count_orders_this_year(
+    connection: Connection, customer_id: int, today: date
+) -> int
 
 # Refuses when an item is out of stock. Otherwise sums the lines, applies
 # the repeat discount, and stamps the expiry.
-def price_cart(...) -> Quote
+def price_cart(
+    items: list[CartItem], stock: dict[int, int], order_count: int,
+    now: datetime,
+) -> Quote
 
 # Existing, changed. Stores the quote with its expiry.
 # Today: stores the quote with no expiry.
@@ -110,16 +125,16 @@ def read_quote(...) -> QuoteResponse
 # ── helpers the steps call ──
 
 # The percent off for a customer's Nth order this year.
-def repeat_discount_percent(...) -> int
+def repeat_discount_percent(order_count: int) -> int
 
-# ── existing, changed ──
+# ── other new or changed functions ──
 
 # none
 ```
 
 ## Models
 
-Served, what a caller receives:
+Served, what leaves this codebase:
 
 ```python
 # Returned by create_cart_quote and read_quote.
@@ -142,6 +157,7 @@ Internal, what moves between the steps:
 
 ```python
 # Existing, gains 1 field. Built by price_cart, stored by insert_quote.
+# Assumes every quote stored after this change carries an expiry.
 class Quote(BaseModel):
     ...
     # None on a quote issued before this change.
@@ -163,15 +179,22 @@ discount   this is their 5th order this year         → 10%
            their 2nd, 3rd, or 4th would get 5%; their 1st, 0%
 total      100.00 less 10%                           → $90.00
 expires    10:00 plus 30 minutes                     → 10:30
+
+served     QuoteResponse
+             quote_id           812
+             subtotal_cents     10000
+             discount_percent   10
+             total_cents        9000
+             expires_at         10:30
 ```
 
 Also:
 
-- An order placed last year does not count toward the discount.
-- If the lamp is out of stock, no quote is stored and the reply names the
-  lamp.
-- A quote read at 10:30 or later answers 410.
-- A total is whole cents. A fraction of a cent rounds down.
+1. An order placed last year does not count toward the discount.
+2. If the lamp is out of stock, no quote is stored and the reply names the
+   lamp.
+3. A quote read at 10:30 or later answers 410.
+4. A total is whole cents. A fraction of a cent rounds down.
 
 ## When it can't answer
 
@@ -182,7 +205,7 @@ Also:
 
 ## Cost and proof
 
-- Cost: one more indexed read per quote and no outside call. Measured time:
-  `not stated in the plan`.
+- Cost: one more indexed read per quote and no outside call. Measured at 2 ms
+  for a customer with 400 orders this year.
 - Proof: the discount is unit-tested at each boundary, and the route test
   checks the $90.00 above against hand-computed cents.
