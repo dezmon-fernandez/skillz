@@ -41,6 +41,29 @@ It writes nothing.
 | `external-research-agent` | Read-only researcher. Researches one topic from outside the codebase (a library, an external API, a standard, or a technique), local docs first, and reports section-anchored links and local paths, each with why, plus pitfalls and breaking changes. Spawned in parallel by `generate-plan`, one per topic. |
 | `code-quality-pragmatist` | Reviews recent code for over-engineering and unnecessary complexity relative to the project's actual needs, and recommends simplifications. Invoked by hand. |
 
+## Second set (`-v2`)
+
+A second version of the feature loop, tried beside the first. Its skills run only when typed,
+so a request to plan still reaches `generate-plan`. Each `-v2` file names only `-v2`
+siblings, so the two sets never mix. Once one set wins, the other is deleted.
+
+`decompose-feature-v2` → `generate-plan-v2` → `review-plan-v2` → `execute-plan-v2` →
+`review-code-v2` → `commit`, with `walk-plan-v2` beside it.
+
+| Skill or agent | Purpose |
+|-------|---------|
+| `decompose-feature-v2` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: dependency-ordered slices, each one plan's worth of work and no smaller, with the background and working rules that carry the effort across context clears. |
+| `generate-plan-v2` | Turn a feature request, ticket, or conversation into an implementation plan an executor can finish in one pass. The developer agrees the scope first, agents research, and the developer gives the go-ahead before the plan is written. The plan opens with a Design part the developer confirms before anything is built: what gets built, the acceptance criteria, the entry points, the data, the decisions, the call path, the models it serves and stores, and the rules traced on one worked value. |
+| `walk-plan-v2` | Print a plan's Design part so the design can be judged before anything is built, or write one for a plan that has none. Read-only. |
+| `review-plan-v2` | Gate before `execute-plan-v2`: delegate the cold read to the `plan-reviewer-v2` agent, revise the plan where a finding has one sound fix, and ask the developer only what is theirs to decide. The developer confirms the plan from its report before anything is built. |
+| `execute-plan-v2` | Implement a plan task by task, validating each one, and write the execution report. |
+| `review-code-v2` | Gate after `execute-plan-v2`: delegate to the `code-reviewer-v2` agent, save the report, fix every finding that has one sound fix, and ask the developer only what is theirs to decide. |
+| `code-reviewer-v2` | Read-only reviewer. Checks a finished implementation against its plan and execution report, and judges the design now that the code exists. Spawned by `review-code-v2`. |
+| `plan-reviewer-v2` | Read-only reviewer. Reads a plan cold, verifies its claims against the code, and returns blocking issues and the smallest design that meets the goal, and marks each finding that is the developer's to decide. Spawned by `review-plan-v2`. |
+| `codebase-scout-agent-v2` | Read-only scout. Traces the most similar existing feature end to end and reports the route, the files the new feature would change or add, and the slices that need a researcher. Spawned first by `generate-plan-v2`, one per plan. |
+| `codebase-research-agent-v2` | Read-only explorer. Investigates one slice of the codebase and reports the files to read, each with why, plus what exists today, the data touched, and `file:line` citations. Spawned in parallel by `generate-plan-v2`, one per slice the scout names. |
+| `external-research-agent-v2` | Read-only researcher. Researches one topic from outside the codebase (a library, an external API, a standard, or a technique), local docs first, and reports section-anchored links and local paths, each with why, plus pitfalls and breaking changes. Spawned in parallel by `generate-plan-v2`, one per topic. |
+
 ## Hooks
 
 | Hook | Enforces |

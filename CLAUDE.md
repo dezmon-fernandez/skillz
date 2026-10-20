@@ -10,6 +10,11 @@ Everything in `skills/` and `hooks/` is a base that gets copied into other repos
 
 **Write for a reader with no memory.** Say what the output is, who consumes it, and what happens if it is wrong. Give the rule, then show it applied: the ❌/✅ pair pattern in `handover` is the house style.
 
+**Show the shape, not a worked example.** A file that loads on every run carries the shape to fill in, and one ❌/✅ pair where a rule needs showing. A full worked example gets copied, and the output starts to look like the sample instead of the job.
+
+- ❌ An agent file that ends with a complete sample report.
+- ✅ An agent file with the report's blank shape, and one ❌/✅ line for the rule sessions break.
+
 **Short.** A page, two at most. A long skill gets skimmed, and a skimmed skill does the same work as no skill. Supporting files hold the long reference material and the SKILL.md points at them. The SKILL.md holds what a session needs in order to decide. The reference holds the exact shape a session looks up.
 
 The page count tells you to look. It does not tell you what to cut. Test each sentence: **name the wrong thing a session does if this sentence is gone.** If you cannot name one, the sentence is description. Cut it, however true it is. If you can name one, keep the sentence at whatever length it needs.
