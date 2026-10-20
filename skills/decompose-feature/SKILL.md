@@ -1,23 +1,24 @@
 ---
 name: decompose-feature
 description: >-
-  Break a feature too large for one plan into a roadmap of dependency-ordered slices,
-  each one plan's worth of work: as large as the developer can still read in full, and
-  never too small to carry a plan. Writes .agents/roadmaps/<feature>.md, a working document that
+  Break a feature too large for one plan into a roadmap of small, dependency-ordered
+  slices, each carrying one architecture decision that one /generate-plan and one build
+  session can finish. Writes .agents/roadmaps/<feature>.md, a working document that
   carries the effort's background and working rules across context clears. Use when asked
   to "decompose this feature", "break this into slices", "roadmap this", or when a feature
   is too big to plan in one pass.
 argument-hint: "[feature, PRD section, or feature-idea doc]"
 ---
 
-# decompose-feature: a roadmap of slices, each one plan's worth
+# decompose-feature: a roadmap of slices, one decision each
 
 ## Feature: $ARGUMENTS
 
-Break a feature into slices and the order to build them. A slice is one plan's worth of
-work: it ships and stands on its own, and it changes about six to twenty source files,
-tests aside. Cut as few slices as that size allows. Built in order, each slice is planned
-against what the earlier ones actually landed, not a guess made up front.
+Break a feature into slices and the order to build them. A slice is one unit of work: one
+architecture decision, small enough to plan and build in one session, large enough to ship
+and stand on its own. Built in order, each slice is planned against what the earlier ones
+actually landed, not a guess made up front. Plan them one at a time, or a few together when
+they come out small.
 
 A slice entry says **what it develops, the problem it solves, and the constraints it must
 respect**, and stops there. No signatures, data shapes, enums, file layout, or tests.
@@ -26,8 +27,8 @@ its own. Write each entry to be read at a glance: plain words, one idea per line
 deliverable first. An entry that needs a wall of detail is two slices, or you have started
 planning it.
 
-A slice is the right size when the developer can read every file it changes in one
-sitting, and its result is something a user or a caller can observe.
+A slice is the right size when its plan is short and its result is one observable, testable
+change.
 
 The roadmap is a working document, not just an ordered list. Sessions run off it across
 context clears, so it carries the effort's evidence, design voice, and working rules inline.
@@ -54,14 +55,12 @@ reliably acts on what the document holds. It may never open what the document on
 
 - **Slice 1 proves the inviolable property** end to end with the fewest moving parts. Widen
   from there.
-- **Size each slice before you keep it.** Estimate the source files it will change, tests
-  aside. More than about twenty is two slices, because the developer will not read a
-  change that size. Fewer than about six is no slice: fold it into the slice that needs
-  it. A mechanical change, such as a rename, counts as one file.
-- **Code ships with its first caller.** A slice that adds something nothing calls yet is
-  too small to judge. Its pure core and the shell with the side effects are one slice.
+- **One architecture decision per slice**: a data shape, a key, a boundary, an idempotency
+  rule. Bundle several and the plan review goes coarse. Split them.
 - **Independent units before integrators.** Slices with no upstream dependency come first.
   The slice that wires them together comes last.
+- **Pure logic and I/O are usually two slices**: a pure, testable core, then the shell with
+  the side effects.
 - **Settle the irreversible early.** A decision everything downstream depends on, such as a
   key type every reference uses, is made and reviewed before anything builds on it. A
   decision that can be reshaped later from data already in hand can wait.
@@ -72,8 +71,8 @@ reliably acts on what the document holds. It may never open what the document on
 ### 3. Sequence and check
 
 - Order by dependency. Mark each slice independent, or an integrator of the slices it names.
-- Each slice ends shippable, ends with the test suite green, and stays inside the size.
-  Split one that passes it. Fold one that falls short.
+- Each slice carries exactly one decision, ends shippable, and ends with the test suite
+  green. Split any slice carrying more than one decision.
 - Each entry stays at the develops / solves / constraints altitude. A signature, data shape,
   enum, or test that crept in belongs in the plan. Cut it from the roadmap.
 - Read every entry as the session that will plan it, holding only the roadmap and the repo.
@@ -94,7 +93,7 @@ them around a substitute.
 
 - [ ] The keystone and inviolable property trace to the repo's rules and PRD.
 - [ ] Slice 1 proves the inviolable property end to end.
-- [ ] Each slice ends shippable and green, and changes about six to twenty source files.
+- [ ] Each slice carries one decision, ends shippable, and ends green.
 - [ ] Slices are ordered by dependency, and irreversible decisions come first.
 - [ ] Each entry says what it develops, what it solves, and its constraints, and stops.
 - [ ] The Background carries its evidence in full. A stranger holding only this file and the
@@ -105,7 +104,6 @@ them around a substitute.
 ## Report
 
 - The slice count and the build order: which slices are independent, which integrate.
-- Each slice's estimated source files.
 - The first slice to run.
-- Any slice outside the size, or drifted into implementation detail. It needs splitting,
-  folding, or trimming.
+- Any slice still carrying more than one decision, or drifted into implementation detail. It
+  needs splitting or trimming.

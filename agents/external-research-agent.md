@@ -63,34 +63,32 @@ report on a guessed need looks the same as a real one.
 Your final message is the report. The coordinator sees nothing else you did, so put
 everything in it.
 
-Fill in this shape. Keep every heading, in this order. Under one with nothing to report,
-write `none found` or `not checked`, so the coordinator can tell the two apart. Quote a name
-or signature exactly. Do not paste a source's prose. Point at it.
+Write one line per bullet. Quote a name or signature exactly. Do not paste a source's prose.
+Point at it.
 
-```
+Use these headings, in this order. Keep every heading. Under one with nothing to report,
+write `none found` or `not checked`, so the coordinator can tell the two apart.
+
 **Topic and Version**
-<the topic>, <the version you researched, or `no version`>, from <where the version came from>
+- The topic, the version you researched, and where the version came from. Write `no version`
+  when the topic has none.
 
 **References**
-- [<local | primary | secondary | verify empirically>] <the URL with its section anchor, or
-  the local path with its heading>: <the exact thing it documents>. Why: <why the feature
-  needs it>
+- Most important first. Each one: the URL with its section anchor, or the local path with its
+  heading. Then the exact thing it documents, and why the feature needs it. Label each one
+  local, primary, secondary, or verify empirically.
 
 **Pitfalls**
-- <a gotcha, a deprecation, or a breaking change between the project's version and the
-  latest>   <its source>
+- Known gotchas and deprecations, each with its source. For a versioned topic, the breaking
+  changes between the project's version and the latest.
 
 **Security and Performance**
-- <only what bears on this feature>   <its source>
+- Only what bears on this feature.
 
 **Open Choices**
-- <what is unsettled>: <one side> <its source>, <the other side> <its source>
+- Where sources disagree with each other or with the code's current use, or a source offers
+  two supported ways to do what the feature needs. Cite both sides. The coordinator takes
+  these to the developer.
 
 **Unverified**
-- <what you could not confirm>: <what would settle it>
-```
-
-- List `References` most important first.
-- An open choice is where sources disagree with each other or with the code's current use,
-  or where a source offers two supported ways to do what the feature needs. Cite both
-  sides and do not pick. The coordinator takes these to the developer.
+- Anything you could not confirm, and what would settle it.

@@ -20,9 +20,8 @@ docs to read before planning any slice, each with what it provides.>
   merely finished. That keeps the checklist trustworthy across context clears.
 - When a task settles a convention or teaches a lesson, write it into Running practices with
   its reasoning. It binds every later task.
-- Each slice gets a /generate-plan, which sizes it first and says so when it is small
-  enough to build without a plan. A fresh session needs only this document plus /prime to
-  continue correctly.
+- Heavyweight slices get a full /generate-plan. Light ones may be handled inline. A fresh
+  session needs only this document plus /prime to continue correctly.
 
 ## Background
 
@@ -53,7 +52,6 @@ reasoning that earned it.>
 - **Solves:** <the problem this slice removes, and why it exists>
 - **Constraints:** <any invariant or rule the slice must respect: behavior that must hold,
   not how to build it. Omit if none.>
-- **Size:** about <N> source files, tests aside
 - **Depends on:** <prior slices, or nothing> · **Enables:** <what this unlocks>
 
 ### B: <name> (same shape)
@@ -71,12 +69,10 @@ answer and the doc that settles it.>
 ## A filled slice
 
 ```markdown
-### A: <the read path> (independent)
+### A: pure core (independent)
 
-- **Develops:** a caller can ask for <output> and get it: the pure function that maps
-  <input> to <output>, the read that feeds it, and the entry point that serves it.
-- **Solves:** nothing downstream can be judged until one path runs end to end.
-- **Constraints:** malformed input fails loud. Nothing is written.
-- **Size:** about 12 source files, tests aside
-- **Depends on:** nothing · **Enables:** the slice that persists <output>.
+- **Develops:** a typed, tested pure function mapping <input> to <output>. No caller yet.
+- **Solves:** downstream slices need a trustworthy primitive before any I/O exists.
+- **Constraints:** no I/O, no database, no network. Malformed input fails loud.
+- **Depends on:** nothing · **Enables:** the writer slice that persists its output.
 ```

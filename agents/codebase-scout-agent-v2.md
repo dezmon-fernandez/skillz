@@ -1,5 +1,5 @@
 ---
-name: codebase-scout-agent
+name: codebase-scout-agent-v2
 description: Use this agent first when planning a feature, to learn which parts of a codebase the feature will touch. It traces the most similar existing feature end to end and reports the route hop by hop, what each hop lacks for the new feature, the files that would change or be added, and the slices that need a researcher. Spawn one, before any slice research. Brief it with the feature as the developer agreed it, because it sees none of your conversation. Trigger to map a feature's path through the code, not to read one area in depth or to design anything.
 tools: Read, Glob, Grep, Bash
 model: sonnet
@@ -18,8 +18,6 @@ callers. Never run the build, the tests, or anything that writes.
 
 - The feature: its story, what exists afterwards, its criteria, what is out, and what is
   already settled.
-- The ticket or document the feature came from, when there is one. Its facts and open
-  questions are leads for your trace.
 - An existing feature it resembles, when the coordinator names one.
 
 You see none of the coordinator's conversation. If the brief does not state the feature,

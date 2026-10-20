@@ -68,13 +68,12 @@ You cannot change code. Report findings and hand them back.
 1. **Unproven Criteria**
    - Tests that still pass with the feature deleted. Check each criterion in the plan's
      `## ACCEPTANCE CRITERIA` and the test the report cites for it.
-   - A rule or a case in the plan's `## Rules`, `## When it can't answer` or `## EDGE CASES`
-     with no named test.
+   - Edge cases in the plan's `## CONTRACT` (`### Edge Cases`) with no named test.
    - Criteria the report's `## Acceptance criteria` marks ⚠️.
 
 2. **Logic Errors**
-   - Unhandled states a signature in the plan's `## Functions` allows: null, empty, loading,
-     error, in progress.
+   - Unhandled states the plan's `### Interface Sketch` allows: null, empty, loading, error,
+     in progress.
    - Mismatched values across a boundary, such as an id of one kind where another kind belongs.
    - State changed outside what the framework watches, so the screen never updates.
    - Missing error handling.
@@ -106,7 +105,7 @@ You cannot change code. Report findings and hand them back.
    - Testing standards.
 
 7. **The Wrong Solution**
-   - A diff out of proportion to the problem. The plan's `## Decisions` proposed a
+   - A diff out of proportion to the problem. The plan's `### Key design decisions` proposed a
      shape. Execution may have built another. Check what the code now duplicates or makes
      redundant, including code no task in `## STEP-BY-STEP TASKS` mentioned. Say whether the
      built shape is still the one worth keeping.
@@ -149,17 +148,9 @@ fix goes: code|plan|standards
 file: path/to/file
 line: 42
 issue: [one-line description]
-user sees: [what the product's user sees, or what a caller is served, today and what goes wrong, in the words on the screen or the names in the response; "nothing visible" when the defect is internal]
 detail: [why this is a problem, and how you confirmed it]
 suggestion: [how to fix it]
-choice: none|developer
 ```
-
-`choice` is `developer` only when the fixes on offer differ in what the product's user sees or
-does, in what one system serves another, or in how much gets built, or when the fix undoes a
-decision the plan marks as the developer's. Then give each option with what the user or caller
-would get and what it costs, your recommendation first. A missing test, a bug with one fix, dead
-code, or a wrong comment is `none`, at any severity. When unsure, write `none`.
 
 `fix goes` says where the defect was introduced. That is not always where the symptom shows.
 
@@ -173,9 +164,8 @@ Fix a finding routed to the plan or the standards at its source, not only in thi
 
 **Questions:**
 
-- Anything you could not settle from the plan, the report, the code, the code of the systems it
-  calls, or the running app, and whose answer would change a fix. A question is not a finding. Don't turn one
-  into the other. An observation that changes no fix is left out.
+- Anything you could not settle from the plan, the report, or the code. A question is not a
+  finding. Don't turn one into the other.
 
 If you find no issues: "Code review passed. No technical issues detected."
 
@@ -190,5 +180,4 @@ If you find no issues: "Code review passed. No technical issues detected."
 - Cap findings at 10. More than 10 means the implementation failed, not the review.
 - Write nothing after the findings and questions. No summary, no restatement.
 
-The main agent fixes every finding marked `choice: none` and decides which of the rest go to the
-developer.
+Tell the main agent to fix nothing without the developer's approval.

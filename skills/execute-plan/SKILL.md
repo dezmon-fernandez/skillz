@@ -17,9 +17,9 @@ Read the whole file before you touch any code. The plan is the contract. Carry i
 
 ### 1. Read the plan
 
-Read all of it: the Design part, the edge cases, the tasks and their dependencies, and
-every validation command. Then read the files the plan lists as mandatory reading. Do this
-before you write anything.
+Read all of it: the tasks and their dependencies, the CONTRACT, the edge cases, the testing
+strategy, and every validation command. Then read the files the plan lists as mandatory
+reading. Do this before you write anything.
 
 ### 2. Do the tasks in order
 
@@ -27,12 +27,10 @@ For each task, top to bottom:
 
 - **Read before you write.** Open the files the task changes and the `PATTERN` file it
   cites. A task that says MIRROR is not done from memory.
-- **Follow the task exactly.** Its PATTERN, IMPORTS, and GOTCHA fields are there because
-  the planner already hit that problem. Keep the plan's names and signatures: the
-  developer confirmed the names.
-- **Write the task's tests as part of the task.** Write a named test for each rule and case
-  the task owns, so its `VALIDATE` has something to run. Then break the line each test guards,
-  see the test fail, and restore the line. A test that still passes proves nothing: fix it.
+- **Follow the task exactly.** Its CONTRACT, IMPORTS, and GOTCHA fields are there because
+  the planner already hit that problem.
+- **Write the task's tests as part of the task.** Write a named test for each edge case the
+  task owns, so its `VALIDATE` has something to run.
 - **Run the task's `VALIDATE` before the next task.** Every task has one. The task is not
   done until it passes. If it fails, fix it now. Do not carry the failure forward. The full
   suite still runs in step 3, but this per-task check stops failures piling up there.
@@ -46,8 +44,7 @@ make it pass.
 ### 4. Final check
 
 - [ ] Every task completed, in order
-- [ ] Every clause of every acceptance criterion has a test you saw fail. A criterion that
-      names two states has two clauses
+- [ ] Every acceptance criterion has a test that would fail without the feature
 - [ ] Every validation command passes
 - [ ] The code follows the conventions the plan cited
 - [ ] Docs updated where the plan called for it
@@ -68,8 +65,8 @@ accident.
 <What was built, 2-4 sentences.>
 
 ## Acceptance criteria
-1. ✅ <criterion>: <test file and test name, and the line you broke to see it fail; or the manual check performed>
-2. ⚠️ <criterion>: <the clause not proven, and why>
+1. ✅ <criterion>: <test file and test name, or the manual check performed>
+2. ⚠️ <criterion>: <not proven, and why>
 
 ## Tasks completed
 - <task>: `path/to/file` (CREATE/UPDATE)
@@ -84,12 +81,12 @@ accident.
 <What changed against the plan and WHY, or "none". This is the reviewer's signal of intent.>
 
 ## Issues encountered
-<What is still wrong, untested or unmeasured, or "none". Fix what you can before you write this.>
+<Anything notable, or "none".>
 ```
 
-If any clause is unproven or any issue is left open, mark the status PARTIAL and name it.
-Never report COMPLETE on a hope. A report that claims too much is worse than no report. The
-reviewer trusts it without checking again.
+If any criterion is unproven, mark the status PARTIAL and name it. Never report COMPLETE on
+a hope. A report that claims too much is worse than no report. The reviewer trusts it
+without checking again.
 
 ## Notes
 

@@ -1,218 +1,78 @@
 # Plan template
 
-A plan has two parts. The developer reads the Design part and confirms it before anything
-is built. The executor builds from both.
+Fill every section. Delete a section only when the feature has nothing for it.
+Never leave placeholder text under a heading. The executor will implement it.
 
-- A task never restates another section. It points at it: a function or a model by name,
-  a rule or a case by its opening words. A fact written twice gets changed in one place.
-- Fill every section. One with nothing to report says `none`, because "no migration" is
-  information. Never leave placeholder text under a heading. The executor will implement
-  it.
-- Write every code block in the codebase's own language. The skeleton shows Python and
-  SQL.
-- Keep every line of the Design part under 80 columns, inside code blocks too. The
-  developer may read it in a terminal, where a wider line wraps and breaks every block.
-  Move a trailing comment that does not fit to the line above its field.
-- The Design part names no source file, test, or line number, outside `## Prerequisite`.
-  The Build part carries those.
+The examples use a sample feature: **archiving a record from a list**. Replace them with
+this codebase's real nouns.
 
 ---
 
-````markdown
+```markdown
 # Feature: <feature-name>
 
-# DESIGN
+This plan should be complete, but check the docs, the codebase patterns, and the tasks
+before implementing. Pay close attention to the names of existing utilities, types, and
+models. Import from the right files.
 
-Size: <N> entry points, <N> tables, <N> functions, <N> models
+## Feature Description
 
-## What gets built
+<What the feature is, its purpose, and its value to users.>
 
-<Two sentences in plain words: what exists afterwards that is not there
-today. No function or model name.>
+## User Story
 
-As a <type of user>, I want to <action/goal>, so that <benefit/value>.
+As a <type of user>
+I want to <action/goal>
+So that <benefit/value>
+
+## Problem Statement
+
+<The specific problem or opportunity this addresses.>
+
+## Solution Statement
+
+<The proposed approach and how it solves the problem.>
 
 ## ACCEPTANCE CRITERIA
 
-<Numbered, one each: what a user can observably do, or what must observably
-be true, when the feature is done. Each is provable by a test or a named
-manual check. Tasks cite them by number (AC #3), so the numbering is fixed
-once written.>
+<Numbered, one line each: what a user can observably do, or what must observably be true,
+when the feature is done. These are the requirements. There is no separate requirements
+list. Tasks cite them by number (AC #3), so the numbering is fixed once written.>
 
-## Out of scope
+Each one must be provable by a test or a named manual check. "Works correctly" is not
+provable. Anything the feature deliberately does not do goes in Out of Scope, never here
+as a vague criterion.
 
-- <What this feature does not do, and why. A part that is not fully built is
-  listed here.>
+**Example:**
 
-## Surface
+1. An owner sees an Archive action on each row of their record list.
+2. Archiving asks for confirmation, and cancelling leaves the list unchanged.
+3. An archived record leaves the list without a reload.
+4. An archived record is absent from the list on next load.
+5. A failed archive leaves the row in place and shows the error to the user.
 
-```
-NEW  <a route, command, screen, job, event handler, or public function>
+## OUT OF SCOPE
 
-  Reach     <what it may read, write, or call, and what a call costs>
+<What this feature deliberately does not do, one line each, with the reason. A feature is
+either fully in or explicitly out. A half-built feature is what you get when neither list
+says.>
 
-  Inputs    <input>       <bounds, default, or how it pairs with another>
+**Example:**
 
-  Answers   <outcome>     <what causes it>
-
-
-CHANGED  <the entry point>
-
-  Now       <what a caller sees differently>
-```
-
-## Data
-
-```
-Migration   <none, or each table and column added or changed>
-Writes      <none, or each table, file, or cache and what is written to it>
-Reads       <table, file, cache, or service>    <what it holds for the feature>
-Relies on   <the key or index a new query needs>
-```
-
-## What else changes
-
-- <Existing behaviour that moves, and who sees it.>
-- <Code or behaviour that is removed.>
-- <Work another codebase must do, and which side ships first.>
-- <Generated files that change, such as an API schema, and kept documents,
-  such as a changelog.>
-
-## Decisions
-
-- Developer, <date>: **<what was chosen>**, not <what was rejected>.
-  <Why, in one sentence.>
-- On record, <its source>: **<what was already decided>**.
-- Planner: **<what was chosen>**, not <what was rejected>.
-  <Why, in one sentence.>
-
-## The path
-
-```
-<the request, command, or trigger, with its inputs>
-
-1. <function_name>   <what it does>   → <what it yields>
-2. <function_name>   <what it does>   → <what it yields>
-
-→ <what comes back, or what is written>
-Helpers: <new or changed functions the steps call, or none>
-Reuses: <existing functions this path calls unchanged, or none>
-```
-
-## Models
-
-Served, what leaves this codebase:
-
-```python
-# <Which function returns or builds it.>
-class <Name>:
-    <field>: <type>   # <its meaning, worded as a caller will read it>
-```
-
-Stored, tables added or changed:
-
-```sql
-CREATE TABLE <name> (        -- a changed table is an ALTER TABLE
-    <column> <type>,
-    PRIMARY KEY (<columns>)
-);
--- Row model: <Name>, one field per column. It is not listed again.
-```
-
-## Rules
-
-Traced on one value: <what it is, for whom, asked at what moment>.
-
-```
-<the inputs, as a small table of example values>
-
-<step>   <the arithmetic or check on those inputs>   → <result>
-<step>   <the next step>                             → <result>
-
-served   <the model's name, or `stored` and the table's>
-           <field>   <its value in this example>
-```
-
-Also:
-
-1. <A rule the trace does not show, in one plain sentence with its case.>
-
-## When it can't answer
-
-- <A missing-data, refused, or failed case>: <what the user sees>.
-
-## Cost and proof
-
-- Cost: <measured time and size with their sample, anything metered, caching>.
-- Proof: <how the tests show the result is right, in one sentence>.
+- Bulk archive: one row at a time until the list has a selection model.
+- Unarchive: there is no screen or control for it yet. An admin fixes a mistaken archive.
 
 ## Prerequisite
 
-<`none`, or each condition that must hold before the build starts: a
-dependency to install, an upstream change to land, a schema or API sync to
-confirm.>
+<Omit this section when nothing must be true before execution starts.>
 
-- `<condition>`. <Who makes it hold.> Confirm it with `<command>`, or with
-  the observable state that proves it.
+A condition that must hold before the executor begins: a dependency to install, an
+upstream change to land, a schema or API sync to confirm. Write it as a checkable
+condition, not a task. Say plainly: **do not execute this plan until it holds.**
 
-**Do not execute this plan until each one holds.**
+- `<condition>`. Confirm it with `<command>`, or with the observable state that proves it.
 
-# BUILD
-
-Check the names of existing utilities, types, and models against the code before you use
-them. Import from the right files.
-
-## Functions
-
-```python
-# ── <the first path's name>, in order ──
-
-# <What the body does, in three lines at most.>
-def <name>(<arguments>) -> <return type>
-
-# Existing, changed. <What the body does after the change.>
-# Today: <what it does now.>
-def <name>(...) -> <return type>     # (...) unless the change is to its arguments
-
-# ── helpers the steps call ──
-
-# <What the body does.>
-def <name>(<arguments>) -> <return type>
-
-# ── other new or changed functions ──
-
-# <A function that no path lists.>
-def <name>(<arguments>) -> <return type>
-```
-
-## Internal models
-
-```python
-# <What moves between this feature's own functions. Which one builds it, which reads it.>
-class <Name>:
-    <field>: <type>
-
-# Existing, gains <N> fields.
-class <Name>:
-    ...
-    <new field>: <type>
-```
-
-## EDGE CASES
-
-<Every condition the Design part's Rules and "When it can't answer" have no room for,
-grouped under the unit that owns it. For each unit, take every input it reads and every
-state that input can be in: absent, loading, in-flight, empty, denied, failed with nothing
-held, and failed while an earlier value is still held. Write the line for each state, and
-for each two that can happen together. Add logic that throws or returns a wrong answer
-(boundary values, malformed input), and every case where two rules apply at once, with the
-rule that wins.>
-
-`<unit>`:
-- <condition>: <what must happen>
-
-**Every line here becomes a named test. So does every rule and every case in the Design
-part.**
+---
 
 ## CONTEXT REFERENCES
 
@@ -241,19 +101,163 @@ part.**
 
 ### Patterns to follow
 
-<Patterns from this codebase the executor must match, each as `file:line` with what to
-take from it: naming, error handling, logging.>
+<Patterns taken from this codebase, with real excerpts. Cover naming, error handling,
+logging, and anything else the executor must match.>
+
+---
+
+## DATA MODELS
+
+<The models this feature adds or changes, as real code in this project's own style: a
+validation schema, a type, a struct, or a table definition. Everything else derives from
+them, so get them exact.>
+
+Annotate each model with:
+
+- **Reuse?** What comes from an existing model, its import path, and why sharing it is
+  safe.
+- **Changes:** for an edit to an existing model, the change against `file:line` and the
+  code it affects.
+- **Assumptions:** anything about the shape the reviewer should check. For example: a
+  nullable field the API may not honor, a default that encodes a policy decision, or a
+  rule the backend must agree with.
+
+**Example:**
+
+### `recordSummary` in `record/record-summary.<ext>`
+
+- **Reuse?** `classifiedText` from the shared module. A marked string means the same
+  thing here as everywhere else, so one definition covers both.
+- **Changes:** none, new model.
+- **Assumptions:** the API omits `notes` when empty rather than sending `""`.
+
+    recordSummary {
+      id           opaque server id, never parsed
+      name         required, non-empty, trimmed at the boundary
+      summary      classifiedText (reuse)
+      itemCount    integer, 0 when there are none, never absent
+      notes?       max 500 chars. When not set it is absent, never ""
+      archivedAt?  timestamp; absent while active
+    }
+
+---
+
+## CONTRACT
+
+<What this feature exposes to the rest of the system, what it must always do, and how it
+behaves at the edges. DATA MODELS says what the data is. This section says what the code
+does with it.>
+
+### Interface Sketch
+
+<Signatures only: the public inputs and outputs of each new unit, the units it depends on,
+the public methods and the endpoint each one calls, and any route parameters. Comment what
+each one guarantees and why each dependency is needed. No bodies.>
+
+### Behavioral Rules
+
+<Numbered statements that must be observably true when the feature is done. One rule per
+line. Each one is something a test can prove.>
+
+### Edge Cases
+
+<Conditions that would degrade the system or make it behave in a way nobody asked for,
+grouped under the unit that owns them. Include UI states (empty, loading, error, denied,
+in-flight) and logic that throws or returns a wrong answer (boundary values, malformed
+input, an absent optional value).>
+
+Write each one as `condition: what must happen`. **Every line here becomes a named test.**
+
+**Example:**
+
+### Archive a record: `ArchiveButton` and `RecordService`
+
+**Interface Sketch**
+
+    ArchiveButton (NEW)
+      input  record   : required, the row this button acts on
+      output  archived : emitted after a successful archive, so the parent can offer undo
+      needs RecordService   (owns the list this mutates)
+      needs ConfirmService  (owns the confirmation prompt)
+
+    RecordService.archive(recordId) returns async Record   (EXISTING service, one new method)
+      POST {recordServiceUrl}/{id}/archive
+      resolves with the archived record and drops it from the cached list, as delete() does
+
+**Behavioral Rules**
+
+1. Archiving confirms through `ConfirmService` first, and a cancelled prompt calls nothing.
+2. The row leaves the list only after the server confirms, never optimistically.
+3. A failed archive leaves the row in place and reports the error to the user.
+
+**Edge Cases**
+
+`ArchiveButton`:
+- archive while the list is still loading: the button is disabled
+
+`RecordService.archive`:
+- already archived by someone else (404): treat as success, drop the row
+- the cached list has not loaded yet: dropping the row does nothing, and never throws
+- two archives in flight on different rows: each one finishes on its own
+
+---
+
+## IMPLEMENTATION PLAN
+
+Phases run **top to bottom by default**. Each one assumes the phase above it is done.
+Where that is not the true dependency, add a `**Depends on:**` line under the phase header.
+Add an `**Independent of:**` line where two phases don't block each other. Independent
+phases can run in parallel. Annotate only where it changes execution order or allows
+parallel work. Skip the obvious sequential case.
+
+### Key design decisions
+
+<The choices that shaped this plan and why each one won, one line each. A decision settled
+at the Decision Gate goes here as a fact, never as an option. This is where a reviewer
+disagrees with the approach, before any code exists.>
+
+**Example:**
+
+- Archive is a soft delete on the server, not a client-side filter. The list must still be
+  correct after a reload, and only the server knows that state.
+- The confirm step reuses `ConfirmService` instead of a new prompt, so archive and delete
+  ask the same way.
+- `ArchiveButton` owns the confirm and the call, so the list stays a list.
+
+### Phases
+
+<The phases this feature actually has. Title each one with the work it delivers, not a
+generic label: "Phase 1: Foundation (schema, service method, prompt)". Under it, give the
+order the pieces are built in and why. Say which dependencies are hard and which are
+convenient.>
+
+When an algorithm is too involved for the CONTRACT to express, sketch it in pseudocode
+under the phase that owns it: the loop, the branches, where the transaction or state
+update happens. **Sketch it, do not write it.** If the executor could paste it and be
+done, cut it back to pseudocode.
+
+**Example:**
+
+#### Phase 1: The service method (`RecordService.archive`)
+
+Build it with its tests first. The button has nothing to call until it exists.
+
+#### Phase 2: The button (`ArchiveButton`)
+
+**Depends on:** Phase 1.
+
+Build the unit, wire up the confirmation, then render it in the list row. No algorithm
+sketch is needed. The CONTRACT's rules and edge cases already specify the whole flow.
+
+---
 
 ## STEP-BY-STEP TASKS
 
-Execute in order, top to bottom. Number the tasks. Each one is atomic and independently
-testable, and names the files it changes. The executor should never have to go discover a
-file.
+Execute in order, top to bottom. Each task is atomic and independently testable. Each task
+carries everything it needs. The executor reads the files it names and does what it says,
+and should never have to go discover anything.
 
-Group tasks under `### Phase N: <the work it delivers>` headers when the work spans
-stages. A phase assumes the one above it is done. Where that is not the true dependency,
-add a `**Depends on:**` or an `**Independent of:**` line under its header. Independent
-phases can run in parallel.
+Group tasks under `### Phase N` headers when the work spans stages.
 
 Start each task title with an action keyword, then add short bullets saying exactly what
 changes:
@@ -263,32 +267,44 @@ changes:
 - **ADD**: new functionality in existing code
 - **REMOVE**: deprecated code
 - **REFACTOR**: restructure without changing behavior
-- **MIRROR**: follow the shape of existing code. Count the places that already hold the
-  same logic and say the number: a third copy is a REFACTOR, unless a project rule says
-  otherwise
-- **VERIFY**: run a check that changes no file
+- **MIRROR**: copy a pattern from elsewhere in the codebase
 
 Add the fields below only when the task needs them. Most tasks need just the change
-bullets, a BUILDS and a VALIDATE:
+bullets and a VALIDATE:
 
-- **BUILDS**: the functions and models this task delivers, by name. Never restate them.
+- **CONTRACT**: the exact signature, type, or behavior this unit must expose, when the
+  top-level CONTRACT or a synced schema does not already fix it.
 - **PATTERN**: the existing code to mirror, as `file:line`.
 - **IMPORTS**: the exact imports, when they are not obvious.
-- **EDGE CASES**: the rules and cases this task owns. It writes the named test for each.
+- **EDGE CASES**: the paths this task must handle, when it owns any.
 - **GOTCHA**: a known constraint that would trip up the executor, such as framework
   behavior, ordering, or a type quirk.
 - **VALIDATE**: `<executable command>` proving this one task is done. **Always include it.**
 - **SATISFIES**: the acceptance criterion this advances (for example AC #2), so every task
   traces to one.
 
-When an algorithm is too involved for Functions and Rules to carry, sketch it in
-pseudocode under the task that owns it: the loop, the branches, where the transaction or
-state update happens.
+---
+
+## TESTING STRATEGY
+
+### Unit Tests
+
+<Scope and requirements, following the testing approach already in the codebase.>
+
+### Integration Tests
+
+<Scope and requirements.>
+
+### Edge Cases
+
+The CONTRACT's Edge Cases list is the checklist. Every line there gets a named test.
+
+---
 
 ## VALIDATION COMMANDS
 
-<The real commands from this project, each one run while planning, or marked `not run`
-with the reason. Every one must be non-interactive.>
+<The real commands from this project, found in Phase 2. Every one must be non-interactive
+and runnable as written.>
 
 Run every command. Together they prove no regressions and a correct feature.
 
@@ -301,38 +317,25 @@ Run every command. Together they prove no regressions and a correct feature.
   loading, error, denied. For a UI change, check keyboard focus and run an accessibility
   check on the changed view.
 
-- **Level 5: Additional.** <any other check this feature needs>
-
-## NOTES
-
-<Your decisions that nobody outside the code would see, one line each, and context the
-sections above have no home for.>
-````
+- **Level 5: Additional (optional).** <any other tooling available in this project>
 
 ---
 
-## Rules the skeleton cannot show
+## COMPLETION CHECKLIST
 
-- **Surface.** For a screen, draw it under its entry, in each state that changes the
-  layout. Where the plan rests on size, colour or spacing, say under the sketch whether
-  the developer has seen it rendered.
-- **Decisions.** List every decision the developer made, then each of yours whose effect
-  the developer or a caller would see. A choice with no rejected alternative is not a
-  decision. Your others go under `## NOTES`.
-- **The path.** One block for each path, such as a job that writes and a route that reads.
-  Every function the plan adds or changes appears by name, as a step or under `Helpers`.
-- **Models.** Name a field with the word the developer or the code already uses for the
-  thing. Where neither has one, your name is a decision: list it under Decisions with the
-  name you rejected. An existing model appears in full only when a new or changed function
-  returns it, marked `Existing, unchanged`. One that a new model nests appears only as a
-  field's type. Say in a model's comment what it reuses from an existing model, and any
-  assumption a reviewer should check, such as a nullable field the caller may not honor.
-- **Rules.** Pick a value whose numbers include a tie or a boundary when the feature has
-  one. For a feature that writes, follow one record to its stored row. Two behaviours that
-  share no step get a trace each. Use no term the Design part has not shown. Number at
-  most six rules under `Also`. The rest go under `## EDGE CASES`.
-- **When it can't answer.** At most five cases a user would see. The rest go under
-  `## EDGE CASES`.
-- **Functions.** A function appears once. Leave out test code: fixtures, doubles, and
-  seeding helpers. List a style rule or a stored query the same way: its name and what it
-  does.
+- [ ] All tasks completed in order
+- [ ] Each task's own validation passed immediately
+- [ ] All validation commands executed successfully
+- [ ] Full test suite passes
+- [ ] No linting or type errors
+- [ ] Manual testing confirms the feature works
+- [ ] Every acceptance criterion met
+- [ ] Code reviewed for quality and maintainability
+
+---
+
+## NOTES
+
+<Extra context, design decisions, and trade-offs. Decisions settled with the developer
+live here as facts if they have no better home.>
+```

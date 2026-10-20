@@ -1,11 +1,12 @@
 ---
 name: generate-plan
 description: >-
-  Turn a feature request, a tracker ticket, or the current conversation into an
-  implementation plan. The developer agrees the scope, agents research the codebase and
-  outside sources, and the developer settles the open decisions before the plan is
-  written. Use before writing any code for a feature, or when asked to "plan this",
-  "write a plan", or "plan the feature".
+  Turn a feature request, the current conversation, or a tracker ticket into an
+  implementation plan full of context. It works through codebase analysis, external
+  research, and a decision gate that settles every open question with the developer. The
+  plan states the contract and a pseudocode sketch, not literal implementation code. Use
+  before writing any code for a feature, or when asked to "plan this", "write a plan", or
+  "plan the feature".
 argument-hint: "[a ticket key or URL, a feature description, or empty to plan from the conversation]"
 ---
 
@@ -16,226 +17,217 @@ argument-hint: "[a ticket key or URL, a feature description, or empty to plan fr
 **Write no code here.** The output is a plan. An executor with no memory of this
 conversation must be able to finish it on the first try.
 
-## Phase 1: Define the feature scope
+Resolve the input first:
 
-Read the input. For a ticket (a key like `ABC-123`, or an issue URL), **fetch it first**
-with the project's tracker tool. Read its summary, acceptance criteria, and context. Follow
-its links up to the parent epic and any architecture document. Inherit their decisions.
-When `$ARGUMENTS` is empty or points at the conversation, take the feature from this
-session.
+- **A description:** plan from it.
+- **Chat context** (`$ARGUMENTS` is empty or points at the conversation): the executor
+  never sees this session. Restate the feature in your own words, confirm it with the
+  developer, then plan from that.
+- **A ticket** (a key like `ABC-123`, or an issue URL): **fetch it first** with the
+  project's tracker tool. Read its summary, acceptance criteria, and context. Follow its
+  links up to the parent epic and any architecture document. Inherit their decisions.
+  Never plan from a bare key.
 
-Before you open any code, write the feature back to the developer:
+## Spec versus code
+
+Give the **contract** (signatures, types, behavioral rules, edge cases) and a **pseudocode
+sketch**. Pseudocode, examples, and specs are good. Paste-ready code is not.
+
+**The test:** if the executor could paste it and be done, it is code. Write pseudocode
+instead.
+
+**The exception is data models.** A schema or type *is* its own spec. Write it as real
+code, exactly as it will be written.
+
+## Process
+
+### Phase 1: Feature Understanding
+
+**Deep Feature Analysis:**
+
+- Extract the core problem being solved
+- Identify user value and business impact
+- Determine feature type: New Capability/Enhancement/Refactor/Bug Fix
+- Assess complexity: Low/Medium/High
+- Map affected systems and components
+
+**Create User Story Format Or Refine If Story Was Provided By The User:**
 
 ```
-As a <type of user>, I want to <action/goal>, so that <benefit/value>.
-
-Afterwards: <two sentences on what exists that is not there today>
-Criteria:
-1. <what a user can observably do, or what must observably be true, when it is done>
-2. (assumed) <a criterion the input left open, as you read it>
-Out: <what the feature will not do>
-Settled: <a decision the input or a document it links to already made, or none>
+As a <type of user>
+I want to <action/goal>
+So that <benefit/value>
 ```
 
-- Write outcomes, with no file, function, or type name. You have read no code, so a name
-  here is a guess.
-- Where the input states the story or a criterion, keep its words.
-- Where the input says nothing and the feature needs an answer, write your reading and
-  mark it `(assumed)`. Do not ask. The developer corrects a line faster than they answer a
-  question.
-- Where the input names an open question, leave it open. Research answers it or Phase 3
-  asks it. An assumed answer here closes it before anyone has looked.
-- `Settled` holds decisions only. A fact from the input stays in the input, which the
-  research agents receive.
-- Write only the criteria the input gives you or forces you to assume. Research adds the
-  rest.
+### Phase 2: Codebase intelligence
 
-❌ `Archiving works correctly.`
+`codebase-research-agent` instances find what you must read. Each one reports on five areas
+of its slice: structure, patterns, dependencies, testing, and integration points. The agent
+holds what each area covers.
 
-✅ `An owner archives a record from the list, and the row leaves once the server confirms.`
+1. Search the codebase for the key nouns from Phase 1 (entities, routes, screens, commands).
+   Note which directories the hits fall in. Do not open the files.
+2. Group the hits into subsystems: a package, service, module, or layer with its own
+   directory and conventions. One with only a hit or two joins its nearest neighbor.
+3. Send one agent per subsystem, all in one message so they run in parallel. A small feature
+   gets one agent, never none. More than five means the grouping is too fine. Merge
+   neighbors until it is five or fewer.
 
-Stop and wait for the developer's corrections. Research starts from the block as they
-agreed it. A line they agreed changes only in Phase 3.
+An agent sees neither this conversation nor the ticket. Give each:
 
-## Phase 2: Research
+- the feature in full, and the decisions already settled
+- its slice, and the slices the other agents hold
+- your search hits in its slice
+- the questions the plan must answer about its slice, when you have any
 
-Agents do the reading, so your context stays clear for the plan. Do not search the codebase
-yourself first.
+❌ `We want to add archiving. Look at how records are deleted.`
 
-1. **Scout.** Send one `codebase-scout-agent` the Phase 1 block, word for word, and the
-   ticket or document it came from, whole, if there is one. Its report gives the route
-   through the code, the files the feature would change or add, and the slices that need a
-   researcher.
-2. **Size the work** from the scout's file counts. A mechanical change, such as a rename,
-   counts as one file.
-   - **About five or fewer:** it needs no plan. Say so, name the files and any decision
-     Phase 3 would put to the developer, and stop. The developer says whether to build it.
-   - **More than about twenty:** it is too big for one plan, because the developer will
-     not read a change that size. Say so, say where you would cut it, and stop. The
-     `decompose-feature` skill cuts it.
-   - **In between:** plan it.
-3. **Research each slice.** Send one `codebase-research-agent` per slice the scout named,
-   and skip none. Send them all in one message so they run in parallel. Give each these,
-   whole, because a summary drops whatever you did not think mattered:
-   - the Phase 1 block, and the ticket or document it came from
-   - the scout's report
-   - its slice, by the name the scout gave it
-   - any other question the plan must answer about its slice
-4. **Research outside topics.** List what the feature needs from outside the codebase, one
-   topic each: a library, an external API or service, a standard or protocol, a technique
-   the codebase has no example of, or a function or option of an installed library that
-   the codebase does not call yet. Two needs from the same library are one topic. Send one
-   `external-research-agent` per topic, all in one message. Past five topics, send first
-   the five that decide a design choice. Give each:
-   - the feature, and what it needs from the topic
-   - the topic, and for a library the version the codebase researchers found in use
-   - where the code uses it now, as `file:line`
-   - the local documents that cover it, as paths
+✅ The same request as a brief:
 
-   Skip a topic only when you can name the `file:line` where the codebase already calls
-   the exact API the feature will use. An installed library is not a reason to skip. When
-   unsure, dispatch.
-5. **Sample real data.** Where the design rests on what real data or a live service
-   returns, such as a payload's shape or how many rows a query reads, sample it now
-   yourself, read-only. Never spend a metered call or write anything to do it. What you
-   cannot sample that way becomes a check in the plan's `## Prerequisite` section.
+```
+Feature: an owner archives a record from the list. The row leaves once the server confirms.
+Settled: archive is a soft delete on the server.
+Your slice: record/. Other slices: list/, api/.
+Hits: record/record-service:40, record/record-service:112.
+Answer: what does delete() do to the cached list?
+```
 
-**Check every report before you use it.**
+Each report opens with `Files to Read`. Each entry has a line range, what you will do with
+the file, and why.
 
-- Read the lines it cites with the read tool, and copy each `file:line` number from that
-  output.
-- Read first-hand what the plan changes: the whole file when it is a few hundred lines or
-  shorter, otherwise each function the plan changes and its callers in that file. For a
-  file to mirror, reuse, match, or follow as a test, read the cited range, and widen it
-  when it does not show what the report claims. Do not read every listed file in full: it
-  fills the context the agents kept clear.
-- Open only the outside references that decide a design choice. Record each one the plan
-  uses with why the executor needs it.
-- Do not redo what a report covers.
+- Read in full each file the plan changes. For a file to mirror, reuse, match, or follow as
+  a test, read the cited range, and widen it when it does not show what the report claims.
+  Reading every listed file in full refills the context the agents kept clear.
+- A report is a lead, not a fact. Read the file with the read tool to quote its lines, and
+  copy each `file:line` number from that output.
+- Do not re-explore what the reports cover.
 - Settle every gap and `Unverified` item the plan depends on now. Read the file if you know
-  which one. Otherwise resume the agent that reported it, because a new agent starts with
-  nothing. Never carry a gap into the plan as a risk or a hedge, and never cite an
-  unverified item as fact.
+  which one. Otherwise resume the agent that holds that slice and ask it. A new agent starts
+  with nothing. Never carry the gap into the plan as a risk or a hedge.
 
 **Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
-preference, and open architecture choice, and add each report's `Open Choices`. Phase 3
-resolves them all. The one exception is an ambiguity that blocks the research itself, such
-as a scout's report that shows the feature could land in two different places.
+preference, and open architecture choice, and add each report's `Open Choices`. Resolve them
+all at the Decision Gate, after research has taught you how to ask each one well. The one
+exception is an ambiguity that blocks the research itself, such as not knowing which
+subsystem to study.
 
-**Research is done when** every section of the plan's Design part can be filled from a
-report line, a file you read, or a sample you took. A section you would have to guess is a
-gap. Settle it now.
+### Phase 3: External research
 
-## Phase 3: Validate with the developer
+List what the feature needs from outside the codebase, one topic each: a library, an
+external API or service, a standard or protocol, a technique the codebase has no example of,
+or a function or option of an installed library that the codebase does not call yet.
 
-**Never write the plan while a decision is open.** The executor holds only the plan.
+Dispatch `external-research-agent` instances, one per topic, all in one message. Two needs
+from the same library are one topic. Past five topics, send the five a design choice hangs
+on first and the rest after.
 
-1. **Choose the approach,** and note why you rejected the others.
-2. **Collect** every open decision: from the approach, from every `Open Choices` section in
-   the reports, and any choice research raised about scope, defaults, cost, where the
-   feature appears, or how often it runs. Add any line of the Phase 1 block that research
-   showed cannot hold, or costs far more than it looked.
-3. **Settle what is already answered.** If the codebase, a standard, the request, or an
-   earlier developer decision answers it, take that answer and record its source. Never
-   ask what you can verify, and never recommend against a decision the developer already
-   made.
-4. **Sort the rest** by one test: if the developer objected to this choice after the plan
-   was written, what would it cost?
-   - **A replan: ask.** Which system, or which query, does the work. How much gets
-     built, what it costs to run, and what is left out. What a user sees or does, where
-     the options differ in more than wording. Data the feature throws away and cannot get
-     back.
-   - **An edit, or nothing: decide.** A name, a field's meaning, a default, where code
-     lives, a helper, how something is tested. Take the option that adds least, and check
-     it works in the code. Put each name and meaning a caller will see under `Shown:` in
-     the report, so the developer can correct it there.
-5. **Report back in one message, then stop and wait:**
+An agent sees neither this conversation nor the Phase 2 reports. Give each:
 
-   ```
-   Holds: <each criterion that can be built as agreed, by number and opening words>
-   Changed: <a criterion that cannot, or costs far more than it looked, and why; or none>
-   Approach: <four lines at most: where the feature enters, what it stores, which
-             system does the work>
-   Size: <N> files to change, <N> to add
-   Shown: <each name or meaning a caller will see, and the one you rejected; or none>
+- the feature, and what it needs from the topic
+- the topic, and for a library the version Phase 2 found in use
+- where the code uses it now, as `file:line`
+- the local documents Phase 2 found that cover it, as paths
 
-   Decide, worst first (or "Decide: none"):
+Each report lists references, pitfalls, and breaking changes. A reference is a
+section-anchored link with the exact thing it documents and why.
 
-   1. <the question, in plain words>
-      Recommend: <option>. <why, in one sentence>
-      Today: <what the user or a caller gets now, in the screen's words or the
-             response's names>
-      Options: <option>: <what it costs and what it rules out>
-               <option>: <what it costs and what it rules out>
-      Lost if wrong: <what a wrong answer costs once built>
-   ```
+- Open the few references that decide a design choice.
+- Do not re-research what the reports cover.
+- Settle every `Unverified` item the plan depends on. Resume the agent that reported it and
+  ask. Never cite it in the plan as fact.
+- A reference labeled `verify empirically`, and any item reading cannot settle, becomes a
+  check in the plan's `## Prerequisite` section.
+- Where sources disagree with each other or with the code, the report lists it under
+  `Open Choices`. Take it to the Decision Gate.
+- Record each reference in the plan with *why* the executor needs it.
 
-   "Lost if wrong" sets the rank. Where options differ in a screen, a route, a
-   signature or a model, sketch each one under Options. Write the questions here even
-   when a multiple-choice prompt follows: the prompt shows nothing but its own words.
-6. **A question is settled only when the developer confirms it:** they approve it, pick
-   another option, or settle it by talking it through. Never take one as settled
-   because they answered another or said to go on. Read each answer as new input too:
-   it may raise a question, contradict an assumption, or ask you something back. Check
-   it against the code and answer it. Ask again only when it opens a new decision that
-   would cost a replan.
+Research is the default. Skip a topic only when you can name the `file:line` where the
+codebase already calls the exact API the feature will use. An installed library is not a
+reason to skip. When unsure, dispatch.
 
-   End each reply with every question, written out:
+### Phase 3.5: Decision Gate (mandatory)
 
-   ```
-   Settled: <the decision, as a fact>
-   Open: <the question, in plain words>
-   ```
+**Never write the plan while an open question remains.** Open questions are policy choices
+that look like architecture questions. The codebase cannot answer them. A plan that guesses
+makes the developer's decision for them.
 
-   ❌ `Settled: 1, 2. Open: 3.`
+1. **Collect** every unresolved decision: from the request, from Phase 2, from every
+   `Open Choices` section in the reports, and any choice research raised about scope,
+   defaults, cost, where the feature appears, or how often it runs.
+2. **Sort.** If the codebase, a standard, or an earlier developer decision answers it,
+   resolve it and record how. Never ask what you can verify.
+3. **Recommend before asking.** For each remaining item, form a recommendation and check
+   it works in the code. Attach the trade-off: cost, how much of the system it touches,
+   and upkeep.
+4. **Ask** in batches of up to four. Put the recommended option first, labeled
+   "(Recommended)". Each option's description states its consequence.
+5. **Loop.** Read each answer as an answer *and* as new input. It may raise a question,
+   contradict an assumption, or ask you something back. Check it against the code, answer
+   it, and repeat until nothing is left.
 
-   ✅ `Settled: archived records stay searchable, behind a filter.`
+**Done when** zero open questions remain and every decision appears in the plan as a
+settled fact, never an option list. The executor holds only the plan.
 
-**Done when** the developer has confirmed every question and said to write the plan.
-Every decision then goes into the plan as a fact, never an option list.
+### Phase 4: Strategic thinking
 
-## Phase 4: Write the plan
+- How does this fit the architecture?
+- What is the critical order of operations?
+- What could go wrong (edge cases, race conditions, error paths)?
+- How will it be fully tested?
+- What are the performance and security effects?
+- Can it be maintained?
 
-Fill in the template at `references/plan-template.md`. The developer confirms the plan
-from its Design part, so write that part for them. The Build part is the executor's.
+Choose between approaches and state why. A **new** decision that belongs to the developer
+goes back through the Decision Gate. Settled decisions stay settled.
 
-- The Phase 1 block goes in word for word: the story and `Afterwards` under
-  `What gets built`, the criteria under `ACCEPTANCE CRITERIA`, `Out` under `Out of scope`,
-  and `Settled` under `Decisions`. Research adds to them.
-- Mark each decision the developer made as theirs.
-- **Spec, not code.** Give the contract (signatures, types, rules, edge cases) and a
-  pseudocode sketch. If the executor could paste it and be done, it is code, so write
-  pseudocode instead. The exception is data models. A schema or type is its own spec, so
-  write it as real code, with each field exactly as it will be written.
-- Use the codebase's own words in tasks.
-- Every command, pattern and quoted string in the plan was run or matched while
-  planning. What you did not run, describe and leave to the executor.
-- A decision that first appears while you write goes back through Phase 3. Settled
-  decisions stay settled.
+### Phase 5: Write the plan
 
-**Done when** an executor with the repository open and no memory of this conversation
-could build the feature from the plan alone. It can read the code, so point at code and
-never copy it. It does not know what you decided, so state every decision. If it would
-have to ask, the plan is not done.
+Fill in the template at `references/plan-template.md`. Every section is there because an
+executor got stuck without it.
 
 **Output**: `.agents/plans/<kebab-case-descriptive-name>.md`. Create the directory if
 missing.
 
+## Quality criteria
+
+**Context complete**
+- [ ] Every pattern to follow is named, with `file:line`
+- [ ] Every outside reference is an anchored link with a *why*
+- [ ] Integration points are mapped, and pitfalls and anti-patterns noted
+
+**Implementation ready**
+- [ ] Tasks are ordered by dependency and run top to bottom
+- [ ] Each task is atomic, testable alone, and has an executable `VALIDATE`
+- [ ] Each task traces to an acceptance criterion
+
+**Information dense**
+- [ ] No generic references. Everything is specific and actionable
+- [ ] Tasks use the codebase's own words
+- [ ] Validation commands are non-interactive and run as written
+
+**Decisions settled**
+- [ ] The Decision Gate ran. Every open question was settled with the developer or
+      verified against the code
+- [ ] No section hands the executor an option list or an unanswered question
+
+**The No Prior Knowledge test:** someone who does not know this codebase could build the
+feature from the plan alone. If they would have to ask, the plan is not done.
+
 ## Report
 
-Print the plan's Design part as it stands in the file. The developer confirms the plan
-from it, so add nothing to it and leave nothing out. Then give:
+After writing the plan, report:
 
+- the feature and approach, briefly
+- each decision settled at the Decision Gate, and what was chosen
 - each outside topic you did not research, and the `file:line` that made the skip safe
-- the full path to the plan, how many source files it expects to change, the key
-  implementation risks, and a confidence score out of 10 that execution succeeds on the
-  first try
-
-The build starts on the developer's word, never on yours.
+- the full path to the plan
+- the complexity assessment
+- the key implementation risks
+- a confidence score out of 10 that execution succeeds on the first try
 
 ## Note
 
-Phase 2 uses the `codebase-scout-agent`, `codebase-research-agent` and
-`external-research-agent` agents, all installed alongside this skill. If you dispatch and
-an agent is missing, say so and stop. Do not research in this session instead: it fills
-the context the agents keep clear, and the plan looks finished when it is not.
+Phase 2 uses the `codebase-research-agent` agent and Phase 3 uses the
+`external-research-agent` agent, both installed alongside this skill. If you dispatch and an
+agent is missing, say so and stop. Researching in this session instead defeats the point of
+the agent while still looking like success.
