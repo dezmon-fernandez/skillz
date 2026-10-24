@@ -19,6 +19,7 @@ into a project and adapted there.
 | `commit` | Stage the current work and write one atomic commit in the repo's own convention. |
 | `hooks-create` | Author a working hook from a plain-English description, wire it in, and prove it fires. |
 | `review-prose` | Rewrite one skill, agent, or document in place so it is short and plain, keeping every rule and every name other files depend on. Invoked by hand. |
+| `annotate` | Open a local page where the developer comments line by line on markdown you are writing together, or on the outputs of a skill-creator eval iteration, then act on the comments when they press Send. Needs Node 22.18 or later. |
 
 `handover` and `prime` are a pair: `handover` writes the file, `prime` consumes and deletes it.
 

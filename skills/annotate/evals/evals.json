@@ -1,0 +1,36 @@
+{
+  "skill_name": "annotate",
+  "evals": [
+    {
+      "id": 1,
+      "name": "apply-comments-to-doc",
+      "prompt": "Earlier you opened outputs/local-setup.md in the annotate comment page for me, as a background command. That command just finished with this output:\n\nSEND\ninstruction: (none)\nComments from local-setup.md:\n\n## local-setup.md\nOverall: Shorter. Plain words.\n- Lines 3-4 (\"This guide was first written last spring when we switched test runners, and it has been upd...\"): Cut this, nobody needs the history\n- Line 7 (\"You need Node 22 and npm 10. Use nvm so the version matches the repo.\"): is this right? check the .nvmrc next to this file\n- Line 9 (\"1. Run `npm i` to install the dependencies.\"): We use npm ci, not npm i. Same in troubleshooting\n- Line 15 (\"Ask a teammate for the values in `.env`. The app refuses to start without them.\"): why do we need this file at all?",
+      "expected_output": "local-setup.md edited: history cut, Node 24, npm ci in both places, shorter overall, environment step kept. The reply answers each comment on its own line, explains what the .env file holds instead of only editing, and the page is reopened on the same file in the background.",
+      "files": ["evals/files/local-setup.md", "evals/files/.nvmrc", "evals/files/.env.example"],
+      "expectations": [
+        "The history paragraph (lines 3-4) is gone",
+        "The doc says Node 24, matching .nvmrc, and no longer says Node 22",
+        "npm ci replaces npm i in the steps and in troubleshooting",
+        "The step about the .env file is still in the doc",
+        "The doc has fewer words than the original",
+        "The reply answers each of the five comments, overall included, on its own line",
+        "The reply says what the .env file is for (the API address and the session secret), not only what was edited",
+        "The page is reopened on the same file as a background command"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "open-eval-folder",
+      "prompt": "i want to go through the iteration 2 outputs line by line and mark what to keep and what to cut. they're in iteration-2/",
+      "expected_output": "The comment page is started in the background on the iteration-2 folder, the developer gets the address and what to do, and the agent ends its turn without judging the outputs itself.",
+      "files": ["evals/files/iteration-2"],
+      "expectations": [
+        "The comment page is started on the iteration-2 folder as a background command",
+        "The reply gives the page address and how to comment",
+        "The agent does not judge or label the outputs itself",
+        "The agent ends its turn waiting for the developer's Send",
+        "skill-creator's viewer is not opened instead"
+      ]
+    }
+  ]
+}

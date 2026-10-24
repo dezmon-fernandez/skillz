@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Annotate: __NAME__</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #ffffff; --fg: #1b1b1f; --muted: #555; --number: #767676; --panel: #fafafa; --border: #ddd;
+    --hover: #eef2f8; --selected: #dbe6fb; --current: #e8eefc; --current-border: #c5d3f6;
+    --accent: #c25e00; --tint: #f9ece0; --flash: #ffe58a; --card: #ffffff; --quoted: #333; --good: #2e7d32;
+    --link: #1565c0; --code: #f1f3f5; --changed: #e6f4e8; --changed-border: #2e7d32;
+    --shadow: rgba(0, 0, 0, .06); --shadow-strong: rgba(0, 0, 0, .15);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #16181d; --fg: #e6e6e6; --muted: #a3a8b0; --number: #8a8f98; --panel: #1c1f26; --border: #30343c;
+    --hover: #232833; --selected: #263a5e; --current: #263048; --current-border: #3b4d75;
+    --accent: #e8822a; --tint: #3a2a1d; --flash: #6b5a12; --card: #1f232b; --quoted: #c9ccd1; --good: #66bb6a;
+    --link: #90caf9; --code: #262b34; --changed: #1d3322; --changed-border: #66bb6a;
+    --shadow: rgba(0, 0, 0, .4); --shadow-strong: rgba(0, 0, 0, .6);
+  }
+  body { margin: 0; font: 14px/1.5 -apple-system, system-ui, sans-serif; display: grid; grid-template-columns: 280px 1fr; height: 100vh; background: var(--bg); color: var(--fg); }
+  nav { border-right: 1px solid var(--border); overflow: auto; padding: 12px; background: var(--panel); }
+  nav h2 { font-size: 13px; text-transform: uppercase; color: var(--muted); margin: 4px 0 8px; }
+  nav button.document { display: block; width: 100%; text-align: left; padding: 8px; margin: 2px 0; border: 1px solid transparent; background: none; color: inherit; border-radius: 6px; cursor: pointer; font: inherit; }
+  nav button.document[aria-current="true"] { background: var(--current); border-color: var(--current-border); }
+  nav .count { float: right; color: var(--muted); }
+  nav .done { color: var(--good); margin-right: 4px; }
+  nav .hint { color: var(--muted); font-size: 12px; }
+  .status { font-size: 12px; color: var(--muted); min-height: 1.5em; }
+  main { overflow: auto; padding: 16px 24px 120px; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  #sheets.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+  .sheet-head { display: flex; gap: 16px; align-items: baseline; margin-bottom: 6px; }
+  .sheet-head h2 { font-size: 15px; margin: 0; }
+  .sheet-head label { font-size: 13px; cursor: pointer; }
+  textarea.overall { min-height: 36px; margin-bottom: 12px; }
+  .body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; max-width: 1760px; }
+  #sheets.compare .body { grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; }
+  .line { display: flex; gap: 12px; padding: 2px 8px; border-left: 4px solid transparent; cursor: pointer; white-space: pre-wrap; font-size: 14px; user-select: none; }
+  .line .number { font-family: ui-monospace, Menlo, monospace; font-size: 12px; padding-top: 2px; }
+  .md-h1 { font-size: 1.5em; font-weight: 600; }
+  .md-h2 { font-size: 1.3em; font-weight: 600; }
+  .md-h3 { font-size: 1.15em; font-weight: 600; }
+  .md-h4 { font-size: 1em; font-weight: 600; }
+  .md-marker { color: var(--muted); margin-right: .45em; }
+  .md-code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  .md-fence { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: var(--code); }
+  .md-fence-mark, .md-muted { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .md-link { color: var(--link); text-decoration: underline; }
+  .md-image { color: var(--muted); font-style: italic; }
+  .md-summary { font-weight: 500; }
+  .md-quote { border-left: 3px solid var(--border); padding-left: 10px; color: var(--muted); }
+  .line:hover, .line:focus-visible { background: var(--hover); outline: none; }
+  .line.changed { background: var(--changed); border-left-color: var(--changed-border); }
+  .swatch { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; margin-right: 4px; background: var(--changed); border-left: 4px solid var(--changed-border); }
+  .line.commented { background: var(--tint); border-left-color: var(--accent); }
+  .line.commented:hover { filter: brightness(0.96); }
+  .line.selected { background: var(--selected); }
+  .line.flash { animation: flash 1.4s ease-out; }
+  @keyframes flash { from { background: var(--flash); } to { background: var(--tint); } }
+  .line .number { color: var(--number); min-width: 2.5em; text-align: right; }
+  .line .text { flex: 1; }
+  .line .gutter { flex: none; width: 1.8em; display: flex; justify-content: center; align-self: flex-start; }
+  .line .badge { font-family: system-ui; font-size: 12px; padding: 0 4px; border-radius: 8px; background: var(--accent); cursor: pointer; line-height: 1.5; }
+  .line .badge:hover { filter: brightness(1.15); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+  .margin { position: relative; }
+  .card { position: absolute; left: 0; right: 0; text-align: left; font: inherit; font-size: 13px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 6px 10px; cursor: pointer; box-shadow: 0 1px 3px var(--shadow); }
+  .card:hover, .card:focus-visible { box-shadow: 0 2px 8px var(--shadow-strong); outline: none; }
+  .card .range { color: var(--muted); font-size: 12px; }
+  .card .comment { color: var(--fg); white-space: pre-wrap; }
+  main { padding-bottom: 360px; }
+  .editor { position: fixed; left: 280px; right: 0; bottom: 0; z-index: 2; background: var(--card); border-top: 2px solid var(--current-border); border-radius: 12px 12px 0 0; padding: 14px 24px 18px; box-shadow: 0 -6px 20px var(--shadow-strong); visibility: hidden; transform: translateY(100%); transition: transform .22s ease-out, visibility 0s .22s; }
+  .editor.open { visibility: visible; transform: translateY(0); transition: transform .22s ease-out, visibility 0s; }
+  .editor > * { max-width: 900px; }
+  .editor .quoted { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--quoted); margin: 0 0 8px; white-space: pre-wrap; }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; margin: 12px 0; padding: 6px 10px; font-size: 13px; }
+  fieldset label { display: block; cursor: pointer; }
+  .editor > label { display: block; font-weight: 500; margin-bottom: 4px; }
+  textarea { display: block; width: 100%; min-height: 72px; font: inherit; box-sizing: border-box; }
+  .actions button, .export { padding: 5px 12px; font: inherit; cursor: pointer; margin: 6px 6px 0 0; }
+</style>
+</head>
+<body>
+<nav aria-label="Documents">
+  <h2>Documents</h2>
+  <div id="documents"></div>
+  <p class="hint" id="changed-hint" hidden><span class="swatch"></span>Changed since your last Send</p>
+  <fieldset>
+    <legend>Agent</legend>
+    <label for="instruction">What should the agent do? (optional)</label>
+    <textarea id="instruction" class="overall" placeholder="e.g. apply these, then tighten the intro"></textarea>
+    <button class="export" id="send">Send to agent</button>
+    <button class="export" id="copy">Copy for agent</button>
+    <p class="status" id="status" role="status"></p>
+  </fieldset>
+  <fieldset id="view" hidden>
+    <legend>View</legend>
+    <label><input type="checkbox" id="compare"> Both versions side by side</label>
+  </fieldset>
+  <p class="hint">Click a line, or drag across several, and write a comment. Shift+click extends from the last line you
+  clicked. Click a 💬, a card, or a commented section to edit it. Comments stay in this browser; nothing leaves it
+  unless you press Send, which only reaches the helper running on your own machine.</p>
+</nav>
+<main>
+  <h1 id="title"></h1>
+  <div id="sheets"></div>
+</main>
+<section class="editor" id="editor" aria-label="Comment on this section">
+  <p class="quoted" id="quoted"></p>
+  <label for="comment">Comment</label>
+  <textarea id="comment"></textarea>
+  <div class="actions"><button id="save">Save</button><button id="clear">Delete</button><button id="close">Cancel</button></div>
+</section>
+<script>
+const DATA = __DATA__;
+const STORAGE_KEY = "annotate:" + DATA.key;
+const META_KEY = STORAGE_KEY + ":meta";
+const notes = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+const meta = JSON.parse(localStorage.getItem(META_KEY) || "{}");
+const byId = (id) => document.getElementById(id);
+const editor = byId("editor");
+let current = 0;
+let compare = localStorage.getItem("annotate:compare") === "true";
+let selection = null;
+let hovered = null;
+let drag = null;
+let lastClicked = null;
+
+const documentAt = () => DATA.documents[current];
+const itemById = (id) => DATA.documents.find((item) => item.id === id);
+const siblingOf = (item) => DATA.documents.find((other) => other.group === item.group && other.id !== item.id);
+const isBaseline = (item) => /^(old|without)_/.test(item.version);
+const rangeKey = (item, start, end) => item.id + ":" + start + "-" + end;
+const persist = () => { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); localStorage.setItem(META_KEY, JSON.stringify(meta)); };
+
+// A document's id carries a hash of its text, so comments on a version the agent has since edited are dropped here.
+const known = new Set(DATA.documents.map((item) => item.id));
+Object.keys(notes).forEach((key) => { if (!known.has(key.slice(0, key.lastIndexOf(":")))) delete notes[key]; });
+Object.keys(meta).forEach((id) => { if (!known.has(id)) delete meta[id]; });
+persist();
+const lineLabel = (start, end) => (start === end ? "Line " + (start + 1) : "Lines " + (start + 1) + "-" + (end + 1));
+const sheetOf = (item) => document.querySelector('.sheet[data-id="' + CSS.escape(item.id) + '"]');
+const rowAt = (sheet, index) => sheet.querySelector('.line[data-index="' + index + '"]');
+const metaOf = (item) => meta[item.id] || (meta[item.id] = { reviewed: false, overall: "" });
+const versionLabel = (item) => item.version.replaceAll("_", " ");
+const element = (tag, className, text) => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+function notesOf(item) {
+  return Object.entries(notes)
+    .filter(([key]) => key.startsWith(item.id + ":"))
+    .map(([key, note]) => {
+      const [start, end] = key.slice(item.id.length + 1).split("-").map(Number);
+      return { key, start, end, comment: note.comment };
+    })
+    .sort((first, second) => first.start - second.start || first.end - second.end);
+}
+
+function shownItems() {
+  const item = documentAt();
+  const sibling = siblingOf(item);
+  if (!compare || !sibling) return [item];
+  return [item, sibling].sort((first, second) => Number(isBaseline(first)) - Number(isBaseline(second)));
+}
+
+function renderDocuments() {
+  byId("documents").replaceChildren(...DATA.documents.map((item, index) => {
+    const button = element("button", "document");
+    button.setAttribute("aria-current", String(shownItems().some((shown) => shown.id === item.id)));
+    const count = element("span", "count", notesOf(item).length || "");
+    const done = element("span", "done", metaOf(item).reviewed ? "✓" : "");
+    button.append(count, done, item.title);
+    button.onclick = () => { current = index; lastClicked = null; closeEditor(); render(); };
+    return button;
+  }));
+}
+
+// Renders Markdown one source line at a time, so every row still maps to exactly one line of the document.
+function inlineMarkdown(text) {
+  const nodes = [];
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)]*\)|\[[^\]]+\]\([^)]*\))/g;
+  let last = 0;
+  let match;
+  while ((match = pattern.exec(text))) {
+    if (match.index > last) nodes.push(document.createTextNode(text.slice(last, match.index)));
+    const token = match[0];
+    if (token.startsWith("**")) nodes.push(element("strong", "", token.slice(2, -2)));
+    else if (token.startsWith("`")) nodes.push(element("code", "md-code", token.slice(1, -1)));
+    else if (token.startsWith("![")) nodes.push(element("span", "md-image", "[image: " + (token.match(/^!\[([^\]]*)\]/)[1] || "screenshot") + "]"));
+    else nodes.push(element("span", "md-link", token.match(/^\[([^\]]+)\]/)[1]));
+    last = pattern.lastIndex;
+  }
+  if (last < text.length) nodes.push(document.createTextNode(text.slice(last)));
+  return nodes;
+}
+
+function markdownLine(text, state) {
+  const span = element("span", "text");
+  let match;
+  if (/^\s*```/.test(text)) {
+    state.fence = !state.fence;
+    span.className = "text md-fence-mark";
+    span.textContent = state.fence ? "code" : " ";
+    return span;
+  }
+  if (state.fence) {
+    span.className = "text md-fence";
+    span.textContent = text || " ";
+    return span;
+  }
+  if ((match = text.match(/^(#{1,6})\s+(.*)$/))) {
+    span.classList.add("md-h" + Math.min(match[1].length, 4));
+    span.append(...inlineMarkdown(match[2]));
+    return span;
+  }
+  if ((match = text.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/))) {
+    span.style.paddingLeft = (Math.floor(match[1].length / 2) * 1.4) + "em";
+    span.append(element("span", "md-marker", /\d/.test(match[2]) ? match[2] : "•"), ...inlineMarkdown(match[3]));
+    return span;
+  }
+  if ((match = text.match(/^\s*<summary>(.*)<\/summary>\s*$/))) {
+    span.className = "text md-summary";
+    span.textContent = "▸ " + match[1];
+    return span;
+  }
+  if (/^\s*(<\/?details>|<!--.*-->)\s*$/.test(text)) {
+    span.className = "text md-muted";
+    span.textContent = text.trim();
+    return span;
+  }
+  if ((match = text.match(/^>\s?(.*)$/))) {
+    span.classList.add("md-quote");
+    span.append(...inlineMarkdown(match[1]));
+    return span;
+  }
+  span.append(...(text ? inlineMarkdown(text) : [document.createTextNode(" ")]));
+  return span;
+}
+
+function renderLines(container, item) {
+  const list = notesOf(item);
+  const markdown = { fence: false };
+  const changed = new Set(item.changed);
+  container.replaceChildren(...item.lines.map((text, index) => {
+    const commented = list.some((note) => index >= note.start && index <= note.end);
+    const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (commented ? " commented" : ""));
+    row.dataset.index = index;
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+    row.setAttribute("aria-label", "Line " + (index + 1) + (changed.has(index) ? ", changed" : "") + (commented ? ", has a comment" : "") + ": " + text);
+    const gutter = element("span", "gutter");
+    list.filter((note) => note.start === index).forEach((note) => {
+      const badge = element("span", "badge", "💬");
+      badge.dataset.key = note.key;
+      badge.title = note.comment;
+      gutter.append(badge);
+    });
+    row.append(gutter, element("span", "number", index + 1), markdownLine(text, markdown));
+    return row;
+  }));
+}
+
+function renderMargin(margin, lines, item) {
+  margin.querySelectorAll(".card").forEach((card) => card.remove());
+  let nextFreeTop = 0;
+  notesOf(item).forEach((note) => {
+    const card = element("button", "card");
+    card.append(element("div", "range", lineLabel(note.start, note.end).toLowerCase()), element("div", "comment", note.comment));
+    card.setAttribute("aria-label", "Edit comment on " + lineLabel(note.start, note.end).toLowerCase() + ": " + note.comment);
+    card.onclick = () => openEditor(item, note.start, note.end, note);
+    card.onmouseenter = () => { hovered = { id: item.id, start: note.start, end: note.end }; highlight(); };
+    card.onmouseleave = () => { hovered = null; highlight(); };
+    card.onfocus = card.onmouseenter;
+    card.onblur = card.onmouseleave;
+    margin.append(card);
+    const top = Math.max(lines.querySelector('.line[data-index="' + note.start + '"]').offsetTop, nextFreeTop);
+    card.style.top = top + "px";
+    nextFreeTop = top + card.offsetHeight + 8;
+  });
+  margin.style.minHeight = Math.max(lines.offsetHeight, nextFreeTop) + "px";
+}
+
+function renderSheets() {
+  const items = shownItems();
+  byId("title").textContent = items.length > 1 ? items[0].group : items[0].title;
+  const container = byId("sheets");
+  container.classList.toggle("compare", items.length > 1);
+  container.replaceChildren(...items.map((item) => {
+    const sheet = element("div", "sheet");
+    sheet.dataset.id = item.id;
+    const head = element("div", "sheet-head");
+    if (items.length > 1) head.append(element("h2", "", versionLabel(item)));
+    const reviewed = element("label");
+    const box = element("input");
+    box.type = "checkbox";
+    box.checked = metaOf(item).reviewed;
+    box.onchange = () => { metaOf(item).reviewed = box.checked; persist(); renderDocuments(); };
+    reviewed.append(box, " Reviewed");
+    head.append(reviewed);
+    const overall = element("textarea", "overall");
+    overall.placeholder = "Overall comment on this document (optional)";
+    overall.setAttribute("aria-label", "Overall comment on " + item.title);
+    overall.value = metaOf(item).overall;
+    overall.oninput = () => { metaOf(item).overall = overall.value; persist(); };
+    const body = element("div", "body");
+    const lines = element("div", "lines");
+    const margin = element("div", "margin");
+    body.append(lines, margin);
+    sheet.append(head, overall, body);
+    renderLines(lines, item);
+    return sheet;
+  }));
+  items.forEach((item) => {
+    const sheet = sheetOf(item);
+    renderMargin(sheet.querySelector(".margin"), sheet.querySelector(".lines"), item);
+  });
+}
+
+function highlight() {
+  const range = selection || hovered;
+  document.querySelectorAll(".sheet").forEach((sheet) => {
+    sheet.querySelectorAll(".line").forEach((row) => {
+      const index = Number(row.dataset.index);
+      row.classList.toggle("selected", Boolean(range) && range.id === sheet.dataset.id && index >= range.start && index <= range.end);
+    });
+  });
+}
+
+function openEditor(item, start, end, note) {
+  selection = { id: item.id, start, end, key: note ? note.key : null };
+  const first = item.lines[start];
+  const last = item.lines[end];
+  byId("quoted").textContent = (compare ? versionLabel(item) + ", " : "") + lineLabel(start, end) + ":\n" + first + (end > start ? (end > start + 1 ? "\n..." : "") + "\n" + last : "");
+  byId("comment").value = note ? note.comment : "";
+  byId("clear").hidden = !note;
+  editor.classList.add("open");
+  highlight();
+  byId("comment").focus({ preventScroll: true });
+  rowAt(sheetOf(item), start).scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function openAt(item, start, end) {
+  const existing = start === end ? notesOf(item).find((note) => start >= note.start && start <= note.end) : null;
+  if (existing) openEditor(item, existing.start, existing.end, existing);
+  else openEditor(item, start, end, null);
+}
+
+function closeEditor() { editor.classList.remove("open"); selection = null; highlight(); }
+
+function render() { renderDocuments(); renderSheets(); highlight(); }
+
+const sheets = byId("sheets");
+sheets.addEventListener("mousedown", (event) => {
+  const row = event.target.closest(".line");
+  if (!row || event.button !== 0) return;
+  event.preventDefault();
+  const item = itemById(row.closest(".sheet").dataset.id);
+  const badge = event.target.closest(".badge");
+  if (badge) {
+    const note = notesOf(item).find((candidate) => candidate.key === badge.dataset.key);
+    if (note) openEditor(item, note.start, note.end, note);
+    return;
+  }
+  const index = Number(row.dataset.index);
+  if (event.shiftKey && lastClicked && lastClicked.id === item.id) {
+    openEditor(item, Math.min(lastClicked.index, index), Math.max(lastClicked.index, index), null);
+    return;
+  }
+  drag = { id: item.id, start: index };
+  selection = { id: item.id, start: index, end: index, key: null };
+  highlight();
+});
+sheets.addEventListener("mouseover", (event) => {
+  if (!drag) return;
+  const row = event.target.closest(".line");
+  if (!row || row.closest(".sheet").dataset.id !== drag.id) return;
+  const index = Number(row.dataset.index);
+  selection = { id: drag.id, start: Math.min(drag.start, index), end: Math.max(drag.start, index), key: null };
+  highlight();
+});
+document.addEventListener("mouseup", () => {
+  if (!drag) return;
+  const { id, start, end } = selection;
+  drag = null;
+  lastClicked = start === end ? { id, index: start } : null;
+  openAt(itemById(id), start, end);
+});
+sheets.addEventListener("keydown", (event) => {
+  const row = event.target.closest(".line");
+  if (!row || (event.key !== "Enter" && event.key !== " ")) return;
+  event.preventDefault();
+  const item = itemById(row.closest(".sheet").dataset.id);
+  const index = Number(row.dataset.index);
+  if (event.shiftKey && lastClicked && lastClicked.id === item.id) {
+    openEditor(item, Math.min(lastClicked.index, index), Math.max(lastClicked.index, index), null);
+  } else {
+    lastClicked = { id: item.id, index };
+    openAt(item, index, index);
+  }
+});
+
+byId("save").onclick = () => {
+  const comment = byId("comment").value.trim();
+  if (!selection || !comment) return;
+  const { id, start, end } = selection;
+  const item = itemById(id);
+  notes[selection.key || rangeKey(item, start, end)] = { comment };
+  persist(); closeEditor(); render();
+  const sheet = sheetOf(item);
+  for (let index = start; index <= end; index += 1) rowAt(sheet, index).classList.add("flash");
+};
+byId("clear").onclick = () => {
+  if (selection && selection.key) { delete notes[selection.key]; persist(); }
+  closeEditor(); render();
+};
+byId("close").onclick = closeEditor;
+byId("comment").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) byId("save").click();
+});
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeEditor(); });
+window.addEventListener("resize", () => shownItems().forEach((item) => {
+  const sheet = sheetOf(item);
+  renderMargin(sheet.querySelector(".margin"), sheet.querySelector(".lines"), item);
+}));
+
+byId("view").hidden = !DATA.documents.some(siblingOf);
+byId("changed-hint").hidden = !DATA.documents.some((item) => item.changed.length);
+byId("compare").checked = compare;
+byId("compare").onchange = () => {
+  compare = byId("compare").checked;
+  localStorage.setItem("annotate:compare", String(compare));
+  closeEditor(); render();
+};
+
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+const applyTheme = () => { document.documentElement.dataset.theme = systemDark.matches ? "dark" : "light"; };
+systemDark.addEventListener("change", applyTheme);
+applyTheme();
+
+function collect() {
+  return {
+    name: DATA.name,
+    comments: DATA.documents.flatMap((item) => notesOf(item).map((note) => ({
+      document: item.title,
+      group: item.group,
+      version: item.version,
+      start_line: note.start + 1,
+      end_line: note.end + 1,
+      text: item.lines.slice(note.start, note.end + 1).join("\n"),
+      comment: note.comment
+    }))),
+    documents: DATA.documents.map((item) => ({ document: item.title, group: item.group, version: item.version, reviewed: metaOf(item).reviewed, overall: metaOf(item).overall }))
+  };
+}
+
+function asText() {
+  const lines = ["Comments from " + DATA.name + ":"];
+  DATA.documents.forEach((item) => {
+    const list = notesOf(item);
+    const { reviewed, overall } = metaOf(item);
+    if (!list.length && !overall && !reviewed) return;
+    lines.push("", "## " + item.title + (reviewed ? " [reviewed]" : ""));
+    if (overall) lines.push("Overall: " + overall);
+    list.forEach((note) => {
+      const first = item.lines[note.start].trim();
+      lines.push("- " + lineLabel(note.start, note.end) + ' ("' + first.slice(0, 70) + (first.length > 70 ? "..." : "") + '"): ' + note.comment);
+    });
+  });
+  return lines.join("\n");
+}
+
+function status(text) { byId("status").textContent = text; }
+
+byId("copy").onclick = async () => {
+  const text = asText();
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const scratch = element("textarea");
+    scratch.value = text;
+    document.body.append(scratch);
+    scratch.select();
+    document.execCommand("copy");
+    scratch.remove();
+  }
+  status("Copied. Paste it to the agent.");
+};
+
+// The helper exits on Send. When the agent starts it again on the same files, it answers with a new session.
+function reloadWhenReopened() {
+  setTimeout(async () => {
+    try {
+      const response = await fetch("/ping", { cache: "no-store" });
+      if ((await response.json()).session !== DATA.session) return location.reload();
+    } catch {
+      // Not back yet.
+    }
+    reloadWhenReopened();
+  }, 2000);
+}
+
+byId("send").onclick = async () => {
+  byId("send").disabled = true;
+  status("Sending...");
+  try {
+    const body = JSON.stringify({ token: DATA.token, instruction: byId("instruction").value.trim(), text: asText(), ...collect() });
+    const response = await fetch("/send", { method: "POST", headers: { "Content-Type": "application/json" }, body });
+    if (!response.ok) throw new Error(String(response.status));
+    status("Sent. This page reloads when the agent reopens it.");
+    reloadWhenReopened();
+  } catch (error) {
+    byId("send").disabled = false;
+    status("Couldn't reach the agent (" + error.message + "). Use Copy for agent instead.");
+  }
+};
+
+render();
+</script>
+</body>
+</html>
