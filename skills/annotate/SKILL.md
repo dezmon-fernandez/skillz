@@ -28,8 +28,9 @@ It prints the page's address and serves until the developer presses Send. Then i
 and that exit is what wakes you. Give the developer the address and end your turn. Don't poll, and don't start on
 the work the comments are for. Your own guess at their comments is not their comments.
 
-If your harness can't wake you when a background command exits, ask the developer to press **Copy for agent** and
-paste the comments instead.
+If your harness has no background commands, run the helper in the foreground with no timeout. The developer reads
+the address in its live output, and the call returns with the comments when they press Send. If Send can't reach
+you, ask the developer to press **Copy for agent** and paste the comments instead.
 
 The same files always open on the same address, so unsent comments survive a restart.
 
