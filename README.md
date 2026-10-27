@@ -53,7 +53,7 @@ siblings, so the two sets never mix. Once one set wins, the other is deleted.
 
 | Skill or agent | Purpose |
 |-------|---------|
-| `decompose-feature-v2` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: dependency-ordered slices, each one plan's worth of work and no smaller, with the background and working rules that carry the effort across context clears. |
+| `decompose-feature-v2` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: user stories in build order, each one plan's worth of work, with its high-level requirements, what research already found, and what is still unknown, plus the working rules that carry the effort across context clears. |
 | `generate-plan-v2` | Turn a feature request, ticket, or conversation into an implementation plan an executor can finish in one pass. The developer agrees the scope first, agents research, and the developer gives the go-ahead before the plan is written. The plan opens with a Design part the developer confirms before anything is built: what gets built, the acceptance criteria, the entry points, the data, the decisions, the call path, the models it serves and stores, and the rules traced on one worked value. |
 | `walk-plan-v2` | Print a plan's Design part so the design can be judged before anything is built, or write one for a plan that has none. Read-only. |
 | `review-plan-v2` | Gate before `execute-plan-v2`: delegate the cold read to the `plan-reviewer-v2` agent, revise the plan where a finding has one sound fix, and ask the developer only what is theirs to decide. The developer confirms the plan from its report before anything is built. |
