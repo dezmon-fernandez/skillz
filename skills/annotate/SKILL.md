@@ -59,9 +59,10 @@ Stop the helper when the developer says they're done.
 
 ### Eval iteration folders
 
-The folder is the layout skill-creator writes, `<eval>/<version>/outputs/*.md`. skill-creator runs and grades the
+The folder is the layout skill-creator writes, `<eval>/<version>/outputs/*.md`, or
+`<eval>/<version>/run-<n>/outputs/*.md` when each version ran more than once. skill-creator runs and grades the
 evals; this page is only where the developer comments on what they produced. When an eval has two versions, such as
-`new_skill` and `old_skill`, the page can show them side by side. Each Send also writes `<folder>/feedback.json`,
+`new_skill` and `old_skill`, the page can show them side by side, run 1 beside run 1. Each Send also writes `<folder>/feedback.json`,
 which keeps the comments as labels.
 
 Do what the instruction asks, such as revising the skill from the comments. With no instruction, the comments are

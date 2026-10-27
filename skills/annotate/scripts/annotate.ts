@@ -30,17 +30,28 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex').s
 const snapshotOf = (path: string) => join(snapshots, hash(resolve(path)) + '.md');
 const linesOf = (text: string) => text.replace(/\n$/, '').split('\n');
 
+// <eval>/<version>/outputs/<file>.md, or <eval>/<version>/run-<n>/outputs/<file>.md when each version ran more than
+// once. The same run number of each version shares a group, so the two sit side by side.
 function evalSources(iteration: string): Source[] {
   return readdirSync(iteration, { recursive: true, encoding: 'utf8' })
     .map((path) => path.split('/'))
-    .filter((parts) => parts.length === 4 && parts[2] === 'outputs' && parts[3].endsWith('.md'))
+    .filter(
+      (parts) =>
+        parts.at(-2) === 'outputs' &&
+        parts.at(-1)!.endsWith('.md') &&
+        (parts.length === 4 || (parts.length === 5 && /^run-\d+$/.test(parts[2])))
+    )
     .sort((first, second) => first.join('/').localeCompare(second.join('/')))
-    .map(([evaluation, version, , file]) => ({
-      path: join(iteration, evaluation, version, 'outputs', file),
-      group: evaluation + '/' + file,
-      version,
-      title: `${evaluation}/${file} (${version.replaceAll('_', ' ')})`
-    }));
+    .map((parts) => {
+      const [evaluation, version] = parts;
+      const file = evaluation + '/' + (parts.length === 5 ? parts[2] + '/' : '') + parts.at(-1);
+      return {
+        path: join(iteration, ...parts),
+        group: file,
+        version,
+        title: `${file} (${version.replaceAll('_', ' ')})`
+      };
+    });
 }
 
 function fileSources(paths: string[]): Source[] {
@@ -105,7 +116,7 @@ async function main() {
   const iteration = targets.length === 1 && statSync(targets[0]).isDirectory() ? targets[0] : null;
   const sources = iteration ? evalSources(iteration) : fileSources(targets);
   if (!sources.length) {
-    console.error(`No <eval>/<version>/outputs/*.md files under ${iteration}`);
+    console.error(`No <eval>/<version>/[run-<n>/]outputs/*.md files under ${iteration}`);
     process.exit(1);
   }
 
