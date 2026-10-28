@@ -21,8 +21,14 @@ From the repo root, run the helper as a background command, on files or on one e
 
 ```bash
 node --no-warnings .claude/skills/annotate/scripts/annotate.ts <file.md> [more.md ...]
+node --no-warnings .claude/skills/annotate/scripts/annotate.ts --base HEAD <file.md> [more.md ...]
 node --no-warnings .claude/skills/annotate/scripts/annotate.ts <iteration-folder>
 ```
+
+To propose a change, make it in the file, uncommitted, and open the file with `--base <git ref>`, usually `HEAD`.
+Lines changed since that ref are highlighted, and removed lines show where they were cut. The developer's Send
+approves what they leave alone. Revert what they reject with git. Never only describe an edit in the terminal when
+the page can show it.
 
 It prints the page's address and serves until the developer presses Send. Then it prints the comments and exits,
 and that exit is what wakes you. Give the developer the address and end your turn. Don't poll, and don't start on
@@ -53,8 +59,8 @@ Each comment is the developer's request about the lines it marks. Work through a
 - An overall comment applies to the whole document.
 
 Then reply with one line per comment: what you did, why you didn't, or your question back. Reopen the page with
-the same command. It tints the lines you changed since the Send and clears the comments on every file you edited.
-The developer's open tab reloads by itself.
+the same command. It highlights the lines you changed since the Send, marks the lines you removed, and clears the
+comments on every file you edited. The developer's open tab reloads by itself.
 
 Stop the helper when the developer says they're done.
 
@@ -63,8 +69,8 @@ Stop the helper when the developer says they're done.
 The folder is the layout skill-creator writes, `<eval>/<version>/outputs/*.md`, or
 `<eval>/<version>/run-<n>/outputs/*.md` when each version ran more than once. skill-creator runs and grades the
 evals; this page is only where the developer comments on what they produced. When an eval has two versions, such as
-`new_skill` and `old_skill`, the page can show them side by side, run 1 beside run 1. Each Send also writes `<folder>/feedback.json`,
-which keeps the comments as labels.
+`new_skill` and `old_skill`, the page can show them side by side, run 1 beside run 1. Each Send also writes
+`<folder>/feedback.json`, which keeps the comments as labels.
 
 Do what the instruction asks, such as revising the skill from the comments. With no instruction, the comments are
 labels: say how many arrived and change nothing. Reopen the page so the developer can keep going. The outputs
