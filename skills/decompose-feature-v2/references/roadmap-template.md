@@ -50,6 +50,7 @@ reasoning behind it.>
 As <the user>, I want <what>, so that <why>.
 
 **Requirements**
+- <what the story produces, where it goes, and the later story that uses it>
 - <an outcome a person can check, including any repo rule this story must keep>
 
 **Known from research**

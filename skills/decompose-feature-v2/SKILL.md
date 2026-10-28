@@ -77,7 +77,12 @@ defines may be used as the repo defines it.
 ### 3. Fill each story
 
 - **Requirements**: what must be true when the story is done, as outcomes a person can
-  check. Include the repo rules the story must keep.
+  check. The first says what the story produces and where it goes, in positive words, and
+  names the later story that uses it. A story described only by what it does not do leaves
+  the reader asking where its output went. Include the repo rules the story must keep.
+  - ❌ `It creates no customer or order records.`
+  - ✅ `It saves each incoming message, as received, in one inbox table. Story C turns them
+    into orders.`
 - **Known from research**: a known problem that would make the plan build the wrong thing,
   one line each. Where code lives and how to build it is the plan's to find: no file paths,
   function names, or line numbers here. Every other fact goes in the research notes at the
@@ -122,6 +127,8 @@ them around a substitute.
 - [ ] Every story reads "As <user>, I want <what>, so that <why>", with requirements a person
       can check.
 - [ ] Each story changes about six to twenty source files and ends shippable and green.
+- [ ] Every story's first requirement says what it produces, where it goes, and which later
+      story uses it.
 - [ ] Every known problem that would make a plan build the wrong thing sits on its story,
       with no file paths, function names, or line numbers.
 - [ ] Each story reads in under a minute, about 25 lines at most.
