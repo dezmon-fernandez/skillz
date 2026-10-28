@@ -23,9 +23,6 @@ and which story proves it first.>
 
 ## How to work this roadmap
 
-- Open every task with a developer's walkthrough of the affected area: its role, its
-  end-to-end data flow with file references, and where this task's problem sits. Deliver it
-  before any code changes, then pause for the developer's questions.
 - A box is checked only on the developer's explicit say-so, never because the work is
   merely finished. That keeps the checklist trustworthy across context clears.
 - When a task settles a convention or teaches a lesson, write it into Working rules with
@@ -33,10 +30,6 @@ and which story proves it first.>
 - Each story gets a /generate-plan-v2, which sizes it first and says so when it is small
   enough to build without a plan. A fresh session needs only this document plus /prime to
   continue correctly.
-
-## Design approach
-
-<The one approach the code follows across stories, and how things are named.>
 
 ## Working rules
 
@@ -53,11 +46,8 @@ As <the user>, I want <what>, so that <why>.
 - <what the story produces, where it goes, and the later story that uses it>
 - <an outcome a person can check, including any repo rule this story must keep>
 
-**Known from research**
-- <a known problem that would make the plan build the wrong thing, or "nothing">
-
-**Unknown, to explore**
-- <a question this story's plan must answer, with what research found so far, or "nothing">
+**Open questions**
+- <a question this story's plan must answer, or "nothing">
 
 Needs: <earlier stories, or nothing> · Unlocks: <later stories> · About <N> source files,
 tests aside
@@ -65,12 +55,4 @@ tests aside
 ### B: <name> (same shape)
 
 ### C: <name> (same shape)
-
----
-
-## Research notes
-
-<Reference for the plans. Each plan re-checks what it uses. Label each fact: measured,
-documented, from an earlier document, or not checked. A fact that changes what a story
-builds is on that story too.>
 ```

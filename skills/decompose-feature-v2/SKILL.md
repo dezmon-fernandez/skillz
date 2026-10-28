@@ -2,12 +2,12 @@
 name: decompose-feature-v2
 disable-model-invocation: true
 description: >-
-  Break a feature too large for one plan into a roadmap: user stories in build order, each
-  one plan's worth of work, with its high-level requirements, what research already found,
-  and what is still unknown. Writes .agents/roadmaps/<feature>.md, a working document that
-  carries the effort's goal and working rules across context clears. Use when asked to
-  "decompose this feature", "break this into stories", "roadmap this", or when a feature is
-  too big to plan in one pass.
+  Break a feature too large for one plan into a roadmap: what is being built, why, and how
+  the work splits into user stories in build order, each one plan's worth of work, with its
+  high-level requirements and the questions its plan must answer. Writes
+  .agents/roadmaps/<feature>.md, a working document that carries the effort's goal and
+  working rules across context clears. Use when asked to "decompose this feature", "break
+  this into stories", "roadmap this", or when a feature is too big to plan in one pass.
 argument-hint: "[feature, PRD section, or feature-idea doc]"
 ---
 
@@ -15,20 +15,21 @@ argument-hint: "[feature, PRD section, or feature-idea doc]"
 
 ## Feature: $ARGUMENTS
 
-Break a feature into user stories and the order to build them. The roadmap stays high level:
-the developer reads it to agree what gets built, in what order, and where the feature is
-headed, so each story must read at a glance. A wrong roadmap sends every later plan the
-wrong way.
+Break a feature into user stories and the order to build them. The roadmap answers three
+things: what is being built, why, and how the work splits. Research and discovery belong to
+each story's plan, not here. The developer reads the roadmap to agree what gets built and
+in what order, so each story must read at a glance. A wrong roadmap sends every later plan
+the wrong way.
 
 A story is one part of the feature that one plan builds. It ships and stands on its own,
 and it changes about six to twenty source files, tests aside. Cut as few stories as that
 size allows. Built in order, each story is planned against what the earlier ones landed.
 
-A story says **who wants what and why, what must be true when it is done, what research
-already found, and what is still unknown**, and stops there. No signatures, data shapes,
-file layout, or tests. No decisions either: deciding how to build a story is
-`/generate-plan-v2`'s job, after its own research, and it puts the decisions to the
-developer there.
+A story says **who wants what and why, what must be true when it is done, and what its plan
+must find out**, and stops there. No research findings: no measured facts, costs, or code
+details. No signatures, data shapes, file layout, or tests. No decisions either: deciding
+how to build a story is `/generate-plan-v2`'s job, after its own research, and it puts the
+decisions to the developer there.
 
 **Write in plain words.** Name the thing itself. No metaphors and no jargon. A term the repo
 defines may be used as the repo defines it.
@@ -44,15 +45,12 @@ defines may be used as the repo defines it.
   they gave them.
 - **Correctness rule**: the rule that must hold at every step. Take it from the repo's rules
   (CLAUDE.md) and requirements document (PRD). Do not invent it.
-- **Design approach**: the one approach the code follows across stories, and how things are
-  named. Without it, each session picks its own.
-- **Research the codebase, nothing else.** Send one `codebase-scout-agent-v2` the feature as
-  the developer gave it, word for word. Its route, file counts, and slices show what exists
-  today and how big each story is. Send no other agent, and do not search further yourself.
-  Outside sources, such as an external service, a data provider, or a library, are each
-  story's plan to research: write each question about one as an unknown on the story that
-  needs it. Label each fact by how it was checked: measured, documented, from an earlier
-  document, or not checked.
+- **Scout the codebase to size and split, nothing else.** Send one `codebase-scout-agent-v2`
+  the feature as the developer gave it, word for word. Its route, file counts, and slices
+  show what exists today and how big each story is. Use them to cut and order the stories.
+  Copy none of its findings into the roadmap. Send no other agent, and do not search
+  further yourself. A question about an outside source, such as an external service, a
+  data provider, or a library, is an open question on the story that needs it.
 
 ### 2. Cut the stories
 
@@ -69,10 +67,10 @@ defines may be used as the repo defines it.
 - **Code ships with its first caller.** A story that adds something nothing calls yet is too
   small to judge. Its pure core and the code with the side effects are one story.
 - **Independent stories come before the stories that combine them.**
-- **Settle what everything depends on first.** A story whose unknown decides something every
-  later story builds on, such as the id every record is keyed on, comes before them.
+- **Settle what everything depends on first.** A story whose open question decides something
+  every later story builds on, such as the id every record is keyed on, comes before them.
 - **Build on what exists. Do not assume.** Where it is unclear whether something exists,
-  make it an unknown instead of guessing.
+  make it an open question instead of guessing.
 
 ### 3. Fill each story
 
@@ -80,25 +78,20 @@ defines may be used as the repo defines it.
   check. The first says what the story produces and where it goes, in positive words, and
   names the later story that uses it. A story described only by what it does not do leaves
   the reader asking where its output went. Include the repo rules the story must keep.
+  Everything the developer asked for is a requirement, stated as they asked it, never an
+  open question.
   - ❌ `It creates no customer or order records.`
   - ✅ `It saves each incoming message, as received, in one inbox table. Story C turns them
     into orders.`
-- **Known from research**: a known problem that would make the plan build the wrong thing,
-  one line each. Where code lives and how to build it is the plan's to find: no file paths,
-  function names, or line numbers here. Every other fact goes in the research notes at the
-  end, which each plan re-checks. When unsure, put it in the notes.
+- **Open questions**: what this story's plan must find out, as questions only, with no
+  findings. A choice that is hard to reverse or spends money is written here as a
+  question, never answered here.
+  - ❌ `Which export format? Research found the vendor's CSV drops the time zone.`
+  - ✅ `Which export format keeps the time zone?`
+- An open question that affects several stories goes on the first story that needs it.
+  Later stories say they use what that story settled.
 - **A story reads in under a minute, about 25 lines at most.** A longer story is carrying
-  plan detail: move that detail to the research notes.
-- **Unknown, to explore**: a question research could not answer that this story's plan must,
-  with what research found so far. A choice that is hard to reverse or spends money is
-  written here as a question, never answered here.
-- An unknown that affects several stories goes on the first story that needs it. Later
-  stories say they use what that story settled.
-
-- ❌ Known from research: the parser lives in `parse.py:120`, and a new client needs a field
-  on the shared context.
-- ✅ Known from research: the `points` key is already used by another feature, so this one
-  needs its own key.
+  plan detail: cut it. The plan finds it.
 
 ### 4. Check the order
 
@@ -120,8 +113,9 @@ them around a substitute.
 ## Quality criteria
 
 - [ ] The goal and the correctness rule trace to the repo's rules and requirements.
-- [ ] Research was one scout of the codebase. Every question about an outside source is an
-      unknown on its story.
+- [ ] One scout sized and split the stories. Every question about an outside source is an
+      open question on its story.
+- [ ] The roadmap holds no research findings: no measured facts, costs, or code details.
 - [ ] The first story proves the correctness rule, or it stops a loss, needs no other story,
       and the roadmap says why it goes first.
 - [ ] Every story reads "As <user>, I want <what>, so that <why>", with requirements a person
@@ -129,10 +123,9 @@ them around a substitute.
 - [ ] Each story changes about six to twenty source files and ends shippable and green.
 - [ ] Every story's first requirement says what it produces, where it goes, and which later
       story uses it.
-- [ ] Every known problem that would make a plan build the wrong thing sits on its story,
-      with no file paths, function names, or line numbers.
 - [ ] Each story reads in under a minute, about 25 lines at most.
-- [ ] Every unknown sits on the first story that needs it, as a question, not a decision.
+- [ ] Every open question sits on the first story that needs it, as a question, not a
+      decision or a finding.
 - [ ] Plain words throughout: no metaphors, and no jargon the repo does not define.
 - [ ] "How to work this roadmap" is verbatim, and every box is unchecked.
 
@@ -151,6 +144,6 @@ Then add only:
 
 ## Note
 
-Research uses the `codebase-scout-agent-v2` agent, installed alongside this skill. If it is
-missing, say so and stop. Do not research in this session instead: the roadmap would look
-researched when it is not.
+Sizing uses the `codebase-scout-agent-v2` agent, installed alongside this skill. If it is
+missing, say so and stop. Do not scout in this session instead: the sizes would look
+measured when they are not.
