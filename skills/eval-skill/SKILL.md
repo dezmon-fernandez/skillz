@@ -158,22 +158,25 @@ comments decide the next round.
    comment store into the page.
 2. **The developer comments**, as much as they want, in their own words. Wait until they say
    they are done. Do not act on a comment as it lands: the next one may change it.
-3. **Read every comment at once** and give back one list. Each entry: the comment word for
-   word, the section it sits on, what it changes (a verdict on a check, the skill, or the
-   test case), and the exact edit you would make. A comment you cannot turn into one edit
-   goes in the list as a question, not a guess. Group comments that name the same kind of
-   failure, and propose one check for each kind.
-4. **The developer approves or rejects each entry, all at once.** Make only the approved
-   edits. Nothing changes in the skill under test without their yes.
+3. **Read every comment at once and show each proposed edit in view, never only described.**
+   Make each edit in the file it changes, uncommitted: the skill, a check, or the test case.
+   Open those files in `annotate` with `--base HEAD`, so changed lines are highlighted and
+   removed lines show where they were cut. Reply with one line per comment: its words and
+   where its edit is. A comment you cannot turn into one edit goes back as a question, not
+   a guess. Group comments that name the same kind of failure, and propose one check for
+   each kind.
+4. **The developer's Send is the decision.** No comment on a change approves it. A comment
+   changes it or drops it. Revert every rejected edit from git. Nothing is committed
+   without their yes.
 5. **Record** each comment, its decision, and what the next round changes.
 
-- ❌ `Comment 3 says story C is too long, so I shortened every story.`
-- ✅ `3. "this story is too long" (story C) · the skill · add "A story's requirements fit in
-  five lines." · approve?`
+- ❌ `Comment 3: story C is too long. I'd add a five-line limit. Approve?`
+- ✅ The sentence is in the skill file, uncommitted, open in `annotate` against the last
+  commit, highlighted, with `3. "this story is too long" (story C): SKILL.md line 84`.
 
 When neither `annotate` nor a published page is available, write each output to a file with
-numbered sections. The developer writes notes against the numbers in the terminal. The rest
-is the same.
+numbered sections. The developer writes notes against the numbers in the terminal, and each
+proposed edit is shown as its exact before and after text. The rest is the same.
 
 ## Where things live
 
