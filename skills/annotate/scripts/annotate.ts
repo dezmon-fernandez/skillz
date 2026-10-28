@@ -5,9 +5,13 @@
 //   node --no-warnings .claude/skills/annotate/scripts/annotate.ts <file.md> [more.md ...]
 //   node --no-warnings .claude/skills/annotate/scripts/annotate.ts --base <git ref> <file.md> [more.md ...]
 //   node --no-warnings .claude/skills/annotate/scripts/annotate.ts <iteration-folder>
+//   ... annotate.ts --reply <reply.md> <the same files or folder>
 //
 // With --base, each file's changes are shown against its text at that git ref instead of at the last Send, so an
 // edit proposed in the working tree shows as changed and removed lines before anything is committed.
+//
+// With --reply, the page shows that file under the Send box: the agent's answer to the last Send. It is not one of
+// the files, so the address and the developer's unsent comments stay the same.
 //
 // It listens on 127.0.0.1 only, and the page makes no other network calls.
 
@@ -158,10 +162,22 @@ function reply(response: ServerResponse, status: number, body: string | Buffer, 
 
 async function main() {
   const args = process.argv.slice(2);
-  const base = args[0] === '--base' ? args[1] ?? '' : null;
-  const targets = args.slice(base === null ? 0 : 2).map((target) => resolve(target));
-  if (!targets.length || base === '') {
-    console.error('Usage: annotate.ts [--base <git ref>] <file.md> [more.md ...] | <iteration-folder>');
+  const option = (flag: string) => {
+    const at = args.indexOf(flag);
+    return at === -1 ? null : (args.splice(at, 2)[1] ?? '');
+  };
+  const base = option('--base');
+  const replyFile = option('--reply');
+  const targets = args.map((target) => resolve(target));
+  if (!targets.length || base === '' || replyFile === '') {
+    console.error('Usage: annotate.ts [--base <git ref>] [--reply <reply.md>] <file.md> [more.md ...] | <iteration-folder>');
+    process.exit(1);
+  }
+  let agentReply: string | null = null;
+  try {
+    agentReply = replyFile === null ? null : readFileSync(replyFile, 'utf8');
+  } catch {
+    console.error(`--reply ${replyFile}: cannot read the file`);
     process.exit(1);
   }
   const iteration = targets.length === 1 && statSync(targets[0]).isDirectory() ? targets[0] : null;
@@ -187,7 +203,7 @@ async function main() {
     console.error(`--base ${base}: no such commit, or a file is outside a git repo`);
     process.exit(1);
   }
-  const data = JSON.stringify({ name, key, token, session, base, documents }).replaceAll('</', '<\\/');
+  const data = JSON.stringify({ name, key, token, session, base, reply: agentReply, documents }).replaceAll('</', '<\\/');
   const escapedName = name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   const page = readFileSync(join(import.meta.dirname, 'annotate.html'), 'utf8')
     .replace('__DATA__', () => data)

@@ -12,7 +12,9 @@ description: >-
 
 The developer clicks a line, or drags across several, and writes a comment. Send hands you every comment at once.
 The page has no login, listens on 127.0.0.1 only, and makes no other network calls. Code blocks are highlighted,
-and a `mermaid` block is drawn above its lines from the pinned copy in `scripts/vendor/`; its lines stay commentable.
+and a `mermaid` block is drawn in place of its lines from the pinned copy in `scripts/vendor/`. Its first and last line
+numbers frame it, and a click on either comments on the whole diagram. Its lines fold away behind a "Show source"
+link, and stay shown while one holds a change or a comment on part of the diagram.
 
 The helper needs Node 22.18 or later, which runs TypeScript directly. If `node --version` is older, say so and stop.
 
@@ -59,9 +61,11 @@ Each comment is the developer's request about the lines it marks. Work through a
 - A comment can reach beyond its lines ("same for the other steps"). Follow it there.
 - An overall comment applies to the whole document.
 
-Then reply with one line per comment: what you did, why you didn't, or your question back. Reopen the page with
-the same command. It highlights the lines you changed since the Send, marks the lines you removed, and clears the
-comments on every file you edited. The developer's open tab reloads by itself.
+Then write your reply, one line per comment: what you did, why you didn't, or your question back. Save it to a file
+outside the repository and reopen the page with the same command plus `--reply <that file>`, which shows it under
+the Send box, where the developer is looking. Give the same reply in your message. The page highlights the lines you
+changed since the Send, marks the lines you removed, and clears the comments on every file you edited. The
+developer's open tab reloads by itself.
 
 Stop the helper when the developer says they're done.
 
@@ -74,5 +78,5 @@ evals; this page is only where the developer comments on what they produced. Whe
 `<folder>/feedback.json`, which keeps the comments as labels.
 
 Do what the instruction asks, such as revising the skill from the comments. With no instruction, the comments are
-labels: say how many arrived and change nothing. Reopen the page so the developer can keep going. The outputs
-don't change, so their comments stay.
+labels: say how many arrived and change nothing. Reopen the page, with `--reply` as above, so the developer can keep
+going. The outputs don't change, so their comments stay.

@@ -33,8 +33,20 @@
   nav .done { color: var(--good); margin-right: 4px; }
   nav .hint { color: var(--muted); font-size: 12px; }
   .status { font-size: 12px; color: var(--muted); min-height: 1.5em; }
+  .agent-reply { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); max-height: 45vh; overflow-y: auto; font-size: 13px; line-height: 1.4; }
+  .agent-reply h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .agent-reply p { margin: 0 0 6px; }
+  .agent-reply p.item { padding-left: 12px; text-indent: -12px; }
   main { overflow: auto; padding: 16px 24px 120px; }
   h1 { font-size: 18px; margin: 0 0 12px; }
+  .top { display: flex; align-items: center; gap: 20px; margin-bottom: 12px; }
+  .top h1 { margin: 0; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .toggle input { appearance: none; position: relative; width: 34px; height: 20px; margin: 0; border-radius: 10px; background: var(--border); cursor: pointer; transition: background .15s; }
+  .toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .toggle input:checked { background: var(--accent); }
+  .toggle input:checked::after { transform: translateX(14px); }
+  .toggle input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #sheets.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
   .sheet-head { display: flex; gap: 16px; align-items: baseline; margin-bottom: 6px; }
   .sheet-head h2 { font-size: 15px; margin: 0; }
@@ -55,8 +67,21 @@
      beside numbered rows. One wider than both columns is scaled down to fit. */
   .body { --diagram-reach: 364px; }
   #sheets.compare .body { --diagram-reach: 236px; }
-  .md-diagram { box-sizing: border-box; width: max-content; max-width: calc(100% - 1.8em - 2.5em - 32px + var(--diagram-reach)); margin: 6px 0 2px calc(1.8em + 2.5em + 32px); padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; }
+  .md-diagram { box-sizing: border-box; width: max-content; max-width: calc(100% - 1.8em - 2.5em - 32px + var(--diagram-reach)); margin: 6px 0 2px calc(1.8em + 2.5em + 32px); padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; cursor: zoom-in; }
   .md-diagram svg { display: block; max-width: 100%; height: auto; }
+  .md-diagram.zoomed { cursor: zoom-out; }
+  .line.folded { display: none; }
+  .md-diagram-line { display: flex; gap: 12px; padding: 2px 8px; border-left: 4px solid transparent; font-size: 14px; }
+  .md-diagram-line .gutter { flex: none; width: 1.8em; display: flex; justify-content: center; cursor: pointer; }
+  .md-diagram-line .numbers { flex: none; display: flex; flex-direction: column; justify-content: space-between; min-width: 2.5em; margin: 6px 0 2px; padding: 2px 0; border: 0; background: none; color: var(--number); font-family: ui-monospace, Menlo, monospace; font-size: 12px; text-align: right; cursor: pointer; }
+  .md-diagram-line .numbers:hover { color: var(--accent); }
+  .md-diagram-line > .md-diagram { flex: none; margin-left: 0; }
+  .md-diagram-line.commented { background: var(--tint); border-left-color: var(--accent); }
+  .md-diagram-line.selected { background: var(--selected); }
+  .md-source-row { margin: 0 0 8px calc(1.8em + 2.5em + 32px); }
+  .md-source { padding: 0; border: 0; background: none; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .md-source:hover { color: var(--fg); text-decoration: underline; }
+  .md-diagram.zoomed svg { max-width: none; }
   .tok-keyword, .tok-decorator { color: var(--tok-keyword); }
   .tok-string { color: var(--tok-string); }
   .tok-comment { color: var(--tok-comment); font-style: italic; }
@@ -104,7 +129,8 @@
   .line .gutter { flex: none; width: 1.8em; display: flex; justify-content: center; align-self: flex-start; }
   .line .badge { font-family: system-ui; font-size: 12px; padding: 0 4px; border-radius: 8px; background: var(--accent); cursor: pointer; line-height: 1.5; }
   .line .badge:hover { filter: brightness(1.15); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
-  .margin { position: relative; }
+  .margin { position: relative; pointer-events: none; }
+  .margin > * { pointer-events: auto; }
   .card { position: absolute; left: 0; right: 0; text-align: left; font: inherit; font-size: 13px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 6px 10px; cursor: pointer; box-shadow: 0 1px 3px var(--shadow); }
   .card:hover, .card:focus-visible { box-shadow: 0 2px 8px var(--shadow-strong); outline: none; }
   .card .range { color: var(--muted); font-size: 12px; }
@@ -134,10 +160,10 @@
     <button class="export" id="send">Send to agent</button>
     <button class="export" id="copy">Copy for agent</button>
     <p class="status" id="status" role="status"></p>
-  </fieldset>
-  <fieldset id="view" hidden>
-    <legend>View</legend>
-    <label><input type="checkbox" id="compare"> Both versions side by side</label>
+    <section class="agent-reply" id="agent-reply" aria-label="Agent's reply to your last Send" hidden>
+      <h3>Agent's reply</h3>
+      <div id="agent-reply-text"></div>
+    </section>
   </fieldset>
   <p class="hint">Click a line, or drag across several, and write a comment. Shift+click extends from the last line you
   clicked. Click a 💬, a card, or a commented section to edit it. Comments stay in this browser; nothing leaves it
@@ -145,7 +171,10 @@
 </nav>
 <main>
   <p class="working" id="working" role="status" hidden></p>
-  <h1 id="title"></h1>
+  <div class="top">
+    <label class="toggle" id="view" hidden><input type="checkbox" role="switch" id="compare"> Side by side</label>
+    <h1 id="title"></h1>
+  </div>
   <div id="sheets"></div>
 </main>
 <section class="editor" id="editor" aria-label="Comment on this section">
@@ -402,11 +431,14 @@ function markdownLine(text, state) {
   return span;
 }
 
-// A ```mermaid block is drawn above its lines, which stay numbered and commentable. Mermaid
+// A ```mermaid block is drawn in place of its lines, which fold away (see foldSource). Mermaid
 // is served by the helper from its own folder, so the page still calls nothing outside this
 // machine. When it is missing, or a diagram does not parse, the block stays as its text.
 let mermaidLoaded = null;
 const drawnDiagrams = new Map();
+// Every render gets an id no other render has had. Mermaid draws into whichever element holds
+// the id, so a reused one draws a second diagram into the first and leaves the second empty.
+let diagramsRendered = 0;
 function loadMermaid() {
   mermaidLoaded ??= new Promise((resolve) => {
     const script = document.createElement("script");
@@ -422,20 +454,83 @@ async function drawDiagrams(diagrams) {
   if (!diagrams.length) return;
   const mermaid = await loadMermaid();
   const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "default";
-  if (mermaid) mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme, flowchart: { htmlLabels: false, useMaxWidth: false, wrappingWidth: 320 } });
+  if (mermaid) mermaid.initialize({
+    startOnLoad: false, securityLevel: "strict", theme,
+    themeVariables: theme === "dark" ? { lineColor: "#c9d1d9" } : {},
+    themeCSS: ".flowchart-link { stroke-width: 1.6px; }",
+    flowchart: { htmlLabels: true, useMaxWidth: false, wrappingWidth: 320 },
+  });
   for (const diagram of diagrams) {
     const source = diagram.lines.join("\n");
     const key = theme + "\n" + source;
     if (!drawnDiagrams.has(key) && mermaid && await mermaid.parse(source, { suppressErrors: true })) {
       try {
-        drawnDiagrams.set(key, (await mermaid.render("diagram-" + drawnDiagrams.size, source)).svg);
+        drawnDiagrams.set(key, (await mermaid.render("diagram-" + ++diagramsRendered, source)).svg);
       } catch {
         // Left as its text below.
       }
     }
-    if (drawnDiagrams.has(key)) diagram.figure.innerHTML = drawnDiagrams.get(key);
-    else diagram.figure.remove();
+    if (drawnDiagrams.has(key)) {
+      diagram.figure.innerHTML = drawnDiagrams.get(key);
+      diagram.figure.title = "Click to zoom";
+      diagram.figure.onclick = (event) => zoomDiagram(diagram.figure, event);
+      frameDiagram(diagram, key);
+    } else diagram.block.remove();
   }
+  relayout();
+}
+
+// A drawn diagram carries its first and last line numbers, and a click on either comments on
+// the whole diagram. Its source lines fold away, one click from view. They stay shown while
+// one holds a change or a comment on less than the whole diagram, so folding hides neither.
+const shownSources = new Set();
+function frameDiagram(diagram, key) {
+  const { item, block, rows } = diagram;
+  const start = Number(rows[0].dataset.index);
+  const end = Number(rows[rows.length - 1].dataset.index);
+  const notes = notesOf(item).filter((note) => note.start <= end && note.end >= start);
+  const whole = notes.find((note) => note.start === start && note.end === end);
+  block.dataset.start = start;
+  block.dataset.end = end;
+  block.classList.toggle("commented", Boolean(whole));
+  const open = () => { lastClicked = null; openEditor(item, start, end, whole || null); };
+  const gutter = element("span", "gutter", whole ? "💬" : "");
+  const numbers = element("button", "numbers");
+  numbers.append(element("span", "", String(start + 1)), element("span", "", String(end + 1)));
+  numbers.title = "Comment on the whole diagram";
+  numbers.setAttribute("aria-label", "Comment on the diagram, lines " + (start + 1) + " to " + (end + 1));
+  gutter.onclick = numbers.onclick = open;
+  block.prepend(gutter, numbers);
+  if (rows.some((row) => row.matches(".changed")) || notes.some((note) => note !== whole)) return;
+  const button = element("button", "md-source");
+  const show = (shown) => {
+    rows.forEach((row) => row.classList.toggle("folded", !shown));
+    button.textContent = (shown ? "Hide source" : "Show source") + " (" + rows.length + " lines)";
+  };
+  button.onclick = () => {
+    if (shownSources.has(key)) shownSources.delete(key);
+    else shownSources.add(key);
+    show(shownSources.has(key));
+    relayout();
+  };
+  show(shownSources.has(key));
+  const row = element("div", "md-source-row");
+  row.append(button);
+  block.after(row);
+}
+
+// A diagram fits its frame, so its whole shape shows, but a wide one's text is then too small
+// to read. A click shows it at full size, scrolled to keep the clicked point under the pointer.
+function zoomDiagram(figure, event) {
+  const svg = figure.querySelector("svg");
+  const before = svg.getBoundingClientRect();
+  const x = (event.clientX - before.left) / before.width;
+  const y = (event.clientY - before.top) / before.height;
+  const zoomed = figure.classList.toggle("zoomed");
+  figure.title = zoomed ? "Click to fit" : "Click to zoom";
+  const after = svg.getBoundingClientRect();
+  figure.scrollLeft = after.left - figure.getBoundingClientRect().left + figure.scrollLeft + x * after.width - (event.clientX - figure.getBoundingClientRect().left);
+  window.scrollBy(0, after.top + y * after.height - event.clientY);
   relayout();
 }
 
@@ -464,10 +559,11 @@ function renderLines(container, item) {
     cut(index);
     const opensDiagram = !markdown.fence && /^\s*`{3,}\s*mermaid\s*$/i.test(text);
     if (opensDiagram) {
-      diagram = { figure: element("div", "md-diagram"), lines: [] };
+      diagram = { item, block: element("div", "md-diagram-line"), figure: element("div", "md-diagram"), lines: [], rows: [] };
+      diagram.block.append(diagram.figure);
       diagrams.push(diagram);
       table = null;
-      children.push(diagram.figure);
+      children.push(diagram.block);
     }
     const commented = list.some((note) => index >= note.start && index <= note.end);
     const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (commented ? " commented" : ""));
@@ -483,6 +579,7 @@ function renderLines(container, item) {
       gutter.append(badge);
     });
     const content = markdownLine(text, markdown);
+    if (diagram) diagram.rows.push(row);
     if (diagram && !opensDiagram) {
       if (markdown.fence) diagram.lines.push(text);
       else diagram = null;
@@ -521,7 +618,10 @@ function renderMargin(margin, lines, item) {
     card.onfocus = card.onmouseenter;
     card.onblur = card.onmouseleave;
     margin.append(card);
-    const top = Math.max(lines.querySelector('.line[data-index="' + note.start + '"]').offsetTop, nextFreeTop);
+    // A folded line has no position, so a note on one sits beside the diagram drawn in its place.
+    const row = lines.querySelector('.line[data-index="' + note.start + '"]');
+    const diagram = [...lines.querySelectorAll(".md-diagram-line")].find((block) => note.start >= Number(block.dataset.start) && note.start <= Number(block.dataset.end));
+    const top = Math.max((row.classList.contains("folded") && diagram ? diagram : row).offsetTop, nextFreeTop);
     card.style.top = top + "px";
     nextFreeTop = top + card.offsetHeight + 8;
   });
@@ -574,6 +674,9 @@ function highlight() {
     sheet.querySelectorAll(".line").forEach((row) => {
       const index = Number(row.dataset.index);
       row.classList.toggle("selected", Boolean(range) && range.id === sheet.dataset.id && index >= range.start && index <= range.end);
+    });
+    sheet.querySelectorAll(".md-diagram-line").forEach((block) => {
+      block.classList.toggle("selected", Boolean(range) && range.id === sheet.dataset.id && range.start <= Number(block.dataset.end) && range.end >= Number(block.dataset.start));
     });
   });
 }
@@ -673,6 +776,16 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape") cl
 window.addEventListener("resize", relayout);
 
 byId("view").hidden = !DATA.documents.some(siblingOf);
+// The agent's answer to the last Send sits under the Send box. A reopen without one hides it.
+if (DATA.reply) {
+  byId("agent-reply").hidden = false;
+  byId("agent-reply-text").replaceChildren(...DATA.reply.split("\n").filter((line) => line.trim()).map((line) => {
+    const item = /^\s*[-*]\s+/.test(line);
+    const paragraph = element("p", item ? "item" : "");
+    paragraph.append(...(item ? ["• "] : []), ...inlineMarkdown(line.replace(/^\s*[-*]\s+/, ""), { insideCodeSpan: false }));
+    return paragraph;
+  }));
+}
 byId("changed-hint").hidden = !DATA.documents.some((item) => item.changed.length);
 byId("removed-hint").hidden = !DATA.documents.some((item) => (item.removed || []).length);
 if (DATA.base) {
@@ -683,6 +796,9 @@ byId("compare").checked = compare;
 byId("compare").onchange = () => {
   compare = byId("compare").checked;
   localStorage.setItem("annotate:compare", String(compare));
+  // Off falls back to the newer version, never the baseline the pair was showing beside it.
+  const sibling = siblingOf(documentAt());
+  if (!compare && sibling && isBaseline(documentAt())) current = DATA.documents.indexOf(sibling);
   closeEditor(); render();
 };
 
