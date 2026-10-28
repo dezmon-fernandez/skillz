@@ -30,6 +30,10 @@ Lines changed since that ref are highlighted, and removed lines show where they 
 approves what they leave alone. Revert what they reject with git. Never only describe an edit in the terminal when
 the page can show it.
 
+The developer can send one comment at a time. That Send wakes you with only that comment, while its card shows a
+loader. Handle it, then reopen with the same command. With `--base`, the page marks what changed in that round apart
+from older changes, animates it in and scrolls to it. Their unsent comments follow their lines through your edit.
+
 It prints the page's address and serves until the developer presses Send. Then it prints the comments and exits,
 and that exit is what wakes you. Give the developer the address and end your turn. Don't poll, and don't start on
 the work the comments are for. Your own guess at their comments is not their comments.

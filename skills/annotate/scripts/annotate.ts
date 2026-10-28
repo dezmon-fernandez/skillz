@@ -81,18 +81,18 @@ function textAtRef(path: string, ref: string): string {
 }
 
 function readDocument(source: Source, text: string, base: string | null) {
-  let previous: string | null = null;
-  if (base) {
-    previous = textAtRef(source.path, base);
-  } else {
-    try {
-      previous = readFileSync(snapshotOf(source.path), 'utf8');
-    } catch {
-      // Never sent before, so nothing counts as changed.
-    }
+  let sent: string | null = null;
+  try {
+    sent = readFileSync(snapshotOf(source.path), 'utf8');
+  } catch {
+    // Never sent before, so nothing counts as changed since a Send.
   }
   const lines = linesOf(text);
-  const diff = previous === null ? { changed: [], removed: [] } : diffLines(previous === '' ? [] : linesOf(previous), lines);
+  const against = (previous: string | null) =>
+    previous === null ? { changed: [], removed: [] } : diffLines(previous === '' ? [] : linesOf(previous), lines);
+  // Without --base the two are the same: everything changed is from the last round.
+  const diff = against(base ? textAtRef(source.path, base) : sent);
+  const latest = base ? against(sent) : diff;
   return {
     // The text's hash is part of the id, so comments made on a version the agent has since edited no longer match.
     id: source.title + '@' + hash(text),
@@ -101,7 +101,9 @@ function readDocument(source: Source, text: string, base: string | null) {
     title: source.title,
     lines,
     changed: diff.changed,
-    removed: diff.removed
+    removed: diff.removed,
+    latest: latest.changed,
+    latestRemoved: latest.removed
   };
 }
 
