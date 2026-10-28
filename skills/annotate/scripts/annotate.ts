@@ -3,16 +3,21 @@
 // the developer presses Send. That exit is what tells the agent to act.
 //
 //   node --no-warnings .claude/skills/annotate/scripts/annotate.ts <file.md> [more.md ...]
+//   node --no-warnings .claude/skills/annotate/scripts/annotate.ts --base <git ref> <file.md> [more.md ...]
 //   node --no-warnings .claude/skills/annotate/scripts/annotate.ts <iteration-folder>
+//
+// With --base, each file's changes are shown against its text at that git ref instead of at the last Send, so an
+// edit proposed in the working tree shows as changed and removed lines before anything is committed.
 //
 // It listens on 127.0.0.1 only, and the page makes no other network calls.
 
+import { execFileSync } from 'node:child_process';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
-import { changedLines } from './changed-lines.ts';
+import { diffLines } from './changed-lines.ts';
 import { imageFile } from './image-file.ts';
 
 interface Source {
@@ -31,17 +36,28 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex').s
 const snapshotOf = (path: string) => join(snapshots, hash(resolve(path)) + '.md');
 const linesOf = (text: string) => text.replace(/\n$/, '').split('\n');
 
+// <eval>/<version>/outputs/<file>.md, or <eval>/<version>/run-<n>/outputs/<file>.md when each version ran more than
+// once. The same run number of each version shares a group, so the two sit side by side.
 function evalSources(iteration: string): Source[] {
   return readdirSync(iteration, { recursive: true, encoding: 'utf8' })
     .map((path) => path.split('/'))
-    .filter((parts) => parts.length === 4 && parts[2] === 'outputs' && parts[3].endsWith('.md'))
+    .filter(
+      (parts) =>
+        parts.at(-2) === 'outputs' &&
+        parts.at(-1)!.endsWith('.md') &&
+        (parts.length === 4 || (parts.length === 5 && /^run-\d+$/.test(parts[2])))
+    )
     .sort((first, second) => first.join('/').localeCompare(second.join('/')))
-    .map(([evaluation, version, , file]) => ({
-      path: join(iteration, evaluation, version, 'outputs', file),
-      group: evaluation + '/' + file,
-      version,
-      title: `${evaluation}/${file} (${version.replaceAll('_', ' ')})`
-    }));
+    .map((parts) => {
+      const [evaluation, version] = parts;
+      const file = evaluation + '/' + (parts.length === 5 ? parts[2] + '/' : '') + parts.at(-1);
+      return {
+        path: join(iteration, ...parts),
+        group: file,
+        version,
+        title: `${file} (${version.replaceAll('_', ' ')})`
+      };
+    });
 }
 
 function fileSources(paths: string[]): Source[] {
@@ -51,14 +67,32 @@ function fileSources(paths: string[]): Source[] {
   });
 }
 
-function readDocument(source: Source, text: string) {
-  let previous: string | null = null;
+// The file's text at a git ref, or '' when the ref does not have the file, so every line counts as new.
+function textAtRef(path: string, ref: string): string {
   try {
-    previous = readFileSync(snapshotOf(source.path), 'utf8');
+    return execFileSync('git', ['-C', dirname(path), 'show', `${ref}:./${basename(path)}`], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore']
+    });
   } catch {
-    // Never sent before, so nothing counts as changed.
+    execFileSync('git', ['-C', dirname(path), 'rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { stdio: 'ignore' });
+    return '';
+  }
+}
+
+function readDocument(source: Source, text: string, base: string | null) {
+  let sent: string | null = null;
+  try {
+    sent = readFileSync(snapshotOf(source.path), 'utf8');
+  } catch {
+    // Never sent before, so nothing counts as changed since a Send.
   }
   const lines = linesOf(text);
+  const against = (previous: string | null) =>
+    previous === null ? { changed: [], removed: [] } : diffLines(previous === '' ? [] : linesOf(previous), lines);
+  // Without --base the two are the same: everything changed is from the last round.
+  const diff = against(base ? textAtRef(source.path, base) : sent);
+  const latest = base ? against(sent) : diff;
   return {
     // The text's hash is part of the id, so comments made on a version the agent has since edited no longer match.
     id: source.title + '@' + hash(text),
@@ -66,7 +100,10 @@ function readDocument(source: Source, text: string) {
     version: source.version,
     title: source.title,
     lines,
-    changed: previous === null ? [] : changedLines(linesOf(previous), lines)
+    changed: diff.changed,
+    removed: diff.removed,
+    latest: latest.changed,
+    latestRemoved: latest.removed
   };
 }
 
@@ -110,15 +147,21 @@ function reply(response: ServerResponse, status: number, body: string | Buffer, 
 }
 
 async function main() {
-  const targets = process.argv.slice(2).map((target) => resolve(target));
-  if (!targets.length) {
-    console.error('Usage: annotate.ts <file.md> [more.md ...] | <iteration-folder>');
+  const args = process.argv.slice(2);
+  const base = args[0] === '--base' ? args[1] ?? '' : null;
+  const targets = args.slice(base === null ? 0 : 2).map((target) => resolve(target));
+  if (!targets.length || base === '') {
+    console.error('Usage: annotate.ts [--base <git ref>] <file.md> [more.md ...] | <iteration-folder>');
     process.exit(1);
   }
   const iteration = targets.length === 1 && statSync(targets[0]).isDirectory() ? targets[0] : null;
+  if (iteration && base) {
+    console.error('--base works on files, not an iteration folder');
+    process.exit(1);
+  }
   const sources = iteration ? evalSources(iteration) : fileSources(targets);
   if (!sources.length) {
-    console.error(`No <eval>/<version>/outputs/*.md files under ${iteration}`);
+    console.error(`No <eval>/<version>/[run-<n>/]outputs/*.md files under ${iteration}`);
     process.exit(1);
   }
 
@@ -127,8 +170,14 @@ async function main() {
   const token = randomBytes(16).toString('base64url');
   const session = randomBytes(8).toString('hex');
   const texts = sources.map((source) => readFileSync(source.path, 'utf8'));
-  const documents = sources.map((source, index) => readDocument(source, texts[index]));
-  const data = JSON.stringify({ name, key, token, session, documents }).replaceAll('</', '<\\/');
+  let documents;
+  try {
+    documents = sources.map((source, index) => readDocument(source, texts[index], base));
+  } catch {
+    console.error(`--base ${base}: no such commit, or a file is outside a git repo`);
+    process.exit(1);
+  }
+  const data = JSON.stringify({ name, key, token, session, base, documents }).replaceAll('</', '<\\/');
   const escapedName = name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   const page = readFileSync(join(import.meta.dirname, 'annotate.html'), 'utf8')
     .replace('__DATA__', () => data)

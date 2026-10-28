@@ -2,90 +2,109 @@
 name: decompose-feature-v2
 disable-model-invocation: true
 description: >-
-  Break a feature too large for one plan into a roadmap of dependency-ordered slices,
-  each one plan's worth of work: as large as the developer can still read in full, and
-  never too small to carry a plan. Writes .agents/roadmaps/<feature>.md, a working document that
-  carries the effort's background and working rules across context clears. Use when asked
-  to "decompose this feature", "break this into slices", "roadmap this", or when a feature
-  is too big to plan in one pass.
+  Break a feature too large for one plan into a roadmap: what is being built, why, and how
+  the work splits into user stories in build order, each one plan's worth of work, with its
+  high-level requirements and the questions its plan must answer. Writes
+  .agents/roadmaps/<feature>.md, a working document that carries the effort's goal and
+  working rules across context clears. Use when asked to "decompose this feature", "break
+  this into stories", "roadmap this", or when a feature is too big to plan in one pass.
 argument-hint: "[feature, PRD section, or feature-idea doc]"
 ---
 
-# decompose-feature-v2: a roadmap of slices, each one plan's worth
+# decompose-feature-v2: a roadmap of user stories, each one plan's worth
 
 ## Feature: $ARGUMENTS
 
-Break a feature into slices and the order to build them. A slice is one plan's worth of
-work: it ships and stands on its own, and it changes about six to twenty source files,
-tests aside. Cut as few slices as that size allows. Built in order, each slice is planned
-against what the earlier ones actually landed, not a guess made up front.
+Break a feature into user stories and the order to build them. The roadmap answers three
+things: what is being built, why, and how the work splits. Research and discovery belong to
+each story's plan, not here. The developer reads the roadmap to agree what gets built and
+in what order, so each story must read at a glance. A wrong roadmap sends every later plan
+the wrong way.
 
-A slice entry says **what it develops, the problem it solves, and the constraints it must
-respect**, and stops there. No signatures, data shapes, enums, file layout, or tests.
-Deciding how to build a slice is `/generate-plan-v2`'s job, and the plan finds what to read on
-its own. Write each entry to be read at a glance: plain words, one idea per line, the
-deliverable first. An entry that needs a wall of detail is two slices, or you have started
-planning it.
+A story is one part of the feature that one plan builds. It ships and stands on its own,
+and it changes about six to twenty source files, tests aside. Cut as few stories as that
+size allows. Built in order, each story is planned against what the earlier ones landed.
 
-A slice is the right size when the developer can read every file it changes in one
-sitting, and its result is something a user or a caller can observe.
+A story says **who wants what and why, what must be true when it is done, and what its plan
+must find out**, and stops there. No research findings: no measured facts, costs, or code
+details. No signatures, data shapes, file layout, or tests. No decisions either: deciding
+how to build a story is `/generate-plan-v2`'s job, after its own research, and it puts the
+decisions to the developer there.
 
-The roadmap is a working document, not just an ordered list. Sessions run off it across
-context clears, so it carries the effort's evidence, design voice, and working rules inline.
-**Everything load-bearing lives in the roadmap itself, never behind a pointer.** A session
-reliably acts on what the document holds. It may never open what the document only links to.
+**Write in plain words.** Name the thing itself. No metaphors and no jargon. A term the repo
+defines may be used as the repo defines it.
+
+- ❌ `Keystone: the load-bearing deliverable.`
+- ✅ `Goal: an owner can archive a record from the list.`
 
 ## Process
 
 ### 1. Understand the feature
 
-- **Keystone**: the one deliverable this feature exists to produce.
-- **Inviolable property**: the correctness rule that must hold at every step. Take it from
-  the repo's rules (CLAUDE.md) and PRD. Do not invent it. Slice 1 proves it, and every later
-  slice preserves it.
-- **Docs to read before planning**: the design or PRD sections a slice's plan should start
-  from. One list in the Keystone, not a field on every slice.
-- **Engineering focus**: the one architectural theme the effort serves, and the naming
-  discipline its code holds to. Without it, each session picks its own design voice.
-- **Background**: the measured facts, numbers, and problem theory the effort rests on,
-  carried in full (tables, rates, dates). Never a pointer to another document or to this
-  session's memory. The session that picks up a slice has neither.
+- **Goal**: the one result this feature exists to produce, in the developer's words where
+  they gave them.
+- **Correctness rule**: the rule that must hold at every step. Take it from the repo's rules
+  (CLAUDE.md) and requirements document (PRD). Do not invent it.
+- **Scout the codebase to size and split, nothing else.** Send one `codebase-scout-agent-v2`
+  the feature as the developer gave it, word for word. Its route, file counts, and slices
+  show what exists today and how big each story is. Use them to cut and order the stories.
+  Copy none of its findings into the roadmap. Send no other agent, and do not search
+  further yourself. A question about an outside source, such as an external service, a
+  data provider, or a library, is an open question on the story that needs it.
 
-### 2. Cut the slices
+### 2. Cut the stories
 
-- **Slice 1 proves the inviolable property** end to end with the fewest moving parts. Widen
-  from there.
-- **Size each slice before you keep it.** Estimate the source files it will change, tests
-  aside. More than about twenty is two slices, because the developer will not read a
-  change that size. Fewer than about six is no slice: fold it into the slice that needs
-  it. A mechanical change, such as a rename, counts as one file.
-- **Code ships with its first caller.** A slice that adds something nothing calls yet is
-  too small to judge. Its pure core and the shell with the side effects are one slice.
-- **Independent units before integrators.** Slices with no upstream dependency come first.
-  The slice that wires them together comes last.
-- **Settle the irreversible early.** A decision everything downstream depends on, such as a
-  key type every reference uses, is made and reviewed before anything builds on it. A
-  decision that can be reshaped later from data already in hand can wait.
-- **Cut against what exists. Do not assume.** Build on the modules you already know. Where
-  it is unclear whether something exists yet, record a sequencing question instead of
-  guessing. Deep code discovery is the plan's job, not the roadmap's.
+- **The first story proves the correctness rule** end to end with the fewest moving parts.
+  Exception: when waiting loses something that cannot be recovered later, such as data that
+  is not being recorded, the story that stops the loss goes first and proves the rule on its
+  own path. It needs no other story and holds only what stops the loss, even when that is
+  under six files. Folded into a larger story, it waits on that story's dependencies, and
+  the loss continues. The roadmap says why it goes first.
+- **Size each story before you keep it.** More than about twenty source files is two
+  stories, because the developer will not read a change that size. Fewer than about six is
+  no story: fold it into the story that needs it. A mechanical change, such as a rename,
+  counts as one file.
+- **Code ships with its first caller.** A story that adds something nothing calls yet is too
+  small to judge. Its pure core and the code with the side effects are one story.
+- **Independent stories come before the stories that combine them.**
+- **Settle what everything depends on first.** A story whose open question decides something
+  every later story builds on, such as the id every record is keyed on, comes before them.
+- **Build on what exists. Do not assume.** Where it is unclear whether something exists,
+  make it an open question instead of guessing.
 
-### 3. Sequence and check
+### 3. Fill each story
 
-- Order by dependency. Mark each slice independent, or an integrator of the slices it names.
-- Each slice ends shippable, ends with the test suite green, and stays inside the size.
-  Split one that passes it. Fold one that falls short.
-- Each entry stays at the develops / solves / constraints altitude. A signature, data shape,
-  enum, or test that crept in belongs in the plan. Cut it from the roadmap.
-- Read every entry as the session that will plan it, holding only the roadmap and the repo.
-  Anything it would have to ask is a missing sentence. "As discussed" or "see above" is a
-  pointer to replace with the fact itself.
+- **Requirements**: what must be true when the story is done, as outcomes a person can
+  check. The first says what the story produces and where it goes, in positive words, and
+  names the later story that uses it. A story described only by what it does not do leaves
+  the reader asking where its output went. Include the repo rules the story must keep.
+  Everything the developer asked for is a requirement, stated as they asked it, never an
+  open question.
+  - ❌ `It creates no customer or order records.`
+  - ✅ `It saves each incoming message, as received, in one inbox table. Story C turns them
+    into orders.`
+- **Open questions**: what this story's plan must find out, as questions only, with no
+  findings. A choice that is hard to reverse or spends money is written here as a
+  question, never answered here.
+  - ❌ `Which export format? Research found the vendor's CSV drops the time zone.`
+  - ✅ `Which export format keeps the time zone?`
+- An open question that affects several stories goes on the first story that needs it.
+  Later stories say they use what that story settled.
+- **A story reads in under a minute, about 25 lines at most.** A longer story is carrying
+  plan detail: cut it. The plan finds it.
+
+### 4. Check the order
+
+- Order by what each story needs. Mark each story independent, or name the stories it needs.
+- Each story ends shippable, with the test suite green, inside the size.
+- Read every story as the session that will plan it, holding only the roadmap and the repo.
+  Anything it would have to ask is a missing sentence.
 
 ## Output
 
 Fill in `references/roadmap-template.md` and write it to `.agents/roadmaps/<feature>.md`.
-Create the directory if missing. The template's "How to work this roadmap" section is
-verbatim. Copy it word for word into every roadmap. Every box starts unchecked.
+Create the directory if missing. Copy the template's "How to work this roadmap" word for
+word. Every box starts unchecked.
 
 Those working rules send the executing sessions to `/generate-plan-v2` and `/prime`. If the
 repo lacks either skill, keep the rules as written and say so in the report. Do not rewrite
@@ -93,20 +112,38 @@ them around a substitute.
 
 ## Quality criteria
 
-- [ ] The keystone and inviolable property trace to the repo's rules and PRD.
-- [ ] Slice 1 proves the inviolable property end to end.
-- [ ] Each slice ends shippable and green, and changes about six to twenty source files.
-- [ ] Slices are ordered by dependency, and irreversible decisions come first.
-- [ ] Each entry says what it develops, what it solves, and its constraints, and stops.
-- [ ] The Background carries its evidence in full. A stranger holding only this file and the
-      repo has everything load-bearing.
-- [ ] The Engineering focus names the theme and the naming discipline.
+- [ ] The goal and the correctness rule trace to the repo's rules and requirements.
+- [ ] One scout sized and split the stories. Every question about an outside source is an
+      open question on its story.
+- [ ] The roadmap holds no research findings: no measured facts, costs, or code details.
+- [ ] The first story proves the correctness rule, or it stops a loss, needs no other story,
+      and the roadmap says why it goes first.
+- [ ] Every story reads "As <user>, I want <what>, so that <why>", with requirements a person
+      can check.
+- [ ] Each story changes about six to twenty source files and ends shippable and green.
+- [ ] Every story's first requirement says what it produces, where it goes, and which later
+      story uses it.
+- [ ] Each story reads in under a minute, about 25 lines at most.
+- [ ] Every open question sits on the first story that needs it, as a question, not a
+      decision or a finding.
+- [ ] Plain words throughout: no metaphors, and no jargon the repo does not define.
 - [ ] "How to work this roadmap" is verbatim, and every box is unchecked.
 
 ## Report
 
-- The slice count and the build order: which slices are independent, which integrate.
-- Each slice's estimated source files.
-- The first slice to run.
-- Any slice outside the size, or drifted into implementation detail. It needs splitting,
-  folding, or trimming.
+Print the roadmap's top lines, copied from the file, never reworded: the Goal section, the
+"Stories in build order" list, and each story's "As <user>, I want <what>, so that <why>"
+line under its name. The developer reads the rest in the file. A reworded report is a
+second version that can disagree with the file.
+
+Then add only:
+
+- The first story to build, and why it goes first.
+- Any story outside the size.
+- The path the roadmap was written to.
+
+## Note
+
+Sizing uses the `codebase-scout-agent-v2` agent, installed alongside this skill. If it is
+missing, say so and stop. Do not scout in this session instead: the sizes would look
+measured when they are not.
