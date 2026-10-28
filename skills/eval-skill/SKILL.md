@@ -28,8 +28,9 @@ check and grade you produce is a suggestion until they confirm it.
 - Never compare without the sandbox. A run that can read other folders can find an earlier
   answer, and its content checks then measure that answer.
 - Optional: `skill-creator`. When installed, use its test-case folder format, its grader
-  instructions (`agents/grader.md`), and its benchmark script. Without it, use the shapes
-  below.
+  instructions (`agents/grader.md`), and its benchmark script. Without it, use the folder
+  shapes below, brief each grader yourself to grade every judgment check pass or fail with
+  a quote, and count the passes per version and per run.
 - Optional: the `annotate` skill. When installed, the developer comments in it.
 
 ## Two ways to test
@@ -94,13 +95,13 @@ A real-work session the developer judged becomes the test case for the compariso
   the old version can never pass it, whatever it found.
 - Mark each check as one a script can decide, or one that needs judgment.
 - **Behavior checks are scripts** over the run's record: the agents it started, the tools
-  it called, what it asked, the files it wrote. Never give a judge the record: on a long run
+  it called, what it asked, the files it wrote. Never give a grader the record: on a long run
   it sees only part. Write each as a range or an outcome, never an exact list of steps. The
   same request takes different valid paths.
   - ❌ `The run makes exactly 9 tool calls, in this order.`
   - ✅ `The run starts one scout agent and no other research agent.`
 - **Prose checks that are a list or a number are scripts**: banned words, lines per section,
-  text copied word for word. A judge decides only what no list catches, such as a new
+  text copied word for word. A grader decides only what no list catches, such as a new
   metaphor.
 - Start with a few checks. Each later round adds one check per kind of failure the
   developer's comments name.
@@ -138,14 +139,14 @@ A real-work session the developer judged becomes the test case for the compariso
 - Send each run's outputs to its own grader agent, unlabeled, so it cannot tell which
   version it is reading. It grades each judgment check with a quote, and says which checks
   are weak.
-- Run graders on a different model from the one that ran the skill. A judge rates its own
+- Run graders on a different model from the one that ran the skill. A grader rates its own
   model's writing higher.
 - A check whose grader disagreed with the developer gets a grader of its own next round.
 - A check that locks a behavior in passes only when every run passes it. Show each check
   run by run, never as an average. A behavior that holds in 2 runs of 3 is not locked.
-- Put the results on one page, never as a wall of terminal text: the score per version,
-  each check for every run, and the main difference side by side. Then judge by comment,
-  below.
+- Put the results on a results page, never as a wall of terminal text: the score per
+  version, each check for every run, and the main difference side by side. The comments
+  happen on a second page, below.
 
 ## Judge by comment
 
@@ -173,7 +174,8 @@ Both ways of testing end here.
 4. **The developer's Send is the decision.** No comment on a change approves it. A comment
    changes it or drops it. Revert every rejected edit from git. Nothing is committed
    without their yes.
-5. **Record** each comment, its decision, and what the next round changes.
+5. **Record** each comment, its decision, and what the next round changes, in that round's
+   `comments.md` (see Where things live).
 
 - ❌ `Comment 3: story C is too long. I'd add a five-line limit. Approve?`
 - ✅ The sentence is in the skill file, uncommitted, open in `annotate` against the last
@@ -190,17 +192,24 @@ evals/
   cases/<case>/        prompt.md, case.yaml, graders/, case.env, README.md
   <skill>-workspace/iteration-<N>/
     comments.md        each comment, its decision, and what the next round changes
-    <case>/<old_skill | with_skill>/
-                       outputs/, run.json, timing.json, grading.json, sandbox.json,
-                       denials.json, sandbox-blocks.txt, outside-reads.txt
+    <case>/<old_skill | with_skill>/run-<n>/
+                       outputs/, prompt.txt, version.txt, run.json, timing.json,
+                       grading.json, sandbox.json, denials.json, sandbox-blocks.txt,
+                       outside-reads.txt, transcript.jsonl, subagents/
+  <skill>-workspace/real-work-<date>/
+    comments.md        the same, for a session on real work
 ```
 
-`case.env` names the repo, the commit, what a run installs and may use, and the hosts its
-shell commands may reach. The script's header gives its fields.
+- `prompt.md`: the request, word for word.
+- `case.yaml`: the case's name and what a good result looks like.
+- `graders/`: one file per check, holding its type (`script` or `llm`) and its sentence.
+- `README.md`: where the request came from, and what a run can still reach.
+- `case.env`: the repo, the commit, what a run installs and may use, and the hosts its
+  shell commands may reach. The script's header gives its fields.
 
 ## Report
 
 - Trying it on real work: each worktree's folder, branch, and the command to start.
-- Comparing: the page's link, the score per version, and the decisions still open for the
-  developer.
+- Comparing: the results page's link, the comment page's address, the score per version,
+  and the decisions still open for the developer.
 - After the comments: the list of entries, each to approve or reject.
