@@ -107,9 +107,9 @@ the file, and why.
 
 **Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
 preference, and open architecture choice, and add each report's `Open Choices`. Resolve them
-all at the Decision Gate, after research has taught you how to ask each one well. The one
-exception is an ambiguity that blocks the research itself, such as not knowing which
-subsystem to study.
+all at the Decision Gate, after research has taught you how to ask each one well. The
+exceptions block the research itself: an ambiguity such as not knowing which subsystem to
+study, and a sample that costs money or needs a key (Phase 3).
 
 ### Phase 3: External research
 
@@ -136,7 +136,7 @@ section-anchored link with the exact thing it documents and why.
 - Settle every `Unverified` item the plan depends on. Resume the agent that reported it and
   ask. Never cite it in the plan as fact.
 - A reference labeled `verify empirically`, and any item reading cannot settle, becomes a
-  check in the plan's `## Prerequisite` section.
+  sample (below).
 - Where sources disagree with each other or with the code, the report lists it under
   `Open Choices`. Take it to the Decision Gate.
 - Record each reference in the plan with *why* the executor needs it.
@@ -144,6 +144,18 @@ section-anchored link with the exact thing it documents and why.
 Research is the default. Skip a topic only when you can name the `file:line` where the
 codebase already calls the exact API the feature will use. An installed library is not a
 reason to skip. When unsure, dispatch.
+
+**Sample what the design rests on.** Where it rests on what real data or a live service
+returns, such as a payload's shape, the names it uses, or how many rows a query reads,
+sample it, read-only. Never write anything to do it.
+
+- **Free and needs no key or credentials:** take it now, yourself.
+- **Costs money, or needs a key or credentials:** ask the developer now, before the Decision
+  Gate. Say what it settles, what it costs, and what it needs from them. On a yes, take it.
+- **Declined, or it cannot be taken:** it becomes a check in the plan's `## Prerequisite`
+  section, and the build waits for it.
+
+Never choose a design because it works without the fact. That design is a guess.
 
 ### Phase 3.5: Decision Gate (mandatory)
 

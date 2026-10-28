@@ -21,6 +21,13 @@ Read all of it: the tasks and their dependencies, the CONTRACT, the edge cases, 
 strategy, and every validation command. Then read the files the plan lists as mandatory
 reading. Do this before you write anything.
 
+Then confirm each condition under `## Prerequisite`, with the command or the state the plan
+names. One that does not hold stops the build before any code: say which and why, and ask
+the developer. Never build past it.
+
+- ❌ `Built every task, then listed the unmet prerequisite under Deviations.`
+- ✅ `Stopped before Task 1: the prerequisite's check fails. Asked the developer how to proceed.`
+
 ### 2. Do the tasks in order
 
 For each task, top to bottom:

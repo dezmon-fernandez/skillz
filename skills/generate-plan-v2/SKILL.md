@@ -92,9 +92,20 @@ yourself first.
    the exact API the feature will use. An installed library is not a reason to skip. When
    unsure, dispatch.
 5. **Sample real data.** Where the design rests on what real data or a live service
-   returns, such as a payload's shape or how many rows a query reads, sample it now
-   yourself, read-only. Never spend a metered call or write anything to do it. What you
-   cannot sample that way becomes a check in the plan's `## Prerequisite` section.
+   returns, such as a payload's shape, the names it uses, or how many rows a query reads,
+   sample it, read-only. Never write anything to do it.
+   - **Free and needs no key or credentials:** take it now, yourself.
+   - **Costs money, or needs a key or credentials:** ask the developer now, before
+     anything is designed. Say what it settles, what it costs, and what it needs from
+     them. On a yes, take it.
+   - **Declined, or it cannot be taken:** it becomes a check in the plan's
+     `## Prerequisite` section, and the build waits for it.
+
+   Never choose a design because it works without the fact. That design is a guess.
+
+   ❌ `The service's spelling of one name is unknown, so names match on their last word.`
+
+   ✅ `The service's names need its key. Asked; the developer approved the free call, and names match the measured list exactly.`
 
 **Check every report before you use it.**
 
@@ -115,8 +126,9 @@ yourself first.
 
 **Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
 preference, and open architecture choice, and add each report's `Open Choices`. Phase 3
-resolves them all. The one exception is an ambiguity that blocks the research itself, such
-as a scout's report that shows the feature could land in two different places.
+resolves them all. The exceptions block the research itself: an ambiguity such as a scout's
+report that shows the feature could land in two different places, and a sample that costs
+money or needs a key (step 5).
 
 **Research is done when** every section of the plan's Design part can be filled from a
 report line, a file you read, or a sample you took. A section you would have to guess is a
