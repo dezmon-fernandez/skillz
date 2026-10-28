@@ -11,6 +11,8 @@
     --accent: #c25e00; --tint: #f9ece0; --flash: #ffe58a; --card: #ffffff; --quoted: #333; --good: #2e7d32;
     --link: #1565c0; --code: #f1f3f5; --changed: #e6f4e8; --changed-border: #2e7d32; --removed: #fbeaea; --removed-border: #c62828;
     --shadow: rgba(0, 0, 0, .06); --shadow-strong: rgba(0, 0, 0, .15);
+    --tok-keyword: #8250df; --tok-string: #116329; --tok-comment: #6e7781; --tok-function: #0550ae;
+    --tok-type: #953800; --tok-number: #0550ae; --tok-placeholder: #9a6700;
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
@@ -19,6 +21,8 @@
     --accent: #e8822a; --tint: #3a2a1d; --flash: #6b5a12; --card: #1f232b; --quoted: #c9ccd1; --good: #66bb6a;
     --link: #90caf9; --code: #262b34; --changed: #1d3322; --changed-border: #66bb6a; --removed: #3a1e1e; --removed-border: #ef5350;
     --shadow: rgba(0, 0, 0, .4); --shadow-strong: rgba(0, 0, 0, .6);
+    --tok-keyword: #d2a8ff; --tok-string: #7ee787; --tok-comment: #8b949e; --tok-function: #79c0ff;
+    --tok-type: #ffa657; --tok-number: #79c0ff; --tok-placeholder: #e3b341;
   }
   body { margin: 0; font: 14px/1.5 -apple-system, system-ui, sans-serif; display: grid; grid-template-columns: 280px 1fr; height: 100vh; background: var(--bg); color: var(--fg); }
   nav { border-right: 1px solid var(--border); overflow: auto; padding: 12px; background: var(--panel); }
@@ -47,6 +51,19 @@
   .md-marker { color: var(--muted); margin-right: .45em; }
   .md-code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
   .md-fence { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: var(--code); }
+  /* A diagram may spread into the comment margin beside it, which holds no card: cards sit
+     beside numbered rows. One wider than both columns is scaled down to fit. */
+  .body { --diagram-reach: 364px; }
+  #sheets.compare .body { --diagram-reach: 236px; }
+  .md-diagram { box-sizing: border-box; width: max-content; max-width: calc(100% - 1.8em - 2.5em - 32px + var(--diagram-reach)); margin: 6px 0 2px calc(1.8em + 2.5em + 32px); padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; }
+  .md-diagram svg { display: block; max-width: 100%; height: auto; }
+  .tok-keyword, .tok-decorator { color: var(--tok-keyword); }
+  .tok-string { color: var(--tok-string); }
+  .tok-comment { color: var(--tok-comment); font-style: italic; }
+  .tok-function { color: var(--tok-function); }
+  .tok-type { color: var(--tok-type); }
+  .tok-number { color: var(--tok-number); }
+  .tok-placeholder { color: var(--tok-placeholder); font-style: italic; }
   .md-fence-mark, .md-muted { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
   .md-link { color: var(--link); text-decoration: underline; }
   .md-image { color: var(--muted); font-style: italic; }
@@ -251,19 +268,99 @@ function inlineMarkdown(text, state) {
   return nodes;
 }
 
+// Code-block highlighting, one row at a time. A string or comment left open at the end of a
+// row (a Python docstring, a /* block */) carries to the next row in `state.codeOpen`.
+const words = (list) => new Set(list.split(" "));
+const CODE = {
+  python: {
+    comment: "#", blocks: ['"""', "'''"],
+    keywords: words("and as assert async await break class continue def del elif else except False finally for from global if import in is lambda None nonlocal not or pass raise return True try while with yield match case"),
+    types: words("int str float bool bytes list dict set tuple object type date datetime timedelta"),
+  },
+  sql: {
+    comment: "--", blocks: ["/*"], caseless: true,
+    keywords: words("select from where and or not null is in as on join left right inner outer full cross group by order having limit offset insert into values update set delete create table alter add column drop index unique primary key references foreign default distinct union all case when then else end with returning exists between like conflict do nothing cast coalesce count sum min max now interval true false constraint check nulls asc desc if"),
+    types: words("text integer int bigint smallint serial bigserial boolean bool numeric decimal real date time timestamp timestamptz interval jsonb json uuid varchar char bytea"),
+  },
+  ts: {
+    comment: "//", blocks: ["/*"],
+    keywords: words("const let var function return if else for while do switch case break continue new class extends implements interface type enum import export from as async await try catch finally throw typeof instanceof in of null undefined true false this void public private protected readonly static default"),
+    types: words("string number boolean unknown never any object bigint symbol"),
+  },
+  shell: {
+    comment: "#", blocks: [],
+    keywords: words("if then else elif fi for in do done while until case esac function return export local set unset readonly source exit"),
+    types: words(""),
+  },
+};
+const CODE_LANGUAGE = {
+  python: "python", py: "python", sql: "sql", ts: "ts", typescript: "ts", tsx: "ts", js: "ts",
+  javascript: "ts", jsx: "ts", sh: "shell", bash: "shell", shell: "shell", zsh: "shell", console: "shell",
+};
+
+function highlightCode(text, state) {
+  const spec = CODE[state.language];
+  if (!spec) return [document.createTextNode(text || " ")];
+  const nodes = [];
+  let plain = "";
+  let at = 0;
+  const flush = () => { if (plain) nodes.push(document.createTextNode(plain)); plain = ""; };
+  const token = (kind, value) => { flush(); nodes.push(element("span", "tok-" + kind, value)); at += value.length; };
+  if (state.codeOpen) {
+    const end = text.indexOf(state.codeOpen.close);
+    if (end === -1) token(state.codeOpen.kind, text);
+    else { token(state.codeOpen.kind, text.slice(0, end + state.codeOpen.close.length)); state.codeOpen = null; }
+  }
+  while (at < text.length) {
+    const rest = text.slice(at);
+    const before = text.slice(0, at);
+    const opener = spec.blocks.find((mark) => rest.startsWith(mark));
+    let match;
+    if (rest.startsWith(spec.comment)) token("comment", rest);
+    else if (opener) {
+      const close = opener === "/*" ? "*/" : opener;
+      const kind = opener === "/*" ? "comment" : "string";
+      const end = rest.indexOf(close, opener.length);
+      if (end === -1) { token(kind, rest); state.codeOpen = { close, kind }; }
+      else token(kind, rest.slice(0, end + close.length));
+    } else if ((match = rest.match(/^(["'`])(?:\\.|(?!\1).)*\1?/))) token("string", match[0]);
+    // A template's `<placeholder>`, never a generic like Promise<void>.
+    else if (!/[\w)\]]$/.test(before) && (match = rest.match(/^<[a-z`(][^<>]*>/i))) token("placeholder", match[0]);
+    else if (state.language === "python" && (match = rest.match(/^@[\w.]+/))) token("decorator", match[0]);
+    else if (!/\w$/.test(before) && (match = rest.match(/^\d[\d_.]*/))) token("number", match[0]);
+    else if ((match = rest.match(/^[A-Za-z_]\w*/))) {
+      const word = match[0];
+      const key = spec.caseless ? word.toLowerCase() : word;
+      if (spec.keywords.has(key)) token("keyword", word);
+      else if (spec.types.has(key) || (!spec.caseless && /^[A-Z]/.test(word))) token("type", word);
+      else if (/^\s*\(/.test(rest.slice(word.length))) token("function", word);
+      else { plain += word; at += word.length; }
+    } else { plain += text[at]; at += 1; }
+  }
+  flush();
+  return nodes.length ? nodes : [document.createTextNode(" ")];
+}
+
 function markdownLine(text, state) {
   const span = element("span", "text");
   let match;
   if (!text.trim()) state.insideCodeSpan = false;
-  if ((match = text.match(/^\s*```\s*(\S*)/))) {
-    state.fence = !state.fence;
-    span.className = "text md-fence-mark";
-    span.textContent = state.fence ? match[1] || "code" : " ";
-    return span;
+  // A block closes only on a bare fence at least as long as the one that opened it, so a
+  // shorter or labelled fence inside a ```` block is that block's text, as in markdown.
+  if ((match = text.match(/^\s*(`{3,})\s*(\S*)/))) {
+    const closes = state.fence && !match[2] && match[1].length >= state.fence.length;
+    if (!state.fence || closes) {
+      state.fence = closes ? false : match[1];
+      state.language = closes ? null : CODE_LANGUAGE[match[2].toLowerCase()] || null;
+      state.codeOpen = null;
+      span.className = "text md-fence-mark";
+      span.textContent = state.fence ? match[2] || "code" : " ";
+      return span;
+    }
   }
   if (state.fence) {
     span.className = "text md-fence";
-    span.textContent = text || " ";
+    span.append(...highlightCode(text, state));
     return span;
   }
   if (/^\s*\|.*\|\s*$/.test(text)) {
@@ -305,9 +402,48 @@ function markdownLine(text, state) {
   return span;
 }
 
+// A ```mermaid block is drawn above its lines, which stay numbered and commentable. Mermaid
+// is served by the helper from its own folder, so the page still calls nothing outside this
+// machine. When it is missing, or a diagram does not parse, the block stays as its text.
+let mermaidLoaded = null;
+const drawnDiagrams = new Map();
+function loadMermaid() {
+  mermaidLoaded ??= new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "/mermaid.js";
+    script.onload = () => resolve(window.mermaid || null);
+    script.onerror = () => resolve(null);
+    document.head.append(script);
+  });
+  return mermaidLoaded;
+}
+
+async function drawDiagrams(diagrams) {
+  if (!diagrams.length) return;
+  const mermaid = await loadMermaid();
+  const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "default";
+  if (mermaid) mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme, flowchart: { htmlLabels: false, useMaxWidth: false, wrappingWidth: 320 } });
+  for (const diagram of diagrams) {
+    const source = diagram.lines.join("\n");
+    const key = theme + "\n" + source;
+    if (!drawnDiagrams.has(key) && mermaid && await mermaid.parse(source, { suppressErrors: true })) {
+      try {
+        drawnDiagrams.set(key, (await mermaid.render("diagram-" + drawnDiagrams.size, source)).svg);
+      } catch {
+        // Left as its text below.
+      }
+    }
+    if (drawnDiagrams.has(key)) diagram.figure.innerHTML = drawnDiagrams.get(key);
+    else diagram.figure.remove();
+  }
+  relayout();
+}
+
 function renderLines(container, item) {
   const list = notesOf(item);
-  const markdown = { fence: false, insideCodeSpan: false, imageBase: "/image/" + DATA.documents.indexOf(item) + "/" };
+  const diagrams = [];
+  let diagram = null;
+  const markdown = { fence: false, language: null, codeOpen: null, insideCodeSpan: false, imageBase: "/image/" + DATA.documents.indexOf(item) + "/" };
   const changed = new Set(item.changed);
   const removedAt = new Map((item.removed || []).map((block) => [block.at, block.lines]));
   const children = [];
@@ -326,6 +462,13 @@ function renderLines(container, item) {
   };
   item.lines.forEach((text, index) => {
     cut(index);
+    const opensDiagram = !markdown.fence && /^\s*`{3,}\s*mermaid\s*$/i.test(text);
+    if (opensDiagram) {
+      diagram = { figure: element("div", "md-diagram"), lines: [] };
+      diagrams.push(diagram);
+      table = null;
+      children.push(diagram.figure);
+    }
     const commented = list.some((note) => index >= note.start && index <= note.end);
     const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (commented ? " commented" : ""));
     row.dataset.index = index;
@@ -340,6 +483,10 @@ function renderLines(container, item) {
       gutter.append(badge);
     });
     const content = markdownLine(text, markdown);
+    if (diagram && !opensDiagram) {
+      if (markdown.fence) diagram.lines.push(text);
+      else diagram = null;
+    }
     row.append(gutter, element("span", "number", index + 1), content);
     if (content.matches(".md-fence, .md-fence-mark")) row.classList.add("md-block");
     if (!content.matches(".md-cells")) {
@@ -358,6 +505,7 @@ function renderLines(container, item) {
   });
   cut(item.lines.length);
   container.replaceChildren(...children);
+  drawDiagrams(diagrams);
 }
 
 function renderMargin(margin, lines, item) {

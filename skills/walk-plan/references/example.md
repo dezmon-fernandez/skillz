@@ -13,32 +13,16 @@ price quote now stops being honored 30 minutes after it is issued.
 
 ## Surface
 
-```
-NEW  POST /carts/{cart_id}/quote
+```python
+# NEW. Writes one quote. No outside call.
+# Answers 200 with the quote, its total and expiry; 404 when there is no such
+# cart; 409 when an item is out of stock, naming the first one.
+@router.post("/carts/{cart_id}/quote")
+def create_cart_quote(cart_id: int, context: AppContext) -> QuoteResponse
 
-  Reach     Writes one quote. No outside call.
-
-  Inputs    cart_id     the cart to price
-
-  Answers   200         the quote, with its total and expiry
-            404         no such cart
-            409         an item is out of stock; names the first one
-
-
-CHANGED  GET /quotes/{quote_id}
-
-  Now       answers 410 once the quote has expired; today, 200 forever
-```
-
-## Data
-
-```
-Migration   quote.expires_at    new column, nullable
-Writes      quote               one row per priced cart
-Reads       cart_item           what is in the cart, with unit prices
-            inventory           what is in stock
-            customer_order      the customer's earlier orders this year
-Relies on   the customer_order index (customer_id, placed_at)
+# CHANGED. Now answers 410 once the quote has expired; today, 200 forever.
+@router.get("/quotes/{quote_id}")
+def read_quote(...) -> QuoteResponse
 ```
 
 ## What else changes
@@ -60,24 +44,35 @@ Relies on   the customer_order index (customer_id, placed_at)
 
 ## The path
 
+```mermaid
+flowchart TD
+    post(["POST /carts/{cart_id}/quote"])
+    post --> items["fetch_cart_items() -> list[CartItem]"]:::reused
+    post --> stock["fetch_inventory() -> dict[int, int]"]:::reused
+    post --> count["count_orders_this_year() -> int<br/>the customer's orders since January 1"]
+    count --> price["price_cart() -> Quote<br/>stock check, subtotal, discount, expiry"]
+    price --> insert["insert_quote() -> int<br/>stores it, returns its id"]
+    insert --> response(["QuoteResponse"])
+    items -. reads .-> cart_item[("cart_item")]
+    stock -. reads .-> inventory[("inventory")]
+    count -. "reads by (customer_id, placed_at)" .-> customer_order[("customer_order")]
+    insert -- writes --> quote[("quote")]
+    items -- "no such cart" --> notfound(["404"]):::refused
+    price -- "an item is out of stock" --> outofstock(["409, naming the first item"]):::refused
+    classDef reused stroke-dasharray: 5 5
+    classDef refused stroke:#d32f2f,stroke-width:2px
 ```
-POST /carts/{cart_id}/quote
 
-1. count_orders_this_year   the customer's earlier orders      → order_count
-2. price_cart               stock check, subtotal, discount    → quote
-3. insert_quote             stores it with its expiry          → quote id
-
-→ QuoteResponse
-Reuses: fetch_cart_items, fetch_inventory
-```
-
-```
-GET /quotes/{quote_id}
-
-1. read_quote   refuses a quote past its expiry   → QuoteResponse, or 410
-
-→ QuoteResponse
-Reuses: fetch_quote
+```mermaid
+flowchart TD
+    get(["GET /quotes/{quote_id}"])
+    get --> read["read_quote() -> QuoteResponse<br/>refuses a quote past its expiry with 410"]
+    read --> fetch["fetch_quote() -> Quote"]:::reused
+    fetch -. reads .-> quote[("quote")]
+    read --> response(["QuoteResponse"])
+    read -- "past its expiry, or issued before expiries" --> expired(["410"]):::refused
+    classDef reused stroke-dasharray: 5 5
+    classDef refused stroke:#d32f2f,stroke-width:2px
 ```
 
 ## Functions

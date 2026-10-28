@@ -61,7 +61,7 @@ Take the plan's sections in the order it wrote them. Run these five checks on ea
 - A criterion with no task that delivers it.
 - A task that traces to no criterion (no `SATISFIES`, no `AC #n`).
 
-**2. False assumptions.** Look in `## CONTEXT REFERENCES` (`### Relevant codebase files: READ THESE BEFORE IMPLEMENTING`), `## Data`, `## Models` and `## Internal models` (the comment on each model).
+**2. False assumptions.** Look in `## CONTEXT REFERENCES` (`### Relevant codebase files: READ THESE BEFORE IMPLEMENTING`), `## The path` (what each step reads and writes), `## Models` and `## Internal models` (the comment on each model).
 
 - A claim the file itself contradicts.
 - A changed model whose consumers go unnamed.

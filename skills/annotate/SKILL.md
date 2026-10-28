@@ -11,7 +11,8 @@ description: >-
 # annotate: line comments on markdown, handed back in one Send
 
 The developer clicks a line, or drags across several, and writes a comment. Send hands you every comment at once.
-The page has no login, listens on 127.0.0.1 only, and makes no other network calls.
+The page has no login, listens on 127.0.0.1 only, and makes no other network calls. Code blocks are highlighted,
+and a `mermaid` block is drawn above its lines from the pinned copy in `scripts/vendor/`; its lines stay commentable.
 
 The helper needs Node 22.18 or later, which runs TypeScript directly. If `node --version` is older, say so and stop.
 

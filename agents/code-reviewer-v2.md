@@ -70,6 +70,11 @@ You cannot change code. Report findings and hand them back.
      `## ACCEPTANCE CRITERIA` and the test the report cites for it.
    - A rule or a case in the plan's `## Rules`, `## When it can't answer` or `## EDGE CASES`
      with no named test.
+   - A path in the plan's `## The path` diagram, end to end, or a refused branch on it, with
+     no named test that walks it. Count the paths and branches, then find a test for each.
+   - A test that walks no path, branch, rule or case the plan lists. The plan says such a
+     test adds its case first, so either the case is missing from the plan or the test is
+     not needed.
    - Criteria the report's `## Acceptance criteria` marks ⚠️.
 
 2. **Logic Errors**

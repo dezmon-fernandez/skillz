@@ -69,6 +69,11 @@ You cannot change code. Report findings and hand them back.
    - Tests that still pass with the feature deleted. Check each criterion in the plan's
      `## ACCEPTANCE CRITERIA` and the test the report cites for it.
    - Edge cases in the plan's `## CONTRACT` (`### Edge Cases`) with no named test.
+   - A path in the plan's `## The path` diagram, end to end, or a refused branch on it, with
+     no named test that walks it. Count the paths and branches, then find a test for each.
+   - A test that walks no path, branch, rule or case the plan lists. The plan says such a
+     test adds its case first, so either the case is missing from the plan or the test is
+     not needed.
    - Criteria the report's `## Acceptance criteria` marks ⚠️.
 
 2. **Logic Errors**

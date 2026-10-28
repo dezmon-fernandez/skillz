@@ -12,14 +12,14 @@ into a project and adapted there.
 | `create-prd` | Turn a conversation or notes into `.agents/PRD.md`, the source of truth `/prime` reads. |
 | `decompose-feature` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: dependency-ordered slices, one architecture decision each, with the background and working rules that carry the effort across context clears. |
 | `generate-plan` | Turn a feature request, ticket, or conversation into a context-rich implementation plan, settling every open question with the operator first. |
-| `walk-plan` | Render a developer's walkthrough of a plan so the design can be judged before anything is built: what gets built, the entry points, the data, the decisions, the call path, every function and model, and the rules traced on one worked value. Read-only. |
+| `walk-plan` | Render a developer's walkthrough of a plan so the design can be judged before anything is built: what gets built, the entry points, the data, the decisions, the call path, every function and model, and the rules traced on one worked value. Opens in annotate, so its diagrams draw. Changes nothing in the plan. |
 | `review-plan` | Gate before `execute-plan`: delegate the cold read to the `plan-reviewer` agent, relay every finding, and settle the decisions with the developer before revising the plan. |
 | `execute-plan` | Implement a plan task by task, validating each one, and write the execution report. |
 | `review-code` | Gate after `execute-plan`: delegate to the `code-reviewer` agent, save the report, triage the findings. |
 | `commit` | Stage the current work and write one atomic commit in the repo's own convention. |
 | `hooks-create` | Author a working hook from a plain-English description, wire it in, and prove it fires. |
 | `review-prose` | Rewrite one skill, agent, or document in place so it is short and plain, keeping every rule and every name other files depend on. Invoked by hand. |
-| `annotate` | Open a local page where the developer comments line by line on markdown you are writing together, or on the outputs of a skill-creator eval iteration, then act on the comments when they press Send. Needs Node 22.18 or later. |
+| `annotate` | Open a local page where the developer comments line by line on markdown you are writing together, or on the outputs of a skill-creator eval iteration, then act on the comments when they press Send. Highlights code blocks and draws `mermaid` blocks from a bundled copy of Mermaid (MIT). Needs Node 22.18 or later. |
 | `eval-skill` | Test a change to a skill, with the developer as the judge: set up worktrees to try the new version on real work, or run the old and new versions on the same pinned request, each sandboxed so it cannot read other folders, and put the results side by side on one page. The developer comments on what needs to change, and every comment comes back as one list of edits to approve or reject. Uses `skill-creator` when installed. Invoked by hand, because every run spends the account's usage. |
 
 `handover` and `prime` are a pair: `handover` writes the file, `prime` consumes and deletes it.
@@ -31,7 +31,7 @@ is the feature loop; each step reads what the previous one wrote.
 writes a roadmap of slices, and each slice enters the loop at `generate-plan`.
 
 `walk-plan` sits beside the loop. Run it after `generate-plan` or after a plan is revised.
-It writes nothing.
+It changes nothing in the plan.
 
 ## Agents
 
@@ -56,7 +56,7 @@ siblings, so the two sets never mix. Once one set wins, the other is deleted.
 |-------|---------|
 | `decompose-feature-v2` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: what is being built, why, and how the work splits into user stories in build order, each one plan's worth of work, with its high-level requirements and the questions its plan must answer. No research findings: research and discovery belong to each story's plan. |
 | `generate-plan-v2` | Turn a feature request, ticket, or conversation into an implementation plan an executor can finish in one pass. The developer agrees the scope first, agents research, and the developer gives the go-ahead before the plan is written. The plan opens with a Design part the developer confirms before anything is built: what gets built, the acceptance criteria, the entry points, the data, the decisions, the call path, the models it serves and stores, and the rules traced on one worked value. |
-| `walk-plan-v2` | Print a plan's Design part so the design can be judged before anything is built, or write one for a plan that has none. Read-only. |
+| `walk-plan-v2` | Open a plan's Design part in annotate, with its diagrams drawn, so the design can be judged before anything is built, or write one for a plan that has none. Changes nothing in the plan. |
 | `review-plan-v2` | Gate before `execute-plan-v2`: delegate the cold read to the `plan-reviewer-v2` agent, revise the plan where a finding has one sound fix, and ask the developer only what is theirs to decide. The developer confirms the plan from its report before anything is built. |
 | `execute-plan-v2` | Implement a plan task by task, validating each one, and write the execution report. |
 | `review-code-v2` | Gate after `execute-plan-v2`: delegate to the `code-reviewer-v2` agent, save the report, fix every finding that has one sound fix, and ask the developer only what is theirs to decide. |

@@ -30,7 +30,8 @@ For each task, top to bottom:
 - **Follow the task exactly.** Its CONTRACT, IMPORTS, and GOTCHA fields are there because
   the planner already hit that problem.
 - **Write the task's tests as part of the task.** Write a named test for each edge case the
-  task owns, so its `VALIDATE` has something to run.
+  task owns, so its `VALIDATE` has something to run. Then break the line each test guards,
+  see the test fail, and restore the line. A test that still passes proves nothing: fix it.
 - **Run the task's `VALIDATE` before the next task.** Every task has one. The task is not
   done until it passes. If it fails, fix it now. Do not carry the failure forward. The full
   suite still runs in step 3, but this per-task check stops failures piling up there.
@@ -44,7 +45,7 @@ make it pass.
 ### 4. Final check
 
 - [ ] Every task completed, in order
-- [ ] Every acceptance criterion has a test that would fail without the feature
+- [ ] Every acceptance criterion has a test you saw fail
 - [ ] Every validation command passes
 - [ ] The code follows the conventions the plan cited
 - [ ] Docs updated where the plan called for it
@@ -65,7 +66,7 @@ accident.
 <What was built, 2-4 sentences.>
 
 ## Acceptance criteria
-1. ✅ <criterion>: <test file and test name, or the manual check performed>
+1. ✅ <criterion>: <test file and test name, and the line you broke to see it fail; or the manual check performed>
 2. ⚠️ <criterion>: <not proven, and why>
 
 ## Tasks completed

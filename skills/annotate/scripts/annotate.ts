@@ -139,6 +139,18 @@ function replyImage(response: ServerResponse, sources: Source[], url: string) {
   reply(response, 404, '{}');
 }
 
+// Mermaid draws the page's ```mermaid blocks. It ships beside this script, pinned, so the page
+// calls nothing outside this machine. Without the file the page leaves each block as its text.
+const MERMAID = join(import.meta.dirname, 'vendor', 'mermaid-11.17.2.min.js');
+
+function replyMermaid(response: ServerResponse) {
+  try {
+    reply(response, 200, readFileSync(MERMAID), 'text/javascript; charset=utf-8');
+  } catch {
+    reply(response, 404, '{}');
+  }
+}
+
 function reply(response: ServerResponse, status: number, body: string | Buffer, type = 'application/json') {
   response.writeHead(status, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(body) });
   response.end(body);
@@ -185,6 +197,7 @@ async function main() {
     if (request.method === 'GET' && request.url === '/') return reply(response, 200, page, 'text/html; charset=utf-8');
     if (request.method === 'GET' && request.url === '/ping') return reply(response, 200, JSON.stringify({ session }));
     if (request.method === 'GET' && request.url?.startsWith('/image/')) return replyImage(response, sources, request.url);
+    if (request.method === 'GET' && request.url === '/mermaid.js') return replyMermaid(response);
     if (request.method !== 'POST' || request.url !== '/send') return reply(response, 404, '{}');
 
     const { token: given, text, ...feedback } = JSON.parse((await readBody(request)) || '{}');

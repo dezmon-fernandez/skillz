@@ -10,11 +10,8 @@ is built. The executor builds from both.
   it.
 - Write every code block in the codebase's own language. The skeleton shows Python and
   SQL.
-- Keep every line of the Design part under 80 columns, inside code blocks too. The
-  developer may read it in a terminal, where a wider line wraps and breaks every block.
-  Move a trailing comment that does not fit to the line above its field.
-- The Design part names no source file, test, or line number, outside `## Prerequisite`.
-  The Build part carries those.
+- The Design part names no source file, test, or line number. The Build part carries
+  those.
 
 ---
 
@@ -29,6 +26,13 @@ Size: <N> entry points, <N> tables, <N> functions, <N> models
 
 <Two sentences in plain words: what exists afterwards that is not there
 today. No function or model name.>
+
+Like <the existing feature it copies>, except:
+
+- <one place it differs, and why, in one line>
+
+<When no existing feature is close, replace the list with one sentence on
+what it is built from.>
 
 As a <type of user>, I want to <action/goal>, so that <benefit/value>.
 
@@ -46,28 +50,16 @@ once written.>
 
 ## Surface
 
-```
-NEW  <a route, command, screen, job, event handler, or public function>
+```python
+# NEW. <What it may read, write, or call, and what a call costs.>
+# Answers <outcome> when <cause>; <outcome> when <cause>.
+<the line that registers it, as the codebase writes it: a route, a command, a job>
+def <name>(
+    <input>: <type> = <default>,   # <its bounds, or how it pairs with another>
+) -> <return type>
 
-  Reach     <what it may read, write, or call, and what a call costs>
-
-  Inputs    <input>       <bounds, default, or how it pairs with another>
-
-  Answers   <outcome>     <what causes it>
-
-
-CHANGED  <the entry point>
-
-  Now       <what a caller sees differently>
-```
-
-## Data
-
-```
-Migration   <none, or each table and column added or changed>
-Writes      <none, or each table, file, or cache and what is written to it>
-Reads       <table, file, cache, or service>    <what it holds for the feature>
-Relies on   <the key or index a new query needs>
+# CHANGED. Now <what a caller sees differently>.
+def <name>(...) -> <return type>
 ```
 
 ## What else changes
@@ -80,23 +72,22 @@ Relies on   <the key or index a new query needs>
 
 ## Decisions
 
-- Developer, <date>: **<what was chosen>**, not <what was rejected>.
-  <Why, in one sentence.>
-- On record, <its source>: **<what was already decided>**.
-- Planner: **<what was chosen>**, not <what was rejected>.
-  <Why, in one sentence.>
+- **<what was chosen>**, not <what was rejected>. <Why, in one sentence.>
 
 ## The path
 
-```
-<the request, command, or trigger, with its inputs>
-
-1. <function_name>   <what it does>   → <what it yields>
-2. <function_name>   <what it does>   → <what it yields>
-
-→ <what comes back, or what is written>
-Helpers: <new or changed functions the steps call, or none>
-Reuses: <existing functions this path calls unchanged, or none>
+```mermaid
+flowchart TD
+    trigger(["{the request, command, or trigger, with its inputs}"])
+    trigger --> first["{function_name}() -> {return type}<br/>{what it does, in plain words}"]
+    first --> second["{function_name}() -> {return type}<br/>{what it does, in plain words}"]
+    second --> result(["{what comes back}"])
+    first -. "reads by {the key or index it relies on}" .-> source[("{table, file, cache, or service}")]
+    second -- writes --> store[("{table, file, or cache}")]
+    first --> reused["{existing_function}() -> {return type}"]:::reused
+    second -- "{a case it refuses or fails on}" --> refused(["{what the user sees}"]):::refused
+    classDef reused stroke-dasharray: 5 5
+    classDef refused stroke:#d32f2f,stroke-width:2px
 ```
 
 ## Models
@@ -117,6 +108,7 @@ CREATE TABLE <name> (        -- a changed table is an ALTER TABLE
     PRIMARY KEY (<columns>)
 );
 -- Row model: <Name>, one field per column. It is not listed again.
+CREATE INDEX <name> ON <table> (<columns>);   -- <the new query that needs it>
 ```
 
 ## Rules
@@ -146,21 +138,20 @@ Also:
 - Cost: <measured time and size with their sample, anything metered, caching>.
 - Proof: <how the tests show the result is right, in one sentence>.
 
-## Prerequisite
-
-<`none`, or each condition that must hold before the build starts: a
-dependency to install, an upstream change to land, a schema or API sync to
-confirm.>
-
-- `<condition>`. <Who makes it hold.> Confirm it with `<command>`, or with
-  the observable state that proves it.
-
-**Do not execute this plan until each one holds.**
-
 # BUILD
 
 Check the names of existing utilities, types, and models against the code before you use
 them. Import from the right files.
+
+## Prerequisite
+
+<`none`, or each condition that must hold before the build starts: a dependency to install,
+an upstream change to land, a schema or API sync to confirm.>
+
+- `<condition>`. <Who makes it hold.> Confirm it with `<command>`, or with the observable
+  state that proves it.
+
+**Do not execute this plan until each one holds.**
 
 ## Functions
 
@@ -212,7 +203,8 @@ rule that wins.>
 - <condition>: <what must happen>
 
 **Every line here becomes a named test. So does every rule and every case in the Design
-part.**
+part, each path in The path's diagram end to end, and each refused branch on it. A test
+that walks none of these adds its case here first.**
 
 ## CONTEXT REFERENCES
 
@@ -316,14 +308,20 @@ sections above have no home for.>
 - **Surface.** For a screen, draw it under its entry, in each state that changes the
   layout. Where the plan rests on size, colour or spacing, say under the sketch whether
   the developer has seen it rendered.
-- **Decisions.** List every decision the developer made, then each of yours whose effect
-  the developer or a caller would see. A choice with no rejected alternative is not a
-  decision. Your others go under `## NOTES`.
-- **The path.** One block for each path, such as a job that writes and a route that reads.
-  Every function the plan adds or changes appears by name, as a step or under `Helpers`.
+- **Decisions.** At most five: the ones that set the shape, such as where the feature
+  lives, which side does which work, or what the data is keyed by, whoever made them. A
+  choice with no rejected alternative is not a decision. The rest go under `## NOTES`.
+- **The path.** One diagram for each path, such as a job that writes and a route that
+  reads. Every function the plan adds or changes is a node on some path. An existing
+  function the path calls unchanged is a dashed `reused` node. Each table, file, cache, or
+  service a step reads or writes is a cylinder, joined by a `reads` or `writes` edge. A new
+  query's `reads` edge names the key or index it relies on. Each
+  case where a step refuses or fails is an edge from that step, labelled with its cause, to
+  a `refused` node naming what the user sees. Mermaid drops anything that looks like a tag, so write `<` and `>` in a label as `#lt;`
+  and `#gt;`.
 - **Models.** Name a field with the word the developer or the code already uses for the
-  thing. Where neither has one, your name is a decision: list it under Decisions with the
-  name you rejected. An existing model appears in full only when a new or changed function
+  thing. Where neither has one, list your name under `## NOTES` with the name you
+  rejected. An existing model appears in full only when a new or changed function
   returns it, marked `Existing, unchanged`. One that a new model nests appears only as a
   field's type. Say in a model's comment what it reuses from an existing model, and any
   assumption a reviewer should check, such as a nullable field the caller may not honor.

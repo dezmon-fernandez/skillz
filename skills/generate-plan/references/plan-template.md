@@ -8,7 +8,7 @@ this codebase's real nouns.
 
 ---
 
-```markdown
+````markdown
 # Feature: <feature-name>
 
 This plan should be complete, but check the docs, the codebase patterns, and the tasks
@@ -32,6 +32,30 @@ So that <benefit/value>
 ## Solution Statement
 
 <The proposed approach and how it solves the problem.>
+
+## The path
+
+<One diagram for each path, such as a job that writes and a route that reads. Every function
+the plan adds or changes is a node on some path. An existing function the path calls unchanged
+is a dashed `reused` node. Each table, file, cache, or service a step reads or writes is a
+cylinder, joined by a `reads` or `writes` edge. A new query's `reads` edge names the key or
+index it relies on. Each case where a step refuses or fails is an edge from that step,
+labelled with its cause, to a `refused` node naming what the user sees. Mermaid drops anything
+that looks like a tag, so write `<` and `>` in a label as `#lt;` and `#gt;`.>
+
+```mermaid
+flowchart TD
+    trigger(["{the request, command, or trigger, with its inputs}"])
+    trigger --> first["{function_name}() -> {return type}<br/>{what it does, in plain words}"]
+    first --> second["{function_name}() -> {return type}<br/>{what it does, in plain words}"]
+    second --> result(["{what comes back}"])
+    first -. "reads by {the key or index it relies on}" .-> source[("{table, file, cache, or service}")]
+    second -- writes --> store[("{table, file, or cache}")]
+    first --> reused["{existing_function}() -> {return type}"]:::reused
+    second -- "{a case it refuses or fails on}" --> refused(["{what the user sees}"]):::refused
+    classDef reused stroke-dasharray: 5 5
+    classDef refused stroke:#d32f2f,stroke-width:2px
+```
 
 ## ACCEPTANCE CRITERIA
 
@@ -158,6 +182,23 @@ each one guarantees and why each dependency is needed. No bodies.>
 
 <Numbered statements that must be observably true when the feature is done. One rule per
 line. Each one is something a test can prove.>
+
+### Traced on one value
+
+<One value followed through the rules above, with real example numbers: what it is, for whom,
+asked at what moment. Pick a value whose numbers include a tie or a boundary when the feature
+has one. For a feature that writes, follow one record to its stored row. Two behaviours that
+share no step get a trace each. Each line of the trace becomes one assertion in a test.>
+
+```
+<the inputs, as a small table of example values>
+
+<step>   <the arithmetic or check on those inputs>   → <result>
+<step>   <the next step>                             → <result>
+
+stored   <the table, or the model served>
+           <field>   <its value in this example>
+```
 
 ### Edge Cases
 
@@ -297,7 +338,9 @@ bullets and a VALIDATE:
 
 ### Edge Cases
 
-The CONTRACT's Edge Cases list is the checklist. Every line there gets a named test.
+The checklist is each path in The path's diagram end to end, each refused branch on it, each
+line of the traced value, and every line of the CONTRACT's Edge Cases. Each gets a named
+test. A test that walks none of these adds its case to Edge Cases first.
 
 ---
 
@@ -338,4 +381,4 @@ Run every command. Together they prove no regressions and a correct feature.
 
 <Extra context, design decisions, and trade-offs. Decisions settled with the developer
 live here as facts if they have no better home.>
-```
+````
