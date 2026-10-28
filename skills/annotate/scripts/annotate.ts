@@ -13,6 +13,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { changedLines } from './changed-lines.ts';
+import { imageFile } from './image-file.ts';
 
 interface Source {
   path: string;
@@ -91,7 +92,19 @@ async function readBody(request: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-function reply(response: ServerResponse, status: number, body: string, type = 'application/json') {
+function replyImage(response: ServerResponse, sources: Source[], url: string) {
+  const [, index, path] = url.match(/^\/image\/(\d+)\/(.+)$/) ?? [];
+  const source = sources[Number(index)];
+  try {
+    const file = source && path ? imageFile(dirname(source.path), decodeURIComponent(path)) : null;
+    if (file) return reply(response, 200, readFileSync(file.path), file.type);
+  } catch {
+    // A malformed path or a missing file is a 404 like any other.
+  }
+  reply(response, 404, '{}');
+}
+
+function reply(response: ServerResponse, status: number, body: string | Buffer, type = 'application/json') {
   response.writeHead(status, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(body) });
   response.end(body);
 }
@@ -124,6 +137,7 @@ async function main() {
   const server = createServer(async (request, response) => {
     if (request.method === 'GET' && request.url === '/') return reply(response, 200, page, 'text/html; charset=utf-8');
     if (request.method === 'GET' && request.url === '/ping') return reply(response, 200, JSON.stringify({ session }));
+    if (request.method === 'GET' && request.url?.startsWith('/image/')) return replyImage(response, sources, request.url);
     if (request.method !== 'POST' || request.url !== '/send') return reply(response, 404, '{}');
 
     const { token: given, text, ...feedback } = JSON.parse((await readBody(request)) || '{}');

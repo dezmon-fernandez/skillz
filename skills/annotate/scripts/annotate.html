@@ -52,6 +52,22 @@
   .md-image { color: var(--muted); font-style: italic; }
   .md-summary { font-weight: 500; }
   .md-quote { border-left: 3px solid var(--border); padding-left: 10px; color: var(--muted); }
+  .md-img { display: block; max-width: 100%; height: auto; margin: 4px 0; border: 1px solid var(--border); border-radius: 4px; }
+  .line.md-block { padding-top: 0; padding-bottom: 0; }
+  .line.md-block .text { background: var(--code); padding: 2px 10px; }
+  .line.md-block .number { padding-top: 4px; }
+  /* A table's rows are still one row per source line; subgrid lets them share the table's columns. */
+  .md-table { display: grid; justify-content: start; }
+  .md-table .line { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; gap: 0; padding-top: 0; padding-bottom: 0; }
+  .md-table .gutter, .md-table .number { margin-right: 12px; padding-top: 4px; }
+  .md-cells { display: contents; }
+  .md-cell { padding: 3px 10px; border: 0 solid var(--border); border-width: 0 1px 1px 0; }
+  .md-cell .md-code { overflow-wrap: anywhere; }
+  .md-cell:first-child { border-left-width: 1px; }
+  .md-head .md-cell { font-weight: 600; border-top-width: 1px; }
+  /* The |---| line under a header draws as the header's underline, not as a row of its own. */
+  .md-table .md-rule .number { font-size: 0; padding-top: 0; }
+  .md-rule .md-cell { padding: 0; }
   .line:hover, .line:focus-visible { background: var(--hover); outline: none; }
   .line.changed { background: var(--changed); border-left-color: var(--changed-border); }
   .swatch { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; margin-right: 4px; background: var(--changed); border-left: 4px solid var(--changed-border); }
@@ -181,9 +197,31 @@ function renderDocuments() {
   }));
 }
 
-// Renders Markdown one source line at a time, so every row still maps to exactly one line of the document.
-function inlineMarkdown(text) {
+// The helper serves images from the document's own folder, so the page still makes no other network calls.
+function markdownImage(token, state) {
+  const [, alt, target] = token.match(/^!\[([^\]]*)\]\(([^)]*)\)/);
+  const path = target.trim().split(/\s+/)[0];
+  if (!path || /^([a-z][a-z0-9+.-]*:|\/)/i.test(path)) return element("span", "md-image", "[image: " + (alt || path) + "]");
+  const image = element("img", "md-img");
+  image.alt = alt || path;
+  image.src = state.imageBase + path;
+  image.addEventListener("load", relayout);
+  return image;
+}
+
+// Renders Markdown one source line at a time, so every row still maps to exactly one line of the document. A code
+// span that wraps onto the next line carries over in `state`.
+function inlineMarkdown(text, state) {
   const nodes = [];
+  if (state.insideCodeSpan) {
+    const closingTick = text.indexOf("`");
+    const indent = text.match(/^\s*/)[0];
+    const codeEnd = closingTick === -1 ? text.length : closingTick;
+    nodes.push(document.createTextNode(indent), element("code", "md-code", text.slice(indent.length, codeEnd)));
+    if (closingTick === -1) return nodes;
+    text = text.slice(closingTick + 1);
+    state.insideCodeSpan = false;
+  }
   const pattern = /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)]*\)|\[[^\]]+\]\([^)]*\))/g;
   let last = 0;
   let match;
@@ -192,21 +230,27 @@ function inlineMarkdown(text) {
     const token = match[0];
     if (token.startsWith("**")) nodes.push(element("strong", "", token.slice(2, -2)));
     else if (token.startsWith("`")) nodes.push(element("code", "md-code", token.slice(1, -1)));
-    else if (token.startsWith("![")) nodes.push(element("span", "md-image", "[image: " + (token.match(/^!\[([^\]]*)\]/)[1] || "screenshot") + "]"));
+    else if (token.startsWith("![")) nodes.push(markdownImage(token, state));
     else nodes.push(element("span", "md-link", token.match(/^\[([^\]]+)\]/)[1]));
     last = pattern.lastIndex;
   }
-  if (last < text.length) nodes.push(document.createTextNode(text.slice(last)));
+  const rest = text.slice(last);
+  const openingTick = rest.indexOf("`");
+  if (openingTick !== -1) {
+    nodes.push(document.createTextNode(rest.slice(0, openingTick)), element("code", "md-code", rest.slice(openingTick + 1)));
+    state.insideCodeSpan = true;
+  } else if (rest) nodes.push(document.createTextNode(rest));
   return nodes;
 }
 
 function markdownLine(text, state) {
   const span = element("span", "text");
   let match;
-  if (/^\s*```/.test(text)) {
+  if (!text.trim()) state.insideCodeSpan = false;
+  if ((match = text.match(/^\s*```\s*(\S*)/))) {
     state.fence = !state.fence;
     span.className = "text md-fence-mark";
-    span.textContent = state.fence ? "code" : " ";
+    span.textContent = state.fence ? match[1] || "code" : " ";
     return span;
   }
   if (state.fence) {
@@ -214,14 +258,24 @@ function markdownLine(text, state) {
     span.textContent = text || " ";
     return span;
   }
+  if (/^\s*\|.*\|\s*$/.test(text)) {
+    const rule = /^[\s|:-]+$/.test(text);
+    span.className = "text md-cells" + (rule ? " md-rule" : "");
+    span.append(...text.trim().slice(1, -1).split(/(?<!\\)\|/).map((cell) => {
+      const node = element("span", "md-cell");
+      if (!rule) node.append(...inlineMarkdown(cell.trim().replaceAll("\\|", "|"), state));
+      return node;
+    }));
+    return span;
+  }
   if ((match = text.match(/^(#{1,6})\s+(.*)$/))) {
     span.classList.add("md-h" + Math.min(match[1].length, 4));
-    span.append(...inlineMarkdown(match[2]));
+    span.append(...inlineMarkdown(match[2], state));
     return span;
   }
   if ((match = text.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/))) {
     span.style.paddingLeft = (Math.floor(match[1].length / 2) * 1.4) + "em";
-    span.append(element("span", "md-marker", /\d/.test(match[2]) ? match[2] : "•"), ...inlineMarkdown(match[3]));
+    span.append(element("span", "md-marker", /\d/.test(match[2]) ? match[2] : "•"), ...inlineMarkdown(match[3], state));
     return span;
   }
   if ((match = text.match(/^\s*<summary>(.*)<\/summary>\s*$/))) {
@@ -236,18 +290,20 @@ function markdownLine(text, state) {
   }
   if ((match = text.match(/^>\s?(.*)$/))) {
     span.classList.add("md-quote");
-    span.append(...inlineMarkdown(match[1]));
+    span.append(...inlineMarkdown(match[1], state));
     return span;
   }
-  span.append(...(text ? inlineMarkdown(text) : [document.createTextNode(" ")]));
+  span.append(...(text ? inlineMarkdown(text, state) : [document.createTextNode(" ")]));
   return span;
 }
 
 function renderLines(container, item) {
   const list = notesOf(item);
-  const markdown = { fence: false };
+  const markdown = { fence: false, insideCodeSpan: false, imageBase: "/image/" + DATA.documents.indexOf(item) + "/" };
   const changed = new Set(item.changed);
-  container.replaceChildren(...item.lines.map((text, index) => {
+  const children = [];
+  let table = null;
+  item.lines.forEach((text, index) => {
     const commented = list.some((note) => index >= note.start && index <= note.end);
     const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (commented ? " commented" : ""));
     row.dataset.index = index;
@@ -261,9 +317,24 @@ function renderLines(container, item) {
       badge.title = note.comment;
       gutter.append(badge);
     });
-    row.append(gutter, element("span", "number", index + 1), markdownLine(text, markdown));
-    return row;
-  }));
+    const content = markdownLine(text, markdown);
+    row.append(gutter, element("span", "number", index + 1), content);
+    if (content.matches(".md-fence, .md-fence-mark")) row.classList.add("md-block");
+    if (!content.matches(".md-cells")) {
+      table = null;
+      children.push(row);
+      return;
+    }
+    if (!table) {
+      table = element("div", "md-table");
+      table.style.gridTemplateColumns = "auto auto repeat(" + content.childElementCount + ", auto)";
+      children.push(table);
+      row.classList.add("md-head");
+    }
+    if (content.matches(".md-rule")) row.classList.add("md-rule");
+    table.append(row);
+  });
+  container.replaceChildren(...children);
 }
 
 function renderMargin(margin, lines, item) {
@@ -316,7 +387,11 @@ function renderSheets() {
     renderLines(lines, item);
     return sheet;
   }));
-  items.forEach((item) => {
+  relayout();
+}
+
+function relayout() {
+  shownItems().forEach((item) => {
     const sheet = sheetOf(item);
     renderMargin(sheet.querySelector(".margin"), sheet.querySelector(".lines"), item);
   });
@@ -424,10 +499,7 @@ byId("comment").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) byId("save").click();
 });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeEditor(); });
-window.addEventListener("resize", () => shownItems().forEach((item) => {
-  const sheet = sheetOf(item);
-  renderMargin(sheet.querySelector(".margin"), sheet.querySelector(".lines"), item);
-}));
+window.addEventListener("resize", relayout);
 
 byId("view").hidden = !DATA.documents.some(siblingOf);
 byId("changed-hint").hidden = !DATA.documents.some((item) => item.changed.length);
