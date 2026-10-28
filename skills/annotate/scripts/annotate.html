@@ -9,7 +9,7 @@
     --bg: #ffffff; --fg: #1b1b1f; --muted: #555; --number: #767676; --panel: #fafafa; --border: #ddd;
     --hover: #eef2f8; --selected: #dbe6fb; --current: #e8eefc; --current-border: #c5d3f6;
     --accent: #c25e00; --tint: #f9ece0; --flash: #ffe58a; --card: #ffffff; --quoted: #333; --good: #2e7d32;
-    --link: #1565c0; --code: #f1f3f5; --changed: #e6f4e8; --changed-border: #2e7d32; --removed: #fbeaea; --removed-border: #c62828; --latest: #fff3c4; --latest-border: #b7791f;
+    --link: #1565c0; --code: #f1f3f5; --changed: #e6f4e8; --changed-border: #2e7d32; --removed: #fbeaea; --removed-border: #c62828;
     --shadow: rgba(0, 0, 0, .06); --shadow-strong: rgba(0, 0, 0, .15);
   }
   :root[data-theme="dark"] {
@@ -17,7 +17,7 @@
     --bg: #16181d; --fg: #e6e6e6; --muted: #a3a8b0; --number: #8a8f98; --panel: #1c1f26; --border: #30343c;
     --hover: #232833; --selected: #263a5e; --current: #263048; --current-border: #3b4d75;
     --accent: #e8822a; --tint: #3a2a1d; --flash: #6b5a12; --card: #1f232b; --quoted: #c9ccd1; --good: #66bb6a;
-    --link: #90caf9; --code: #262b34; --changed: #1d3322; --changed-border: #66bb6a; --removed: #3a1e1e; --removed-border: #ef5350; --latest: #3d3415; --latest-border: #e0b84f;
+    --link: #90caf9; --code: #262b34; --changed: #1d3322; --changed-border: #66bb6a; --removed: #3a1e1e; --removed-border: #ef5350;
     --shadow: rgba(0, 0, 0, .4); --shadow-strong: rgba(0, 0, 0, .6);
   }
   body { margin: 0; font: 14px/1.5 -apple-system, system-ui, sans-serif; display: grid; grid-template-columns: 280px 1fr; height: 100vh; background: var(--bg); color: var(--fg); }
@@ -72,15 +72,10 @@
   .line.changed { background: var(--changed); border-left-color: var(--changed-border); }
   .swatch { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; margin-right: 4px; background: var(--changed); border-left: 4px solid var(--changed-border); }
   .swatch.cut { background: var(--removed); border-left-color: var(--removed-border); }
-  .swatch.latest { background: var(--latest); border-left-color: var(--latest-border); }
-  .line.latest { background: var(--latest); border-left-color: var(--latest-border); }
-  .removed.latest { background: var(--latest); border-left-color: var(--latest-border); }
-  .removed.latest .count { color: var(--latest-border); }
-  nav .new { color: var(--latest-border); margin-right: 4px; }
-  .working { position: sticky; top: 0; z-index: 3; margin: 0 0 12px; padding: 8px 12px; border-radius: 6px; background: var(--current); border: 1px solid var(--current-border); font-size: 14px; }
-  .working b { font-variant-numeric: tabular-nums; }
   .removed { margin: 1px 0; padding: 2px 8px 2px calc(1.8em + 2.5em + 32px); border-left: 4px solid var(--removed-border); background: var(--removed); color: var(--muted); font-size: 13px; white-space: pre-wrap; user-select: text; }
   .removed .count { display: block; font-size: 12px; font-weight: 600; color: var(--removed-border); }
+  .working { position: sticky; top: 0; z-index: 3; margin: 0 0 12px; padding: 8px 12px; border-radius: 6px; background: var(--current); border: 1px solid var(--current-border); font-size: 14px; }
+  .working b { font-variant-numeric: tabular-nums; }
   .removed del { display: block; text-decoration: none; color: var(--fg); opacity: .8; }
   .line.commented { background: var(--tint); border-left-color: var(--accent); }
   .line.commented:hover { filter: brightness(0.96); }
@@ -97,13 +92,6 @@
   .card:hover, .card:focus-visible { box-shadow: 0 2px 8px var(--shadow-strong); outline: none; }
   .card .range { color: var(--muted); font-size: 12px; }
   .card .comment { color: var(--fg); white-space: pre-wrap; }
-  .card.sending { border-left-color: var(--latest-border); cursor: default; }
-  .card .working-note { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: var(--muted); }
-  .spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--latest-border); animation: spin .8s linear infinite; flex: none; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes arrive { from { background: var(--flash); } to { background: var(--latest); } }
-  .line.latest.arrive, .removed.latest.arrive { animation: arrive 1.8s ease-out; }
-  @media (prefers-reduced-motion: reduce) { .spinner, .arrive, .flash { animation: none !important; } }
   main { padding-bottom: 360px; }
   .editor { position: fixed; left: 280px; right: 0; bottom: 0; z-index: 2; background: var(--card); border-top: 2px solid var(--current-border); border-radius: 12px 12px 0 0; padding: 14px 24px 18px; box-shadow: 0 -6px 20px var(--shadow-strong); visibility: hidden; transform: translateY(100%); transition: transform .22s ease-out, visibility 0s .22s; }
   .editor.open { visibility: visible; transform: translateY(0); transition: transform .22s ease-out, visibility 0s; }
@@ -121,7 +109,6 @@
   <h2>Documents</h2>
   <div id="documents"></div>
   <p class="hint" id="changed-hint" hidden><span class="swatch"></span><span id="changed-label">Changed since your last Send</span></p>
-  <p class="hint" id="latest-hint" hidden><span class="swatch latest"></span>Changed in your last round</p>
   <p class="hint" id="removed-hint" hidden><span class="swatch cut"></span><span id="removed-label">Removed since your last Send</span></p>
   <fieldset>
     <legend>Agent</legend>
@@ -148,7 +135,7 @@
   <p class="quoted" id="quoted"></p>
   <label for="comment">Comment</label>
   <textarea id="comment"></textarea>
-  <div class="actions"><button id="save">Save</button><button id="send-one">Save and send this one</button><button id="clear">Delete</button><button id="close">Cancel</button></div>
+  <div class="actions"><button id="save">Save</button><button id="clear">Delete</button><button id="close">Cancel</button></div>
 </section>
 <script>
 const DATA = __DATA__;
@@ -174,18 +161,7 @@ const persist = () => { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes))
 
 // A document's id carries a hash of its text, so comments on a version the agent has since edited are dropped here.
 const known = new Set(DATA.documents.map((item) => item.id));
-const titleOf = (id) => id.slice(0, id.lastIndexOf("@"));
-const findLines = (lines, wanted) => lines.findIndex((_, at) => wanted.every((line, offset) => lines[at + offset] === line));
-Object.keys(notes).forEach((key) => {
-  const id = key.slice(0, key.lastIndexOf(":"));
-  const note = notes[key];
-  if (note.sent) { delete notes[key]; return; }
-  if (known.has(id)) return;
-  delete notes[key];
-  const item = DATA.documents.find((doc) => doc.title === titleOf(id));
-  const at = item && note.text ? findLines(item.lines, note.text) : -1;
-  if (at >= 0) notes[rangeKey(item, at, at + note.text.length - 1)] = note;
-});
+Object.keys(notes).forEach((key) => { if (!known.has(key.slice(0, key.lastIndexOf(":")))) delete notes[key]; });
 Object.keys(meta).forEach((id) => { if (!known.has(id)) delete meta[id]; });
 persist();
 const lineLabel = (start, end) => (start === end ? "Line " + (start + 1) : "Lines " + (start + 1) + "-" + (end + 1));
@@ -193,7 +169,6 @@ const sheetOf = (item) => document.querySelector('.sheet[data-id="' + CSS.escape
 const rowAt = (sheet, index) => sheet.querySelector('.line[data-index="' + index + '"]');
 const metaOf = (item) => meta[item.id] || (meta[item.id] = { reviewed: false, overall: "" });
 const versionLabel = (item) => item.version.replaceAll("_", " ");
-const hasLatest = (item) => Boolean(DATA.base && ((item.latest || []).length || (item.latestRemoved || []).length));
 const element = (tag, className, text) => {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -206,7 +181,7 @@ function notesOf(item) {
     .filter(([key]) => key.startsWith(item.id + ":"))
     .map(([key, note]) => {
       const [start, end] = key.slice(item.id.length + 1).split("-").map(Number);
-      return { key, start, end, comment: note.comment, sent: Boolean(note.sent) };
+      return { key, start, end, comment: note.comment };
     })
     .sort((first, second) => first.start - second.start || first.end - second.end);
 }
@@ -224,9 +199,7 @@ function renderDocuments() {
     button.setAttribute("aria-current", String(shownItems().some((shown) => shown.id === item.id)));
     const count = element("span", "count", notesOf(item).length || "");
     const done = element("span", "done", metaOf(item).reviewed ? "✓" : "");
-    const fresh = element("span", "new", hasLatest(item) ? "●" : "");
-    if (hasLatest(item)) fresh.title = "Changed in your last round";
-    button.append(count, done, fresh, item.title);
+    button.append(count, done, item.title);
     button.onclick = () => { current = index; lastClicked = null; closeEditor(); render(); };
     return button;
   }));
@@ -336,38 +309,29 @@ function renderLines(container, item) {
   const list = notesOf(item);
   const markdown = { fence: false, insideCodeSpan: false, imageBase: "/image/" + DATA.documents.indexOf(item) + "/" };
   const changed = new Set(item.changed);
-  const latest = new Set(DATA.base ? item.latest || [] : []);
   const removedAt = new Map((item.removed || []).map((block) => [block.at, block.lines]));
-  const latestAt = new Map((DATA.base ? item.latestRemoved || [] : []).map((block) => [block.at, block.lines]));
   const children = [];
   let table = null;
   // Lines the text has lost sit where they were cut: shown, never numbered or commentable.
-  const removedBlock = (lost, fresh) => {
-    const block = element("div", "removed" + (fresh ? " latest" : ""));
-    const label = lost.length + (lost.length === 1 ? " line removed" : " lines removed") + (fresh ? " in your last round" : "");
+  const cut = (index) => {
+    const lost = removedAt.get(index);
+    if (!lost) return;
+    const block = element("div", "removed");
     block.setAttribute("role", "note");
-    block.setAttribute("aria-label", label + ": " + lost.join(" "));
-    block.append(element("span", "count", "− " + label));
+    block.setAttribute("aria-label", lost.length + (lost.length === 1 ? " line" : " lines") + " removed: " + lost.join(" "));
+    block.append(element("span", "count", "− " + lost.length + (lost.length === 1 ? " line removed" : " lines removed")));
     lost.forEach((line) => block.append(element("del", "", line || " ")));
     table = null;
     children.push(block);
   };
-  // A line cut in the last round shows once, as from the last round.
-  const cut = (index) => {
-    const fresh = latestAt.get(index) || [];
-    const older = [...(removedAt.get(index) || [])];
-    fresh.forEach((line) => { const at = older.indexOf(line); if (at >= 0) older.splice(at, 1); });
-    if (fresh.length) removedBlock(fresh, true);
-    if (older.length) removedBlock(older, false);
-  };
   item.lines.forEach((text, index) => {
     cut(index);
     const commented = list.some((note) => index >= note.start && index <= note.end);
-    const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (latest.has(index) ? " latest" : "") + (commented ? " commented" : ""));
+    const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (commented ? " commented" : ""));
     row.dataset.index = index;
     row.tabIndex = 0;
     row.setAttribute("role", "button");
-    row.setAttribute("aria-label", "Line " + (index + 1) + (latest.has(index) ? ", changed in your last round" : changed.has(index) ? ", changed" : "") + (commented ? ", has a comment" : "") + ": " + text);
+    row.setAttribute("aria-label", "Line " + (index + 1) + (changed.has(index) ? ", changed" : "") + (commented ? ", has a comment" : "") + ": " + text);
     const gutter = element("span", "gutter");
     list.filter((note) => note.start === index).forEach((note) => {
       const badge = element("span", "badge", "💬");
@@ -400,18 +364,10 @@ function renderMargin(margin, lines, item) {
   margin.querySelectorAll(".card").forEach((card) => card.remove());
   let nextFreeTop = 0;
   notesOf(item).forEach((note) => {
-    const card = element("button", "card" + (note.sent ? " sending" : ""));
+    const card = element("button", "card");
     card.append(element("div", "range", lineLabel(note.start, note.end).toLowerCase()), element("div", "comment", note.comment));
-    if (note.sent) {
-      const working = element("div", "working-note");
-      working.append(element("span", "spinner"), element("span", "", "Sent. Claude is working on this"));
-      card.append(working);
-      card.setAttribute("aria-label", "Sent, Claude is working on: " + note.comment);
-      card.onclick = () => {};
-    } else {
-      card.setAttribute("aria-label", "Edit comment on " + lineLabel(note.start, note.end).toLowerCase() + ": " + note.comment);
-      card.onclick = () => openEditor(item, note.start, note.end, note);
-    }
+    card.setAttribute("aria-label", "Edit comment on " + lineLabel(note.start, note.end).toLowerCase() + ": " + note.comment);
+    card.onclick = () => openEditor(item, note.start, note.end, note);
     card.onmouseenter = () => { hovered = { id: item.id, start: note.start, end: note.end }; highlight(); };
     card.onmouseleave = () => { hovered = null; highlight(); };
     card.onfocus = card.onmouseenter;
@@ -552,7 +508,7 @@ byId("save").onclick = () => {
   if (!selection || !comment) return;
   const { id, start, end } = selection;
   const item = itemById(id);
-  notes[selection.key || rangeKey(item, start, end)] = { comment, text: item.lines.slice(start, end + 1) };
+  notes[selection.key || rangeKey(item, start, end)] = { comment };
   persist(); closeEditor(); render();
   const sheet = sheetOf(item);
   for (let index = start; index <= end; index += 1) rowAt(sheet, index).classList.add("flash");
@@ -571,7 +527,6 @@ window.addEventListener("resize", relayout);
 byId("view").hidden = !DATA.documents.some(siblingOf);
 byId("changed-hint").hidden = !DATA.documents.some((item) => item.changed.length);
 byId("removed-hint").hidden = !DATA.documents.some((item) => (item.removed || []).length);
-byId("latest-hint").hidden = !DATA.documents.some(hasLatest);
 if (DATA.base) {
   byId("changed-label").textContent = "Changed since " + DATA.base;
   byId("removed-label").textContent = "Removed since " + DATA.base;
@@ -588,12 +543,10 @@ const applyTheme = () => { document.documentElement.dataset.theme = systemDark.m
 systemDark.addEventListener("change", applyTheme);
 applyTheme();
 
-const unsent = (item, only) => notesOf(item).filter((note) => !note.sent && (!only || note.key === only));
-
-function collect(only) {
+function collect() {
   return {
     name: DATA.name,
-    comments: DATA.documents.flatMap((item) => unsent(item, only).map((note) => ({
+    comments: DATA.documents.flatMap((item) => notesOf(item).map((note) => ({
       document: item.title,
       group: item.group,
       version: item.version,
@@ -606,14 +559,14 @@ function collect(only) {
   };
 }
 
-function asText(only) {
+function asText() {
   const lines = ["Comments from " + DATA.name + ":"];
   DATA.documents.forEach((item) => {
-    const list = unsent(item, only);
+    const list = notesOf(item);
     const { reviewed, overall } = metaOf(item);
-    if (!list.length && (only || (!overall && !reviewed))) return;
+    if (!list.length && !overall && !reviewed) return;
     lines.push("", "## " + item.title + (reviewed ? " [reviewed]" : ""));
-    if (overall && !only) lines.push("Overall: " + overall);
+    if (overall) lines.push("Overall: " + overall);
     list.forEach((note) => {
       const first = item.lines[note.start].trim();
       lines.push("- " + lineLabel(note.start, note.end) + ' ("' + first.slice(0, 70) + (first.length > 70 ? "..." : "") + '"): ' + note.comment);
@@ -668,17 +621,13 @@ function reloadWhenReopened() {
   }, 2000);
 }
 
-// Send every unsent comment, or only one. A sent comment's card shows a loader until the page comes back.
-async function sendNotes(only) {
+byId("send").onclick = async () => {
   byId("send").disabled = true;
   status("Sending...");
   try {
-    const instruction = only ? "" : byId("instruction").value.trim();
-    const body = JSON.stringify({ token: DATA.token, instruction, text: asText(only), ...collect(only) });
+    const body = JSON.stringify({ token: DATA.token, instruction: byId("instruction").value.trim(), text: asText(), ...collect() });
     const response = await fetch("/send", { method: "POST", headers: { "Content-Type": "application/json" }, body });
     if (!response.ok) throw new Error(String(response.status));
-    DATA.documents.forEach((item) => unsent(item, only).forEach((note) => { notes[note.key].sent = true; }));
-    persist(); render();
     status("Sent. This page reloads when the agent reopens it.");
     showWorking();
     reloadWhenReopened();
@@ -686,27 +635,9 @@ async function sendNotes(only) {
     byId("send").disabled = false;
     status("Couldn't reach the agent (" + error.message + "). Use Copy for agent instead.");
   }
-}
-byId("send").onclick = () => sendNotes(null);
-byId("send-one").onclick = () => {
-  const comment = byId("comment").value.trim();
-  if (!selection || !comment) return;
-  const { id, start, end } = selection;
-  const item = itemById(id);
-  const key = selection.key || rangeKey(item, start, end);
-  notes[key] = { comment, text: item.lines.slice(start, end + 1) };
-  persist(); closeEditor();
-  sendNotes(key);
 };
 
-const firstLatest = DATA.documents.findIndex(hasLatest);
-if (firstLatest >= 0) current = firstLatest;
 render();
-if (firstLatest >= 0) {
-  const arrived = document.querySelectorAll("#sheets .line.latest, #sheets .removed.latest");
-  arrived.forEach((node) => node.classList.add("arrive"));
-  if (arrived.length) arrived[0].scrollIntoView({ block: "center" });
-}
 </script>
 </body>
 </html>
