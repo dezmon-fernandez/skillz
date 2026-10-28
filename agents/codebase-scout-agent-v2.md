@@ -16,8 +16,8 @@ callers. Never run the build, the tests, or anything that writes.
 
 ## What you are given
 
-- The feature: its story, what exists afterwards, its criteria, what is out, and what is
-  already settled.
+- The feature: what it is, its story, the problem it solves, its criteria, what it will not
+  do, what is already settled, and what it assumes about outside data.
 - An existing feature it resembles, when the coordinator names one.
 
 You see none of the coordinator's conversation. If the brief does not state the feature,

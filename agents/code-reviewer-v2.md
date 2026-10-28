@@ -68,11 +68,11 @@ You cannot change code. Report findings and hand them back.
 1. **Unproven Criteria**
    - Tests that still pass with the feature deleted. Check each criterion in the plan's
      `## ACCEPTANCE CRITERIA` and the test the report cites for it.
-   - A rule or a case in the plan's `## Rules`, `## When it can't answer` or `## EDGE CASES`
-     with no named test.
-   - A path in the plan's `## The path` diagram, end to end, or a refused branch on it, with
-     no named test that walks it. Count the paths and branches, then find a test for each.
-   - A test that walks no path, branch, rule or case the plan lists. The plan says such a
+   - A rule or a case in the plan's `## How it works` or `## EDGE CASES` with no named test,
+     including each Run again, Stops midway, and Shows it broke line.
+   - A diagram in the plan's `## How it works`, end to end, or a refused branch on it, with
+     no named test that walks it. Count the diagrams and branches, then find a test for each.
+   - A test that walks no diagram, branch, rule or case the plan lists. The plan says such a
      test adds its case first, so either the case is missing from the plan or the test is
      not needed.
    - Criteria the report's `## Acceptance criteria` marks ⚠️.
@@ -111,7 +111,7 @@ You cannot change code. Report findings and hand them back.
    - Testing standards.
 
 7. **The Wrong Solution**
-   - A diff out of proportion to the problem. The plan's `## Decisions` proposed a
+   - A diff out of proportion to the problem. The plan's `## Solution Statement` proposed a
      shape. Execution may have built another. Check what the code now duplicates or makes
      redundant, including code no task in `## STEP-BY-STEP TASKS` mentioned. Say whether the
      built shape is still the one worth keeping.

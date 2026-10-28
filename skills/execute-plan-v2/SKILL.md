@@ -18,9 +18,9 @@ Read the whole file before you touch any code. The plan is the contract. Carry i
 
 ### 1. Read the plan
 
-Read all of it: the Design part, the edge cases, the tasks and their dependencies, and
-every validation command. Then read the files the plan lists as mandatory reading. Do this
-before you write anything.
+Read all of it: the Definition, the Contract, the edge cases, the tasks and their
+dependencies, and every validation command. Then read the files the plan lists as mandatory
+reading. Do this before you write anything.
 
 Then confirm each condition under `## Prerequisite`, with the command or the state the plan
 names. One that does not hold stops the build before any code: say which and why, and ask
@@ -38,9 +38,10 @@ For each task, top to bottom:
 - **Follow the task exactly.** Its PATTERN, IMPORTS, and GOTCHA fields are there because
   the planner already hit that problem. Keep the plan's names and signatures: the
   developer confirmed the names.
-- **Write the task's tests as part of the task.** Write a named test for each rule and case
-  the task owns, so its `VALIDATE` has something to run. Then break the line each test guards,
-  see the test fail, and restore the line. A test that still passes proves nothing: fix it.
+- **Write the task's `TESTS` first.** Write each named test the task lists, run it, and see
+  it fail before the code exists. Then write the code until it passes. Then break the line
+  each test guards, see the test fail, and restore the line. A test that still passes proves
+  nothing: fix it.
 - **Run the task's `VALIDATE` before the next task.** Every task has one. The task is not
   done until it passes. If it fails, fix it now. Do not carry the failure forward. The full
   suite still runs in step 3, but this per-task check stops failures piling up there.

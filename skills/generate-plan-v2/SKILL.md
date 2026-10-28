@@ -3,10 +3,11 @@ name: generate-plan-v2
 disable-model-invocation: true
 description: >-
   Turn a feature request, a tracker ticket, or the current conversation into an
-  implementation plan. The developer agrees the scope, agents research the codebase and
-  outside sources, and the developer settles the open decisions before the plan is
-  written. Use before writing any code for a feature, or when asked to "plan this",
-  "write a plan", or "plan the feature".
+  implementation plan. The developer corrects the feature's definition before any code is
+  read, agents research it while every assumption about outside data is checked, the
+  developer confirms the design and its models, and then the build is planned. Use before
+  writing any code for a feature, or when asked to "plan this", "write a plan", or "plan
+  the feature".
 argument-hint: "[a ticket key or URL, a feature description, or empty to plan from the conversation]"
 ---
 
@@ -14,10 +15,15 @@ argument-hint: "[a ticket key or URL, a feature description, or empty to plan fr
 
 ## Feature: $ARGUMENTS
 
-**Write no code here.** The output is a plan. An executor with no memory of this
-conversation must be able to finish it on the first try.
+**Write no code here.** The output is a plan in the three parts of
+`references/plan-template.md`: the Definition, the Contract, and the Build. The developer
+confirms the Definition and the Contract before the Build is written. An executor with no
+memory of this conversation must be able to finish the Build on the first try.
 
-## Phase 1: Define the feature scope
+Four steps: define, research and check, design, write. Stop for the developer after step 1
+and again after step 3.
+
+## Step 1: Define
 
 Read the input. For a ticket (a key like `ABC-123`, or an issue URL), **fetch it first**
 with the project's tracker tool. Read its summary, acceptance criteria, and context. Follow
@@ -28,14 +34,16 @@ session.
 Before you open any code, write the feature back to the developer:
 
 ```
+Feature: <what it is, its purpose, and its value to users, in two sentences>
 As a <type of user>, I want to <action/goal>, so that <benefit/value>.
+Problem: <what is wrong or missing today, for whom, and what shows it>
 
-Afterwards: <two sentences on what exists that is not there today>
 Criteria:
-1. <what a user can observably do, or what must observably be true, when it is done>
-2. (assumed) <a criterion the input left open, as you read it>
-Out: <what the feature will not do>
+1. Given <the starting state>, when <the trigger>, then <what is observably true>.
+2. (assumed) Given <...>, when <...>, then <...>.
+Will not do: <what the feature will not do>
 Settled: <a decision the input or a document it links to already made, or none>
+Assuming: <each fact about data from outside the codebase the criteria rest on, or none>
 ```
 
 - Write outcomes, with no file, function, or type name. You have read no code, so a name
@@ -44,28 +52,37 @@ Settled: <a decision the input or a document it links to already made, or none>
 - Where the input is silent and the feature needs an answer, write your reading and mark
   it `(assumed)`. Do not ask. The developer corrects a line faster than they answer a
   question.
-- Write only the criteria the input gives you or forces you to assume. Research adds the
-  rest.
+- **Write the criteria for when things go wrong, not only when they go right.** For each
+  input the feature reads, walk the usual cases: missing, empty, late, duplicated, changed
+  after it was first seen, removed, half-failed, run twice, run at the same time, and at a
+  boundary such as midnight, zero, or the maximum. Each one the feature must handle is a
+  criterion. When unsure whether a case can happen, write it and mark it `(assumed)`: the
+  developer cuts a line faster than a reviewer finds one missing.
+- Under `Assuming`, list what the criteria take for granted about outside data: what it
+  holds, what it calls things, how often it arrives, and whether it can change or vanish.
+  Step 2 checks each one. When unsure whether something is an assumption, list it.
 
-❌ `Archiving works correctly.`
+❌ `1. An owner can archive a record.` and nothing else.
 
-✅ `An owner archives a record from the list, and the row leaves once the server confirms.`
+✅ `1. Given an owner viewing the list, when they archive a record, then the row leaves once
+the server confirms.` and `2. Given the server refuses, when they archive a record, then
+the row stays and the reason shows.`
 
 Stop and wait for the developer's corrections. Research starts from the block as they
-agreed it. A line they agreed changes only in Phase 3.
+agreed it. A line they agreed changes only in step 3.
 
-## Phase 2: Research
+## Step 2: Research and check
 
 Agents do the reading, so your context stays clear for the plan. Do not search the codebase
 yourself first.
 
-1. **Scout.** Send one `codebase-scout-agent-v2` the Phase 1 block, word for word. Its report
+1. **Scout.** Send one `codebase-scout-agent-v2` the step 1 block, word for word. Its report
    gives the route through the code, the files the feature would change or add, and the
    slices that need a researcher.
 2. **Size the work** from the scout's file counts. A mechanical change, such as a rename,
    counts as one file.
    - **About five or fewer:** it needs no plan. Say so, name the files and any decision
-     Phase 3 would put to the developer, and stop. The developer says whether to build it.
+     step 3 would put to the developer, and stop. The developer says whether to build it.
    - **More than about twenty:** it is too big for one plan, because the developer will
      not read a change that size. Say so, say where you would cut it, and stop. The
      `decompose-feature-v2` skill cuts it.
@@ -73,10 +90,13 @@ yourself first.
 3. **Research each slice.** Send one `codebase-research-agent-v2` per slice the scout named,
    and skip none. Send them all in one message so they run in parallel. Give each these,
    whole, because a summary drops whatever you did not think mattered:
-   - the Phase 1 block
+   - the step 1 block
    - the scout's report
    - its slice, by the name the scout gave it
    - any other question the plan must answer about its slice
+
+   Before you send, check that each brief holds the scout's report itself. A brief that
+   names the report, or holds a placeholder for it, sends the researcher in blind.
 4. **Research outside topics.** List what the feature needs from outside the codebase, one
    topic each: a library, an external API or service, a standard or protocol, a technique
    the codebase has no example of, or a function or option of an installed library that
@@ -91,15 +111,22 @@ yourself first.
    Skip a topic only when you can name the `file:line` where the codebase already calls
    the exact API the feature will use. An installed library is not a reason to skip. When
    unsure, dispatch.
-5. **Sample real data.** Where the design rests on what real data or a live service
-   returns, such as a payload's shape, the names it uses, or how many rows a query reads,
-   sample it, read-only. Never write anything to do it.
+5. **Check every assumption.** Take each line under `Assuming`, and anything else the
+   design will rest on about what real data or a live service returns, such as a payload's
+   shape, the names it uses, how many rows a query reads, or whether a value can change or
+   vanish. Sample it, read-only. Never write to the source to do it.
    - **Free and needs no key or credentials:** take it now, yourself.
    - **Costs money, or needs a key or credentials:** ask the developer now, before
      anything is designed. Say what it settles, what it costs, and what it needs from
      them. On a yes, take it.
    - **Declined, or it cannot be taken:** it becomes a check in the plan's
      `## Prerequisite` section, and the build waits for it.
+
+   Record each check as `measured <how>, <when>`. The plan carries it. Save what the
+   sample returned to `.agents/samples/<source>-<date>`, in the source's own format. The
+   feature's tests run on that file, never on values you make up. Made-up values are your
+   guesses, the code gets written from the same guesses, and the test passes even when
+   both are wrong.
 
    Never choose a design because it works without the fact. That design is a guess.
 
@@ -125,23 +152,23 @@ yourself first.
   unverified item as fact.
 
 **Collect open questions as you go. Do not ask yet.** Note every ambiguity, unstated
-preference, and open architecture choice, and add each report's `Open Choices`. Phase 3
+preference, and open architecture choice, and add each report's `Open Choices`. Step 3
 resolves them all. The exceptions block the research itself: an ambiguity such as a scout's
 report that shows the feature could land in two different places, and a sample that costs
-money or needs a key (step 5).
+money or needs a key (item 5).
 
-**Research is done when** every section of the plan's Design part can be filled from a
-report line, a file you read, or a sample you took. A section you would have to guess is a
-gap. Settle it now.
+**Research is done when** every section of the Definition and the Contract can be filled
+from a report line, a file you read, or a sample you took, and every assumption is either
+measured or a Prerequisite. A section you would have to guess is a gap. Settle it now.
 
-## Phase 3: Validate with the developer
+## Step 3: Design, and confirm it with the developer
 
-**Never write the plan while a decision is open.** The executor holds only the plan.
+**Never write the Build part while a decision is open.** The executor holds only the plan.
 
 1. **Choose the approach,** and note why you rejected the others.
 2. **Collect** every open decision: from the approach, from every `Open Choices` section in
    the reports, and any choice research raised about scope, defaults, cost, where the
-   feature appears, or how often it runs. Add any line of the Phase 1 block that research
+   feature appears, or how often it runs. Add any line of the step 1 block that research
    showed cannot hold, or costs far more than it looked.
 3. **Settle what is already answered.** If the codebase, a standard, the request, or an
    earlier developer decision answers it, take that answer and record its source. Never
@@ -157,13 +184,24 @@ gap. Settle it now.
      lives, a helper, how something is tested. Take the option that adds least, and check
      it works in the code. Put each name and meaning a caller will see under `Shown:` in
      the report, so the developer can correct it there.
-5. **Report back in one message, then stop and wait:**
+5. **Write the Definition and the Contract** to `.agents/plans/<kebab-case-descriptive-name>.md`,
+   creating the directory if missing, from the template. The step 1 block goes in word for
+   word: `Feature` under Feature Description, the story under User Story, `Problem` under
+   Problem Statement, the criteria under ACCEPTANCE CRITERIA, and `Will not do`, `Settled`
+   and `Assuming` under Solution Statement. Research adds to them. Mark each decision the
+   developer made as theirs. A decision still open is written as your recommendation and
+   listed under `Decide` below.
+6. **Check that it covers the criteria** before you show it. Every criterion has a place in
+   the Contract: a line under What changes for the user, a field, or a step on a diagram.
+   Every criterion about something going wrong has a refused or failed branch on a diagram.
+   Every outside value that can be missing, change, or vanish has a criterion. A criterion
+   with no place is a gap: design it, or take it to the developer under `Changed`.
+7. **Show it, then stop and wait.** Open the plan with the `annotate` skill, so its diagrams
+   draw. Without it, print the Definition and the Contract. Then reply in one message:
 
    ```
    Holds: <each criterion that can be built as agreed, by number and opening words>
    Changed: <a criterion that cannot, or costs far more than it looked, and why; or none>
-   Approach: <four lines at most: where the feature enters, what it stores, which
-             system does the work>
    Size: <N> files to change, <N> to add
    Shown: <each name or meaning a caller will see, and the one you rejected; or none>
 
@@ -181,12 +219,13 @@ gap. Settle it now.
    "Lost if wrong" sets the rank. Where options differ in a screen, a route, a
    signature or a model, sketch each one under Options. Write the questions here even
    when a multiple-choice prompt follows: the prompt shows nothing but its own words.
-6. **A question is settled only when the developer confirms it:** they approve it, pick
+8. **A question is settled only when the developer confirms it:** they approve it, pick
    another option, or settle it by talking it through. Never take one as settled
-   because they answered another or said to go on. Read each answer as new input too:
-   it may raise a question, contradict an assumption, or ask you something back. Check
-   it against the code and answer it. Ask again only when it opens a new decision that
-   would cost a replan.
+   because they answered another or said to go on. Read each answer, and each comment
+   from the page, as new input too: it may raise a question, contradict an assumption, or
+   ask you something back. Check it against the code and answer it. Edit the plan to
+   match, and show it again. Ask again only when it opens a new decision that would cost a
+   replan.
 
    End each reply with every question, written out:
 
@@ -199,18 +238,16 @@ gap. Settle it now.
 
    ✅ `Settled: archived records stay searchable, behind a filter.`
 
-**Done when** the developer has confirmed every question and said to write the plan.
-Every decision then goes into the plan as a fact, never an option list.
+**Done when** the developer has confirmed every question and the Contract, and said to
+write the plan. Every decision is then a fact in the plan, never an option list.
 
-## Phase 4: Write the plan
+## Step 4: Write the Build part
 
-Fill in the template at `references/plan-template.md`. The developer confirms the plan
-from its Design part, so write that part for them. The Build part is the executor's.
+Fill in the template's Build part, below the confirmed Definition and Contract. The
+Build part is the executor's.
 
-- The Phase 1 block goes in word for word: the story and `Afterwards` under
-  `What gets built`, the criteria under `ACCEPTANCE CRITERIA`, `Out` under `Out of scope`,
-  and `Settled` under `Decisions`. Research adds to them.
-- Mark each decision the developer made as theirs.
+- Change nothing above it. A change you find you need there is a new decision, and it goes
+  back through step 3. Settled decisions stay settled.
 - **Spec, not code.** Give the contract (signatures, types, rules, edge cases) and a
   pseudocode sketch. If the executor could paste it and be done, it is code, so write
   pseudocode instead. The exception is data models. A schema or type is its own spec, so
@@ -218,32 +255,28 @@ from its Design part, so write that part for them. The Build part is the executo
 - Use the codebase's own words in tasks.
 - Every command, pattern and quoted string in the plan was run or matched while
   planning. What you did not run, describe and leave to the executor.
-- A decision that first appears while you write goes back through Phase 3. Settled
-  decisions stay settled.
 
 **Done when** an executor with the repository open and no memory of this conversation
 could build the feature from the plan alone. It can read the code, so point at code and
 never copy it. It does not know what you decided, so state every decision. If it would
 have to ask, the plan is not done.
 
-**Output**: `.agents/plans/<kebab-case-descriptive-name>.md`. Create the directory if
-missing.
-
 ## Report
 
-Print the plan's Design part as it stands in the file. The developer confirms the plan
-from it, so add nothing to it and leave nothing out. Then give:
-
+- the full path to the plan
 - each outside topic you did not research, and the `file:line` that made the skip safe
-- the full path to the plan, how many source files it expects to change, the key
-  implementation risks, and a confidence score out of 10 that execution succeeds on the
-  first try
+- how many source files the plan expects to change, the key implementation risks, and a
+  confidence score out of 10 that execution succeeds on the first try
+- the next step: `/review-plan-v2 <the plan's path>`
 
 The build starts on the developer's word, never on yours.
 
 ## Note
 
-Phase 2 uses the `codebase-scout-agent-v2`, `codebase-research-agent-v2` and
+Step 2 uses the `codebase-scout-agent-v2`, `codebase-research-agent-v2` and
 `external-research-agent-v2` agents, all installed alongside this skill. If you dispatch and
 an agent is missing, say so and stop. Do not research in this session instead: it fills
 the context the agents keep clear, and the plan looks finished when it is not.
+
+Step 3 shows the plan with the `annotate` skill when it is installed. Without it, print
+the plan's Definition and Contract instead. Its diagrams then show as their source.

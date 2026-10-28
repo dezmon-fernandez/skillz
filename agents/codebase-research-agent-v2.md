@@ -17,8 +17,8 @@ callers. Never run the build, the tests, or anything that writes.
 
 ## What you are given
 
-- The feature: its story, what exists afterwards, its criteria, what is out, and what is
-  already settled.
+- The feature: what it is, its story, the problem it solves, its criteria, what it will not
+  do, what is already settled, and what it assumes about outside data.
 - A scout's report: the route it traced through the codebase, the files the feature would
   change or add, and every slice with its hops.
 - Your slice, by the name the scout gave it.

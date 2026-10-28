@@ -58,28 +58,29 @@ Take the plan's sections in the order it wrote them. Run these five checks on ea
 **1. Untestable criteria.** Look in `## ACCEPTANCE CRITERIA`, `## STEP-BY-STEP TASKS`.
 
 - "Works as expected" instead of an observable outcome.
-- A criterion with no task that delivers it.
-- A task that traces to no criterion (no `SATISFIES`, no `AC #n`).
+- A criterion that no task's `TESTS` proves.
+- A task whose `TESTS` cite no criterion, edge case or rule, and say no reason why.
 
-**2. False assumptions.** Look in `## CONTEXT REFERENCES` (`### Relevant codebase files: READ THESE BEFORE IMPLEMENTING`), `## The path` (what each step reads and writes), `## Models` and `## Internal models` (the comment on each model).
+**2. False assumptions.** Look in `## Solution Statement` (`Assuming:`), `## CONTEXT REFERENCES` (`### Relevant codebase files: READ THESE BEFORE IMPLEMENTING`), `## How it works` (what each step reads and writes), `## Models` and `## Internal models` (the comment on each model).
 
+- A fact about outside data that is neither measured nor a Prerequisite.
 - A claim the file itself contradicts.
 - A changed model whose consumers go unnamed.
 - Mismatched values across a boundary: an id of one kind where another belongs. Both type-check, and the join returns nothing.
 - A model reused where the meaning does not match.
 
-**3. Gaps that stall the executor.** Look in `## Functions`, `## Models`, `## Internal models`, `## Rules`, `## When it can't answer`, `## Decisions`, `## EDGE CASES`, `## STEP-BY-STEP TASKS` (`**Depends on:**`, `**Independent of:**`).
+**3. Gaps that stall the executor.** Look in `## Functions`, `## Models`, `## Internal models`, `## How it works`, `## Solution Statement`, `## EDGE CASES`, `## STEP-BY-STEP TASKS` (`**Depends on:**`, `**Independent of:**`).
 
 - Signatures, return types, or error paths left unstated.
 - A state a signature allows with no rule: an optional input, a nullable return, an empty collection.
-- A task or criterion that contradicts the Design part, or restates it in other words.
+- A task or criterion that contradicts the Definition or the Contract, or restates it in other words.
 - A design decision left as "X or Y" for the executor.
 - A task order that does not say what is hard and what is merely convenient.
 - A model or field name that needs a comment to explain it.
 - A changed signature whose callers, tests, and fakes are missing from the task list.
 - An irreversible step with no stated scope and no stated way back.
 
-**4. Over-built solutions.** Look in `## What gets built`, `## Out of scope`, `## Models`, `## Internal models`, `## Decisions`, `### New files to create`.
+**4. Over-built solutions.** Look in `## Feature Description`, `## Solution Statement`, `## Models`, `## Internal models`, `### New files to create`.
 
 - A design larger than the goal needs, counted in modules, tables, columns, flags, settings, commands, and states.
 - The wrong mechanism: polling where an event already fires, new storage where the value can be derived, new code where existing code could be lifted out.
