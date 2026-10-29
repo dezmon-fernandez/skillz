@@ -3,8 +3,9 @@ name: eval-skill
 disable-model-invocation: true
 description: >-
   Test a change to a skill, with the developer as the judge. Two ways: set up worktrees so
-  the developer tries the new version on real work, or run the old and new versions on the
-  same pinned request and put the results side by side on one page. Either way, the
+  the developer tries the new version, alone or beside the old one, on real work, or run the
+  old and new versions on the same pinned request and put the results side by side on one
+  page. Either way, the
   developer comments on the output, and their comments decide what the skill changes next.
   Use when asked to "eval this skill", "test this skill change", "try the new version",
   "compare the old and new version", "is the new version better", or "read my comments".
@@ -36,8 +37,9 @@ check and grade you produce is a suggestion until they confirm it.
 ## Two ways to test
 
 - **Try it on real work.** The developer uses the new version on a task they need done, in
-  worktrees beside their main checkout, and judges it as they go. This is the strongest
-  evidence. Start here unless the developer asks for a comparison.
+  worktrees beside their main checkout, and judges it as they go, alone or beside the old
+  version doing the same task. This is the strongest evidence. Start here unless the
+  developer asks for a pinned comparison.
 - **Compare old and new.** Both versions run on the same pinned request, and the results go
   side by side. Use it to check a change, or to find out whether a session the developer
   judged was luck. Each run is a full session that spends the account's usage: it counts
@@ -65,6 +67,40 @@ A real-work session the developer judged becomes the test case for the compariso
 7. When they are done, find the session's transcript in `~/.claude/projects/` by the
    worktree's path. Read what the session wrote, not a summary, and put it on a page for
    their comments (see Judge by comment). Remove a worktree or its branch only on their word.
+
+### Both versions on the same task
+
+The manual comparison. It needs only git and two sessions, so run it whenever the developer
+wants to compare, without waiting for a pinned case to exist. The two sessions may differ
+only in the skill they run. Anything else that differs is what the round measures instead.
+
+- One worktree per version, both from the same commit. Commit any document the task depends
+  on before branching, so both start from it.
+- The old version is the copy the project runs, unless the developer names another. Say how
+  it differs from this repo's copy.
+- Give both the same uncommitted files the task depends on, or give them to neither. An
+  earlier output one version wrote goes to neither: beside the other version, it is a worked
+  example of its rival.
+  - ❌ The new version's worktree holds the plans it wrote in earlier rounds.
+  - ✅ Those plans wait in the round's record, and neither worktree holds them.
+- Both get the developer's request in the same words, with only the skill's name changed.
+- A handover or note for either session holds the task, the constraints, and where the code
+  stands. Never what was learned about doing the job well: that coaches the session, and the
+  round measures the note instead of the skill. Lessons go in the round's `comments.md`.
+  - ❌ The handover opens with "what makes a good plan".
+  - ✅ The handover says what to plan and where the code stands.
+- When you run the sessions yourself, block in the run every place the handover forbids:
+  other checkouts and their databases, remote hosts, the developer's shell history. A rule
+  written only in a handover gets broken once a task seems to need it.
+- Judge what each version hands to the next step, after each has run all of its own steps up
+  to there. Never set one version's first draft beside the other's reviewed one.
+- Only the result the developer picks goes on to the next step. Carrying both on doubles the
+  cost and needs their word.
+- Record how long each step and each agent took, and what each cost, for both versions. The
+  session transcripts hold it: every line is timestamped, and each agent's transcript names
+  its type. A version that is slower or dearer for the same result is the worse one.
+- Put both outputs side by side for comments (see Judge by comment), and record the round in
+  `real-work-<date>/comments.md`.
 
 ## Compare old and new
 
