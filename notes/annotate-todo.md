@@ -25,7 +25,7 @@ Planned for the skillz session that wrote this, after its Story B run. Check
   address and its files. The session then sees the pile without having to remember to look.
 - One sentence in `skills/annotate/SKILL.md`: when a page's files are committed or replaced by a
   newer page, ask the developer whether to close it, and say which.
-- Test each exit path by hand, as `CLAUDE.md` asks for hooks: parent gone, other pages open,
+- Test each exit path by hand, as `AGENTS.md` asks for hooks: parent gone, other pages open,
   none open.
 
 ## 2. A Pi extension for annotate
@@ -75,3 +75,33 @@ Read from the same Pi docs (`skills.md`) and its bundled examples:
 - To check first: how Pi resolves a skill's relative paths, such as
   `.claude/skills/annotate/scripts/annotate.ts` in the annotate skill, which names Claude
   Code's folder.
+
+## 3. Styles through Tailwind, compiled in skillz
+
+The developer, 2026-10-29: "im just htinking tailwind woudlve made it more maintaineable and nice easy".
+Tried native first: the page's own stylesheet was polished instead (sentence-case labels, the file name
+above its folder, one filled Send button, a readable column, softer change bands).
+
+If the page keeps growing, move its styles to Tailwind without breaking the skill's promises:
+
+- Tailwind runs once in skillz, which holds the `package.json`, and compiles a plain CSS file committed
+  into the skill. A project that copies the skill installs nothing and the page makes no network call.
+- Never the CDN script: the page "makes no other network calls" (`skills/annotate/SKILL.md`).
+- The cost: most of the page is built in JavaScript, so every class name the script writes moves to
+  Tailwind's, and the compile step must scan the script for them.
+
+## 4. When the page becomes a small web app
+
+Decided 2026-10-29: not yet. The page stays one HTML file with its script, styled with plain Tailwind
+compiled in skillz. The developer asked "Should I compile a little web app at this point? How far does
+this need to go".
+
+Move it to a small framework (components for the line, the note and the comment box, bundled in skillz
+and shipped compiled in the skill, like the CSS) when any one of these holds:
+
+1. The page script passes about 1,000 lines, or a change keeps breaking something unrelated.
+2. A second screen arrives, such as a list of a session's open pages (item 1 above).
+3. Bugs come from state out of step: comments, layout and the side-by-side view disagreeing.
+
+Until then a framework adds a bundler, a second build and dependencies for one screen. When it comes,
+the Tailwind classes carry over into the components unchanged.

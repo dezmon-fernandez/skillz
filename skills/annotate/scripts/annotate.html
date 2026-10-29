@@ -3,185 +3,55 @@
 <head>
 <meta charset="utf-8">
 <title>Annotate: __NAME__</title>
-<style>
-  :root {
-    color-scheme: light;
-    --bg: #ffffff; --fg: #1b1b1f; --muted: #555; --number: #767676; --panel: #fafafa; --border: #ddd;
-    --hover: #eef2f8; --selected: #dbe6fb; --current: #e8eefc; --current-border: #c5d3f6;
-    --accent: #c25e00; --tint: #f9ece0; --flash: #ffe58a; --card: #ffffff; --quoted: #333; --good: #2e7d32;
-    --link: #1565c0; --code: #f1f3f5; --changed: #e6f4e8; --changed-border: #2e7d32; --removed: #fbeaea; --removed-border: #c62828;
-    --shadow: rgba(0, 0, 0, .06); --shadow-strong: rgba(0, 0, 0, .15);
-    --tok-keyword: #8250df; --tok-string: #116329; --tok-comment: #6e7781; --tok-function: #0550ae;
-    --tok-type: #953800; --tok-number: #0550ae; --tok-placeholder: #9a6700;
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #16181d; --fg: #e6e6e6; --muted: #a3a8b0; --number: #8a8f98; --panel: #1c1f26; --border: #30343c;
-    --hover: #232833; --selected: #263a5e; --current: #263048; --current-border: #3b4d75;
-    --accent: #e8822a; --tint: #3a2a1d; --flash: #6b5a12; --card: #1f232b; --quoted: #c9ccd1; --good: #66bb6a;
-    --link: #90caf9; --code: #262b34; --changed: #1d3322; --changed-border: #66bb6a; --removed: #3a1e1e; --removed-border: #ef5350;
-    --shadow: rgba(0, 0, 0, .4); --shadow-strong: rgba(0, 0, 0, .6);
-    --tok-keyword: #d2a8ff; --tok-string: #7ee787; --tok-comment: #8b949e; --tok-function: #79c0ff;
-    --tok-type: #ffa657; --tok-number: #79c0ff; --tok-placeholder: #e3b341;
-  }
-  body { margin: 0; font: 14px/1.5 -apple-system, system-ui, sans-serif; display: grid; grid-template-columns: 280px 1fr; height: 100vh; background: var(--bg); color: var(--fg); }
-  nav { border-right: 1px solid var(--border); overflow: auto; padding: 12px; background: var(--panel); }
-  nav h2 { font-size: 13px; text-transform: uppercase; color: var(--muted); margin: 4px 0 8px; }
-  nav button.document { display: block; width: 100%; text-align: left; padding: 8px; margin: 2px 0; border: 1px solid transparent; background: none; color: inherit; border-radius: 6px; cursor: pointer; font: inherit; }
-  nav button.document[aria-current="true"] { background: var(--current); border-color: var(--current-border); }
-  nav .count { float: right; color: var(--muted); }
-  nav .done { color: var(--good); margin-right: 4px; }
-  nav .hint { color: var(--muted); font-size: 12px; }
-  .status { font-size: 12px; color: var(--muted); min-height: 1.5em; }
-  .agent-reply { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); max-height: 45vh; overflow-y: auto; font-size: 13px; line-height: 1.4; }
-  .agent-reply h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  .agent-reply p { margin: 0 0 6px; }
-  .agent-reply p.item { padding-left: 12px; text-indent: -12px; }
-  main { overflow: auto; padding: 16px 24px 120px; }
-  h1 { font-size: 18px; margin: 0 0 12px; }
-  .top { display: flex; align-items: center; gap: 20px; margin-bottom: 12px; }
-  .top h1 { margin: 0; }
-  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
-  .toggle input { appearance: none; position: relative; width: 34px; height: 20px; margin: 0; border-radius: 10px; background: var(--border); cursor: pointer; transition: background .15s; }
-  .toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
-  .toggle input:checked { background: var(--accent); }
-  .toggle input:checked::after { transform: translateX(14px); }
-  .toggle input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  #sheets.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
-  .sheet-head { display: flex; gap: 16px; align-items: baseline; margin-bottom: 6px; }
-  .sheet-head h2 { font-size: 15px; margin: 0; }
-  .sheet-head label { font-size: 13px; cursor: pointer; }
-  textarea.overall { min-height: 36px; margin-bottom: 12px; }
-  .body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; max-width: 1760px; }
-  #sheets.compare .body { grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; }
-  .line { display: flex; gap: 12px; padding: 2px 8px; border-left: 4px solid transparent; cursor: pointer; white-space: pre-wrap; font-size: 14px; user-select: none; }
-  .line .number { font-family: ui-monospace, Menlo, monospace; font-size: 12px; padding-top: 2px; }
-  .md-h1 { font-size: 1.5em; font-weight: 600; }
-  .md-h2 { font-size: 1.3em; font-weight: 600; }
-  .md-h3 { font-size: 1.15em; font-weight: 600; }
-  .md-h4 { font-size: 1em; font-weight: 600; }
-  .md-marker { color: var(--muted); margin-right: .45em; }
-  .md-code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
-  .md-fence { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: var(--code); }
-  /* A diagram may spread into the comment margin beside it, which holds no card: cards sit
-     beside numbered rows. One wider than both columns is scaled down to fit. */
-  .body { --diagram-reach: 364px; }
-  #sheets.compare .body { --diagram-reach: 236px; }
-  .md-diagram { box-sizing: border-box; width: max-content; max-width: calc(100% - 1.8em - 2.5em - 32px + var(--diagram-reach)); margin: 6px 0 2px calc(1.8em + 2.5em + 32px); padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; cursor: zoom-in; }
-  .md-diagram svg { display: block; max-width: 100%; height: auto; }
-  .md-diagram.zoomed { cursor: zoom-out; }
-  .line.folded { display: none; }
-  .md-diagram-line { display: flex; gap: 12px; padding: 2px 8px; border-left: 4px solid transparent; font-size: 14px; }
-  .md-diagram-line .gutter { flex: none; width: 1.8em; display: flex; justify-content: center; cursor: pointer; }
-  .md-diagram-line .numbers { flex: none; display: flex; flex-direction: column; justify-content: space-between; min-width: 2.5em; margin: 6px 0 2px; padding: 2px 0; border: 0; background: none; color: var(--number); font-family: ui-monospace, Menlo, monospace; font-size: 12px; text-align: right; cursor: pointer; }
-  .md-diagram-line .numbers:hover { color: var(--accent); }
-  .md-diagram-line > .md-diagram { flex: none; margin-left: 0; }
-  .md-diagram-line.commented { background: var(--tint); border-left-color: var(--accent); }
-  .md-diagram-line.selected { background: var(--selected); }
-  .md-source-row { margin: 0 0 8px calc(1.8em + 2.5em + 32px); }
-  .md-source { padding: 0; border: 0; background: none; color: var(--muted); font-size: 12px; cursor: pointer; }
-  .md-source:hover { color: var(--fg); text-decoration: underline; }
-  .md-diagram.zoomed svg { max-width: none; }
-  .tok-keyword, .tok-decorator { color: var(--tok-keyword); }
-  .tok-string { color: var(--tok-string); }
-  .tok-comment { color: var(--tok-comment); font-style: italic; }
-  .tok-function { color: var(--tok-function); }
-  .tok-type { color: var(--tok-type); }
-  .tok-number { color: var(--tok-number); }
-  .tok-placeholder { color: var(--tok-placeholder); font-style: italic; }
-  .md-fence-mark, .md-muted { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
-  .md-link { color: var(--link); text-decoration: underline; }
-  .md-image { color: var(--muted); font-style: italic; }
-  .md-summary { font-weight: 500; }
-  .md-quote { border-left: 3px solid var(--border); padding-left: 10px; color: var(--muted); }
-  .md-img { display: block; max-width: 100%; height: auto; margin: 4px 0; border: 1px solid var(--border); border-radius: 4px; }
-  .line.md-block { padding-top: 0; padding-bottom: 0; }
-  .line.md-block .text { background: var(--code); padding: 2px 10px; }
-  .line.md-block .number { padding-top: 4px; }
-  /* A table's rows are still one row per source line; subgrid lets them share the table's columns. */
-  .md-table { display: grid; justify-content: start; }
-  .md-table .line { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; gap: 0; padding-top: 0; padding-bottom: 0; }
-  .md-table .gutter, .md-table .number { margin-right: 12px; padding-top: 4px; }
-  .md-cells { display: contents; }
-  .md-cell { padding: 3px 10px; border: 0 solid var(--border); border-width: 0 1px 1px 0; }
-  .md-cell .md-code { overflow-wrap: anywhere; }
-  .md-cell:first-child { border-left-width: 1px; }
-  .md-head .md-cell { font-weight: 600; border-top-width: 1px; }
-  /* The |---| line under a header draws as the header's underline, not as a row of its own. */
-  .md-table .md-rule .number { font-size: 0; padding-top: 0; }
-  .md-rule .md-cell { padding: 0; }
-  .line:hover, .line:focus-visible { background: var(--hover); outline: none; }
-  .line.changed { background: var(--changed); border-left-color: var(--changed-border); }
-  .swatch { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; margin-right: 4px; background: var(--changed); border-left: 4px solid var(--changed-border); }
-  .swatch.cut { background: var(--removed); border-left-color: var(--removed-border); }
-  .removed { margin: 1px 0; padding: 2px 8px 2px calc(1.8em + 2.5em + 32px); border-left: 4px solid var(--removed-border); background: var(--removed); color: var(--muted); font-size: 13px; white-space: pre-wrap; user-select: text; }
-  .removed .count { display: block; font-size: 12px; font-weight: 600; color: var(--removed-border); }
-  .working { position: sticky; top: 0; z-index: 3; margin: 0 0 12px; padding: 8px 12px; border-radius: 6px; background: var(--current); border: 1px solid var(--current-border); font-size: 14px; }
-  .working b { font-variant-numeric: tabular-nums; }
-  .removed del { display: block; text-decoration: none; color: var(--fg); opacity: .8; }
-  .line.commented { background: var(--tint); border-left-color: var(--accent); }
-  .line.commented:hover { filter: brightness(0.96); }
-  .line.selected { background: var(--selected); }
-  .line.flash { animation: flash 1.4s ease-out; }
-  @keyframes flash { from { background: var(--flash); } to { background: var(--tint); } }
-  .line .number { color: var(--number); min-width: 2.5em; text-align: right; }
-  .line .text { flex: 1; }
-  .line .gutter { flex: none; width: 1.8em; display: flex; justify-content: center; align-self: flex-start; }
-  .line .badge { font-family: system-ui; font-size: 12px; padding: 0 4px; border-radius: 8px; background: var(--accent); cursor: pointer; line-height: 1.5; }
-  .line .badge:hover { filter: brightness(1.15); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
-  .margin { position: relative; pointer-events: none; }
-  .margin > * { pointer-events: auto; }
-  .card { position: absolute; left: 0; right: 0; text-align: left; font: inherit; font-size: 13px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 6px 10px; cursor: pointer; box-shadow: 0 1px 3px var(--shadow); }
-  .card:hover, .card:focus-visible { box-shadow: 0 2px 8px var(--shadow-strong); outline: none; }
-  .card .range { color: var(--muted); font-size: 12px; }
-  .card .comment { color: var(--fg); white-space: pre-wrap; }
-  main { padding-bottom: 360px; }
-  .editor { position: fixed; left: 280px; right: 0; bottom: 0; z-index: 2; background: var(--card); border-top: 2px solid var(--current-border); border-radius: 12px 12px 0 0; padding: 14px 24px 18px; box-shadow: 0 -6px 20px var(--shadow-strong); visibility: hidden; transform: translateY(100%); transition: transform .22s ease-out, visibility 0s .22s; }
-  .editor.open { visibility: visible; transform: translateY(0); transition: transform .22s ease-out, visibility 0s; }
-  .editor > * { max-width: 900px; }
-  .editor .quoted { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--quoted); margin: 0 0 8px; white-space: pre-wrap; }
-  fieldset { border: 1px solid var(--border); border-radius: 6px; margin: 12px 0; padding: 6px 10px; font-size: 13px; }
-  fieldset label { display: block; cursor: pointer; }
-  .editor > label { display: block; font-weight: 500; margin-bottom: 4px; }
-  textarea { display: block; width: 100%; min-height: 72px; font: inherit; box-sizing: border-box; }
-  .actions button, .export { padding: 5px 12px; font: inherit; cursor: pointer; margin: 6px 6px 0 0; }
-</style>
+<style>__CSS__</style>
 </head>
-<body>
-<nav aria-label="Documents">
-  <h2>Documents</h2>
-  <div id="documents"></div>
-  <p class="hint" id="changed-hint" hidden><span class="swatch"></span><span id="changed-label">Changed since your last Send</span></p>
-  <p class="hint" id="removed-hint" hidden><span class="swatch cut"></span><span id="removed-label">Removed since your last Send</span></p>
-  <fieldset>
-    <legend>Agent</legend>
-    <label for="instruction">What should the agent do? (optional)</label>
-    <textarea id="instruction" class="overall" placeholder="e.g. apply these, then tighten the intro"></textarea>
-    <button class="export" id="send">Send to agent</button>
-    <button class="export" id="copy">Copy for agent</button>
-    <p class="status" id="status" role="status"></p>
-    <section class="agent-reply" id="agent-reply" aria-label="Agent's reply to your last Send" hidden>
-      <h3>Agent's reply</h3>
-      <div id="agent-reply-text"></div>
-    </section>
-  </fieldset>
-  <p class="hint">Click a line, or drag across several, and write a comment. Shift+click extends from the last line you
-  clicked. Click a 💬, a card, or a commented section to edit it. Comments stay in this browser; nothing leaves it
-  unless you press Send, which only reaches the helper running on your own machine.</p>
-</nav>
-<main>
-  <p class="working" id="working" role="status" hidden></p>
-  <div class="top">
-    <label class="toggle" id="view" hidden><input type="checkbox" role="switch" id="compare"> Side by side</label>
-    <h1 id="title"></h1>
+<!-- Styled with Tailwind's own classes only; references/design.md says which each element uses. -->
+<body class="group/page flex h-screen bg-zinc-50 text-sm text-zinc-900 dark:bg-zinc-900 dark:text-zinc-200">
+<nav aria-label="Documents" class="flex w-68 flex-none flex-col border-r border-zinc-200 bg-white dark:border-white/5 dark:bg-zinc-950/30">
+  <div class="min-h-0 flex-1 overflow-auto px-3 py-4">
+    <h2 class="mx-2 mb-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">Documents</h2>
+    <div id="documents"></div>
+    <div class="mt-4 grid gap-1 px-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <p class="flex items-center gap-2" id="changed-hint" hidden><span class="size-3 flex-none border-l-4 border-emerald-500 bg-emerald-50 dark:border-emerald-400/70 dark:bg-emerald-400/10"></span><span id="changed-label">Changed since your last Send</span></p>
+      <p class="flex items-center gap-2" id="removed-hint" hidden><span class="size-3 flex-none border-l-4 border-rose-500 bg-rose-50 dark:border-rose-400/70 dark:bg-rose-400/10"></span><span id="removed-label">Removed since your last Send</span></p>
+      <p>Click a line to comment. ⌘↵ sends.</p>
+    </div>
   </div>
-  <div id="sheets"></div>
+  <div class="grid gap-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
+    <label for="instruction" class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Note for the agent (optional)</label>
+    <textarea id="instruction" rows="2" placeholder="e.g. apply these, then tighten the intro" class="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-2 focus:-outline-offset-1 focus:outline-zinc-900 dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:outline-zinc-100"></textarea>
+    <div class="flex gap-2">
+      <button id="send" class="h-8 flex-1 cursor-pointer rounded-lg bg-zinc-900 px-3 text-sm font-semibold whitespace-nowrap text-white enabled:hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:enabled:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100">Send</button>
+      <button id="copy" class="h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100">Copy</button>
+    </div>
+    <p class="min-h-4 text-xs text-zinc-500 dark:text-zinc-400" id="status" role="status"></p>
+    <section class="max-h-80 overflow-y-auto border-l-2 border-zinc-200 pl-3 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400" id="agent-reply" aria-label="Agent's reply to your last Send" hidden>
+      <h3 class="mb-1 text-xs font-semibold text-zinc-900 dark:text-zinc-100">Agent's reply</h3>
+      <div class="grid gap-1" id="agent-reply-text"></div>
+    </section>
+  </div>
+</nav>
+<main class="min-w-0 flex-1 overflow-auto px-8 pt-6 pb-64">
+  <p class="sticky top-0 z-20 mx-auto mb-4 max-w-7xl rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 shadow-sm group-data-compare/page:max-w-none dark:border-white/10 dark:bg-zinc-800" id="working" role="status" hidden></p>
+  <div class="mx-auto mb-6 flex max-w-7xl items-start justify-between gap-6 group-data-compare/page:max-w-none">
+    <h1 class="min-w-0 text-lg/6 font-semibold wrap-anywhere" id="title"></h1>
+    <label class="inline-flex flex-none cursor-pointer items-center gap-2 text-zinc-500 dark:text-zinc-400" id="view" hidden><input type="checkbox" role="switch" id="compare" class="relative h-4 w-7 cursor-pointer appearance-none rounded-full bg-zinc-200 transition-colors after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-white after:shadow-sm after:transition-transform checked:bg-zinc-900 checked:after:translate-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-700 dark:after:bg-zinc-950 dark:checked:bg-zinc-100 dark:focus-visible:outline-zinc-100"> Side by side</label>
+  </div>
+  <div class="group-data-compare/page:grid group-data-compare/page:grid-cols-2 group-data-compare/page:gap-8" id="sheets"></div>
 </main>
-<section class="editor" id="editor" aria-label="Comment on this section">
-  <p class="quoted" id="quoted"></p>
-  <label for="comment">Comment</label>
-  <textarea id="comment"></textarea>
-  <div class="actions"><button id="save">Save</button><button id="clear">Delete</button><button id="close">Cancel</button></div>
+<!-- The comment box. Closed, it waits here; open, it sits in the margin beside the lines it is about (openEditor). -->
+<section class="absolute right-0 z-10 grid w-84 gap-2 group-data-compare/page:w-64 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl shadow-black/10 dark:border-white/10 dark:bg-zinc-800 dark:shadow-black/40" id="editor" aria-label="Comment on this section" hidden>
+  <p class="grid gap-1 text-xs text-zinc-500 dark:text-zinc-400" id="quoted"></p>
+  <label for="comment" class="sr-only">Comment</label>
+  <textarea id="comment" class="min-h-20 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 field-sizing-content placeholder:text-zinc-400 focus:border-transparent focus:outline-2 focus:-outline-offset-1 focus:outline-zinc-900 dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:outline-zinc-100"></textarea>
+  <div class="flex flex-wrap items-center gap-2">
+    <button id="send-now" title="Save this comment and send every comment (⌘↵)" class="h-8 cursor-pointer rounded-lg bg-zinc-900 px-3 text-sm font-semibold whitespace-nowrap text-white enabled:hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:enabled:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100">Send<span class="ml-2 text-xs font-normal opacity-60">⌘↵</span></button>
+    <button id="save" class="h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100">Save</button>
+    <span class="ml-auto flex gap-2">
+      <button id="clear" class="h-8 cursor-pointer rounded-lg px-2 text-sm whitespace-nowrap text-zinc-500 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-red-400 dark:focus-visible:outline-zinc-100">Delete</button>
+      <button id="close" class="h-8 cursor-pointer rounded-lg px-2 text-sm whitespace-nowrap text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100">Cancel</button>
+    </span>
+  </div>
 </section>
 <script>
 const DATA = __DATA__;
@@ -193,10 +63,35 @@ const byId = (id) => document.getElementById(id);
 const editor = byId("editor");
 let current = 0;
 let compare = localStorage.getItem("annotate:compare") === "true";
+let working = false; // true from a Send until the agent reopens the page
 let selection = null;
 let hovered = null;
 let drag = null;
 let lastClicked = null;
+
+// The classes on what the script builds. Each is written out whole, so the stylesheet compiler finds it.
+// A row's states are data attributes the script sets (data-changed, data-commented, data-selected) and the body's
+// are data-working and data-compare; the classes below style each one. A selected row shows as selected even when
+// it also changed.
+const ROW = "line group/line flex cursor-pointer gap-3 rounded border-l-4 border-transparent px-2 text-sm/6 whitespace-pre-wrap select-none hover:bg-zinc-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-zinc-900 data-selected:border-zinc-900 data-selected:bg-zinc-100 data-changed:not-data-selected:border-emerald-500 data-changed:not-data-selected:bg-emerald-50 group-data-working/page:cursor-default group-data-working/page:data-commented:opacity-60 dark:hover:bg-white/5 dark:focus-visible:outline-zinc-100 dark:data-selected:border-zinc-100 dark:data-selected:bg-white/5 dark:data-changed:not-data-selected:border-emerald-400/70 dark:data-changed:not-data-selected:bg-emerald-400/10";
+const TEXT = "min-w-0 flex-1 group-data-commented/line:bg-amber-200/50 group-data-commented/line:underline group-data-commented/line:decoration-amber-400 group-data-commented/line:decoration-2 group-data-commented/line:underline-offset-4 dark:group-data-commented/line:bg-amber-300/15 dark:group-data-commented/line:decoration-amber-300/70";
+const FENCE = TEXT + " bg-zinc-100 px-3 font-mono text-xs/6 dark:bg-black/20";
+const CELL = "md-cell border-r border-b border-zinc-200 px-3 py-1 first:border-l group-data-commented/line:bg-amber-200/50 dark:border-zinc-800 dark:group-data-commented/line:bg-amber-300/15";
+const HEADING = ["text-lg font-semibold", "text-base font-semibold", "font-semibold", "font-semibold"];
+const CODE_SPAN = "rounded bg-zinc-100 px-1 font-mono text-xs wrap-anywhere dark:bg-zinc-800";
+const TOKEN = {
+  keyword: "text-violet-700 dark:text-violet-300",
+  decorator: "text-violet-700 dark:text-violet-300",
+  string: "text-cyan-700 dark:text-cyan-300",
+  comment: "text-zinc-500 italic dark:text-zinc-400",
+  function: "text-blue-700 dark:text-blue-300",
+  number: "text-blue-700 dark:text-blue-300",
+  type: "text-fuchsia-700 dark:text-fuchsia-300",
+  placeholder: "text-zinc-500 italic dark:text-zinc-400",
+};
+const FIELD = "w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-2 focus:-outline-offset-1 focus:outline-zinc-900 dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:outline-zinc-100";
+// Blocks that sit between rows start their text where a row's text starts: past a gutter and a number.
+const inset = () => [element("span", "w-5 flex-none"), element("span", "w-8 flex-none")];
 
 const documentAt = () => DATA.documents[current];
 const itemById = (id) => DATA.documents.find((item) => item.id === id);
@@ -241,11 +136,16 @@ function shownItems() {
 
 function renderDocuments() {
   byId("documents").replaceChildren(...DATA.documents.map((item, index) => {
-    const button = element("button", "document");
+    // aria-[current=true] is an arbitrary variant because Tailwind has no aria-current one.
+    const button = element("button", "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-zinc-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-zinc-900 aria-[current=true]:bg-zinc-200/70 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100 dark:aria-[current=true]:bg-zinc-700/60");
     button.setAttribute("aria-current", String(shownItems().some((shown) => shown.id === item.id)));
-    const count = element("span", "count", notesOf(item).length || "");
-    const done = element("span", "done", metaOf(item).reviewed ? "✓" : "");
-    button.append(count, done, item.title);
+    const done = element("span", "flex-none text-zinc-500 empty:hidden dark:text-zinc-400", metaOf(item).reviewed ? "✓" : "");
+    const count = element("span", "min-w-5 flex-none rounded-full bg-amber-200/50 px-2 text-center text-xs/5 empty:hidden dark:bg-amber-300/15", notesOf(item).length || "");
+    const cut = item.title.lastIndexOf("/");
+    const name = element("span", "min-w-0 flex-1");
+    name.append(element("span", "block truncate", item.title.slice(cut + 1)), element("span", "block truncate text-xs text-zinc-500 empty:hidden dark:text-zinc-400", item.title.slice(0, cut + 1)));
+    name.title = item.title;
+    button.append(done, name, count);
     button.onclick = () => { current = index; lastClicked = null; closeEditor(); render(); };
     return button;
   }));
@@ -255,8 +155,8 @@ function renderDocuments() {
 function markdownImage(token, state) {
   const [, alt, target] = token.match(/^!\[([^\]]*)\]\(([^)]*)\)/);
   const path = target.trim().split(/\s+/)[0];
-  if (!path || /^([a-z][a-z0-9+.-]*:|\/)/i.test(path)) return element("span", "md-image", "[image: " + (alt || path) + "]");
-  const image = element("img", "md-img");
+  if (!path || /^([a-z][a-z0-9+.-]*:|\/)/i.test(path)) return element("span", "text-zinc-500 italic dark:text-zinc-400", "[image: " + (alt || path) + "]");
+  const image = element("img", "my-1 block h-auto max-w-full rounded border border-zinc-200 dark:border-zinc-800");
   image.alt = alt || path;
   image.src = state.imageBase + path;
   image.addEventListener("load", relayout);
@@ -271,7 +171,7 @@ function inlineMarkdown(text, state) {
     const closingTick = text.indexOf("`");
     const indent = text.match(/^\s*/)[0];
     const codeEnd = closingTick === -1 ? text.length : closingTick;
-    nodes.push(document.createTextNode(indent), element("code", "md-code", text.slice(indent.length, codeEnd)));
+    nodes.push(document.createTextNode(indent), element("code", CODE_SPAN, text.slice(indent.length, codeEnd)));
     if (closingTick === -1) return nodes;
     text = text.slice(closingTick + 1);
     state.insideCodeSpan = false;
@@ -282,16 +182,16 @@ function inlineMarkdown(text, state) {
   while ((match = pattern.exec(text))) {
     if (match.index > last) nodes.push(document.createTextNode(text.slice(last, match.index)));
     const token = match[0];
-    if (token.startsWith("**")) nodes.push(element("strong", "", token.slice(2, -2)));
-    else if (token.startsWith("`")) nodes.push(element("code", "md-code", token.slice(1, -1)));
+    if (token.startsWith("**")) nodes.push(element("strong", "font-semibold", token.slice(2, -2)));
+    else if (token.startsWith("`")) nodes.push(element("code", CODE_SPAN, token.slice(1, -1)));
     else if (token.startsWith("![")) nodes.push(markdownImage(token, state));
-    else nodes.push(element("span", "md-link", token.match(/^\[([^\]]+)\]/)[1]));
+    else nodes.push(element("span", "underline decoration-zinc-400 underline-offset-2 dark:decoration-zinc-600", token.match(/^\[([^\]]+)\]/)[1]));
     last = pattern.lastIndex;
   }
   const rest = text.slice(last);
   const openingTick = rest.indexOf("`");
   if (openingTick !== -1) {
-    nodes.push(document.createTextNode(rest.slice(0, openingTick)), element("code", "md-code", rest.slice(openingTick + 1)));
+    nodes.push(document.createTextNode(rest.slice(0, openingTick)), element("code", CODE_SPAN, rest.slice(openingTick + 1)));
     state.insideCodeSpan = true;
   } else if (rest) nodes.push(document.createTextNode(rest));
   return nodes;
@@ -334,7 +234,7 @@ function highlightCode(text, state) {
   let plain = "";
   let at = 0;
   const flush = () => { if (plain) nodes.push(document.createTextNode(plain)); plain = ""; };
-  const token = (kind, value) => { flush(); nodes.push(element("span", "tok-" + kind, value)); at += value.length; };
+  const token = (kind, value) => { flush(); nodes.push(element("span", TOKEN[kind], value)); at += value.length; };
   if (state.codeOpen) {
     const end = text.indexOf(state.codeOpen.close);
     if (end === -1) token(state.codeOpen.kind, text);
@@ -371,7 +271,7 @@ function highlightCode(text, state) {
 }
 
 function markdownLine(text, state) {
-  const span = element("span", "text");
+  const span = element("span", TEXT);
   let match;
   if (!text.trim()) state.insideCodeSpan = false;
   // A block closes only on a bare fence at least as long as the one that opened it, so a
@@ -382,48 +282,48 @@ function markdownLine(text, state) {
       state.fence = closes ? false : match[1];
       state.language = closes ? null : CODE_LANGUAGE[match[2].toLowerCase()] || null;
       state.codeOpen = null;
-      span.className = "text md-fence-mark";
+      span.className = FENCE + " text-zinc-400 dark:text-zinc-500";
       span.textContent = state.fence ? match[2] || "code" : " ";
       return span;
     }
   }
   if (state.fence) {
-    span.className = "text md-fence";
+    span.className = FENCE;
     span.append(...highlightCode(text, state));
     return span;
   }
   if (/^\s*\|.*\|\s*$/.test(text)) {
     const rule = /^[\s|:-]+$/.test(text);
-    span.className = "text md-cells" + (rule ? " md-rule" : "");
+    span.className = TEXT + " md-cells" + (rule ? " md-rule" : "");
     span.append(...text.trim().slice(1, -1).split(/(?<!\\)\|/).map((cell) => {
-      const node = element("span", "md-cell");
+      const node = element("span", CELL);
       if (!rule) node.append(...inlineMarkdown(cell.trim().replaceAll("\\|", "|"), state));
       return node;
     }));
     return span;
   }
   if ((match = text.match(/^(#{1,6})\s+(.*)$/))) {
-    span.classList.add("md-h" + Math.min(match[1].length, 4));
+    span.className += " " + HEADING[Math.min(match[1].length, 4) - 1];
     span.append(...inlineMarkdown(match[2], state));
     return span;
   }
   if ((match = text.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/))) {
-    span.style.paddingLeft = (Math.floor(match[1].length / 2) * 1.4) + "em";
-    span.append(element("span", "md-marker", /\d/.test(match[2]) ? match[2] : "•"), ...inlineMarkdown(match[3], state));
+    span.style.paddingLeft = (Math.floor(match[1].length / 2) * 16) + "px";
+    span.append(element("span", "mr-2 text-zinc-500 dark:text-zinc-400", /\d/.test(match[2]) ? match[2] : "•"), ...inlineMarkdown(match[3], state));
     return span;
   }
   if ((match = text.match(/^\s*<summary>(.*)<\/summary>\s*$/))) {
-    span.className = "text md-summary";
+    span.className = TEXT + " font-semibold";
     span.textContent = "▸ " + match[1];
     return span;
   }
   if (/^\s*(<\/?details>|<!--.*-->)\s*$/.test(text)) {
-    span.className = "text md-muted";
+    span.className = TEXT + " font-mono text-xs/6 text-zinc-500 dark:text-zinc-400";
     span.textContent = text.trim();
     return span;
   }
   if ((match = text.match(/^>\s?(.*)$/))) {
-    span.classList.add("md-quote");
+    span.className += " border-l-2 border-zinc-200 pl-3 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400";
     span.append(...inlineMarkdown(match[1], state));
     return span;
   }
@@ -492,19 +392,19 @@ function frameDiagram(diagram, key) {
   const whole = notes.find((note) => note.start === start && note.end === end);
   block.dataset.start = start;
   block.dataset.end = end;
-  block.classList.toggle("commented", Boolean(whole));
+  block.toggleAttribute("data-commented", Boolean(whole));
   const open = () => { lastClicked = null; openEditor(item, start, end, whole || null); };
-  const gutter = element("span", "gutter", whole ? "💬" : "");
-  const numbers = element("button", "numbers");
+  const gutter = element("span", "flex w-5 flex-none cursor-pointer justify-center", whole ? "💬" : "");
+  const numbers = element("button", "my-1 flex min-w-8 flex-none cursor-pointer flex-col justify-between py-1 text-right font-mono text-xs text-zinc-400 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100");
   numbers.append(element("span", "", String(start + 1)), element("span", "", String(end + 1)));
   numbers.title = "Comment on the whole diagram";
   numbers.setAttribute("aria-label", "Comment on the diagram, lines " + (start + 1) + " to " + (end + 1));
   gutter.onclick = numbers.onclick = open;
   block.prepend(gutter, numbers);
-  if (rows.some((row) => row.matches(".changed")) || notes.some((note) => note !== whole)) return;
-  const button = element("button", "md-source");
+  if (rows.some((row) => row.hasAttribute("data-changed")) || notes.some((note) => note !== whole)) return;
+  const button = element("button", "cursor-pointer text-xs text-zinc-500 hover:text-zinc-900 hover:underline focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100");
   const show = (shown) => {
-    rows.forEach((row) => row.classList.toggle("folded", !shown));
+    rows.forEach((row) => { row.hidden = !shown; });
     button.textContent = (shown ? "Hide source" : "Show source") + " (" + rows.length + " lines)";
   };
   button.onclick = () => {
@@ -514,8 +414,8 @@ function frameDiagram(diagram, key) {
     relayout();
   };
   show(shownSources.has(key));
-  const row = element("div", "md-source-row");
-  row.append(button);
+  const row = element("div", "mb-2 flex gap-3 border-l-4 border-transparent px-2");
+  row.append(...inset(), button);
   block.after(row);
 }
 
@@ -547,11 +447,13 @@ function renderLines(container, item) {
   const cut = (index) => {
     const lost = removedAt.get(index);
     if (!lost) return;
-    const block = element("div", "removed");
+    const block = element("div", "flex gap-3 border-l-4 border-rose-500 bg-rose-50 px-2 py-1 text-zinc-500 select-text dark:border-rose-400/70 dark:bg-rose-400/10 dark:text-zinc-400");
     block.setAttribute("role", "note");
     block.setAttribute("aria-label", lost.length + (lost.length === 1 ? " line" : " lines") + " removed: " + lost.join(" "));
-    block.append(element("span", "count", "− " + lost.length + (lost.length === 1 ? " line removed" : " lines removed")));
-    lost.forEach((line) => block.append(element("del", "", line || " ")));
+    const text = element("div", "min-w-0 flex-1 whitespace-pre-wrap");
+    text.append(element("span", "block text-xs font-semibold text-rose-600 dark:text-rose-300", "− " + lost.length + (lost.length === 1 ? " line removed" : " lines removed")));
+    lost.forEach((line) => text.append(element("del", "block line-through decoration-red-600 dark:decoration-red-400", line || " ")));
+    block.append(...inset(), text);
     table = null;
     children.push(block);
   };
@@ -559,21 +461,29 @@ function renderLines(container, item) {
     cut(index);
     const opensDiagram = !markdown.fence && /^\s*`{3,}\s*mermaid\s*$/i.test(text);
     if (opensDiagram) {
-      diagram = { item, block: element("div", "md-diagram-line"), figure: element("div", "md-diagram"), lines: [], rows: [] };
+      diagram = {
+        item,
+        block: element("div", "md-diagram-line group/diagram flex gap-3 rounded border-l-4 border-transparent px-2 data-selected:border-zinc-900 data-selected:bg-zinc-100 dark:data-selected:border-zinc-100 dark:data-selected:bg-white/5"),
+        figure: element("div", "md-diagram my-1 w-max flex-none overflow-x-auto rounded-lg border border-zinc-200 bg-white p-2 group-data-commented/diagram:border-amber-400 group-data-commented/diagram:bg-amber-50 dark:border-white/10 dark:bg-zinc-950/40 dark:group-data-commented/diagram:border-yellow-400 dark:group-data-commented/diagram:bg-amber-300/10"),
+        lines: [],
+        rows: [],
+      };
       diagram.block.append(diagram.figure);
       diagrams.push(diagram);
       table = null;
       children.push(diagram.block);
     }
     const commented = list.some((note) => index >= note.start && index <= note.end);
-    const row = element("div", "line" + (changed.has(index) ? " changed" : "") + (commented ? " commented" : ""));
+    const row = element("div", ROW);
     row.dataset.index = index;
+    row.toggleAttribute("data-changed", changed.has(index));
+    row.toggleAttribute("data-commented", commented);
     row.tabIndex = 0;
     row.setAttribute("role", "button");
     row.setAttribute("aria-label", "Line " + (index + 1) + (changed.has(index) ? ", changed" : "") + (commented ? ", has a comment" : "") + ": " + text);
-    const gutter = element("span", "gutter");
+    const gutter = element("span", "gutter flex w-5 flex-none justify-center self-start");
     list.filter((note) => note.start === index).forEach((note) => {
-      const badge = element("span", "badge", "💬");
+      const badge = element("span", "badge cursor-pointer rounded-full hover:ring-2 hover:ring-amber-400 dark:hover:ring-amber-300", "💬");
       badge.dataset.key = note.key;
       badge.title = note.comment;
       gutter.append(badge);
@@ -584,8 +494,7 @@ function renderLines(container, item) {
       if (markdown.fence) diagram.lines.push(text);
       else diagram = null;
     }
-    row.append(gutter, element("span", "number", index + 1), content);
-    if (content.matches(".md-fence, .md-fence-mark")) row.classList.add("md-block");
+    row.append(gutter, element("span", "number min-w-8 flex-none text-right font-mono text-xs/6 text-zinc-400 dark:text-zinc-600", index + 1), content);
     if (!content.matches(".md-cells")) {
       table = null;
       children.push(row);
@@ -605,12 +514,23 @@ function renderLines(container, item) {
   drawDiagrams(diagrams);
 }
 
+// Whatever sits beside a line: the line's row, or the diagram drawn in place of a folded one, which has no position.
+function anchorOf(lines, index) {
+  const row = lines.querySelector('.line[data-index="' + index + '"]');
+  const diagram = [...lines.querySelectorAll(".md-diagram-line")].find((block) => index >= Number(block.dataset.start) && index <= Number(block.dataset.end));
+  return row.hidden && diagram ? diagram : row;
+}
+
 function renderMargin(margin, lines, item) {
   margin.querySelectorAll(".card").forEach((card) => card.remove());
   let nextFreeTop = 0;
   notesOf(item).forEach((note) => {
-    const card = element("button", "card");
-    card.append(element("div", "range", lineLabel(note.start, note.end).toLowerCase()), element("div", "comment", note.comment));
+    const card = element("button", "card absolute right-0 left-0 cursor-pointer rounded-lg border border-zinc-200 border-l-2 border-l-amber-400 dark:border-l-amber-300/70 bg-amber-50 px-3 py-2 text-left shadow-xs hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:bg-amber-300/10 dark:focus-visible:outline-zinc-100");
+    card.append(
+      element("span", "float-right ml-2 hidden rounded-full border border-zinc-200 px-2 text-xs text-zinc-500 group-data-working/page:inline-block dark:border-zinc-700 dark:text-zinc-400", "sent · Claude is on it"),
+      element("div", "text-xs text-zinc-500 dark:text-zinc-400", lineLabel(note.start, note.end).toLowerCase()),
+      element("div", "whitespace-pre-wrap", note.comment),
+    );
     card.setAttribute("aria-label", "Edit comment on " + lineLabel(note.start, note.end).toLowerCase() + ": " + note.comment);
     card.onclick = () => openEditor(item, note.start, note.end, note);
     card.onmouseenter = () => { hovered = { id: item.id, start: note.start, end: note.end }; highlight(); };
@@ -618,10 +538,7 @@ function renderMargin(margin, lines, item) {
     card.onfocus = card.onmouseenter;
     card.onblur = card.onmouseleave;
     margin.append(card);
-    // A folded line has no position, so a note on one sits beside the diagram drawn in its place.
-    const row = lines.querySelector('.line[data-index="' + note.start + '"]');
-    const diagram = [...lines.querySelectorAll(".md-diagram-line")].find((block) => note.start >= Number(block.dataset.start) && note.start <= Number(block.dataset.end));
-    const top = Math.max((row.classList.contains("folded") && diagram ? diagram : row).offsetTop, nextFreeTop);
+    const top = Math.max(anchorOf(lines, note.start).offsetTop, nextFreeTop);
     card.style.top = top + "px";
     nextFreeTop = top + card.offsetHeight + 8;
   });
@@ -629,30 +546,43 @@ function renderMargin(margin, lines, item) {
 }
 
 function renderSheets() {
+  // The open comment box lives in a margin this replaces, so it closes first.
+  if (byId("sheets").contains(editor)) closeEditor();
   const items = shownItems();
-  byId("title").textContent = items.length > 1 ? items[0].group : items[0].title;
+  const title = items.length > 1 ? items[0].group : items[0].title;
+  const folder = title.slice(0, title.lastIndexOf("/") + 1);
+  byId("title").replaceChildren(title.slice(folder.length), element("span", "block text-xs font-normal text-zinc-400 dark:text-zinc-500", folder));
+  document.body.toggleAttribute("data-compare", items.length > 1);
   const container = byId("sheets");
-  container.classList.toggle("compare", items.length > 1);
   container.replaceChildren(...items.map((item) => {
-    const sheet = element("div", "sheet");
+    const sheet = element("div", "sheet mx-auto w-full min-w-0 max-w-7xl");
     sheet.dataset.id = item.id;
-    const head = element("div", "sheet-head");
-    if (items.length > 1) head.append(element("h2", "", versionLabel(item)));
-    const reviewed = element("label");
-    const box = element("input");
+    // One row above the sheet, as wide as it: the version (side by side), the overall comment link, Reviewed.
+    const head = element("div", "mb-2 flex max-w-4xl items-center gap-4");
+    if (items.length > 1) head.append(element("h2", "font-semibold", versionLabel(item)));
+    const reviewed = element("label", "ml-auto inline-flex cursor-pointer items-center gap-2 text-zinc-500 dark:text-zinc-400");
+    const box = element("input", "size-4 cursor-pointer accent-zinc-900 dark:accent-zinc-100");
     box.type = "checkbox";
     box.checked = metaOf(item).reviewed;
     box.onchange = () => { metaOf(item).reviewed = box.checked; persist(); renderDocuments(); };
     reviewed.append(box, " Reviewed");
     head.append(reviewed);
-    const overall = element("textarea", "overall");
+    const overall = element("textarea", FIELD + " mb-3 block min-h-9 max-w-4xl field-sizing-content");
+    overall.rows = 1;
     overall.placeholder = "Overall comment on this document (optional)";
     overall.setAttribute("aria-label", "Overall comment on " + item.title);
     overall.value = metaOf(item).overall;
     overall.oninput = () => { metaOf(item).overall = overall.value; persist(); };
-    const body = element("div", "body");
-    const lines = element("div", "lines");
-    const margin = element("div", "margin");
+    const addOverall = element("button", "cursor-pointer text-sm text-zinc-500 hover:text-zinc-900 hover:underline focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100", "Add an overall comment");
+    addOverall.type = "button";
+    overall.hidden = !metaOf(item).overall;
+    addOverall.hidden = !overall.hidden;
+    addOverall.onclick = () => { addOverall.hidden = true; overall.hidden = false; overall.focus(); };
+    head.insertBefore(addOverall, reviewed);
+    // The margin is position: relative, and cards and the comment box take their top from a row's offsetTop.
+    const body = element("div", "relative flex gap-8 group-data-compare/page:gap-4");
+    const lines = element("div", "lines min-w-0 max-w-4xl flex-1 rounded-xl bg-white py-2 ring-1 ring-zinc-200 dark:bg-zinc-800/40 dark:ring-white/5");
+    const margin = element("div", "margin pointer-events-none relative w-80 flex-none group-data-compare/page:w-56 *:pointer-events-auto");
     body.append(lines, margin);
     sheet.append(head, overall, body);
     renderLines(lines, item);
@@ -666,6 +596,7 @@ function relayout() {
     const sheet = sheetOf(item);
     renderMargin(sheet.querySelector(".margin"), sheet.querySelector(".lines"), item);
   });
+  if (selection && !editor.hidden) placeEditor();
 }
 
 function highlight() {
@@ -673,25 +604,39 @@ function highlight() {
   document.querySelectorAll(".sheet").forEach((sheet) => {
     sheet.querySelectorAll(".line").forEach((row) => {
       const index = Number(row.dataset.index);
-      row.classList.toggle("selected", Boolean(range) && range.id === sheet.dataset.id && index >= range.start && index <= range.end);
+      row.toggleAttribute("data-selected", Boolean(range) && range.id === sheet.dataset.id && index >= range.start && index <= range.end);
     });
     sheet.querySelectorAll(".md-diagram-line").forEach((block) => {
-      block.classList.toggle("selected", Boolean(range) && range.id === sheet.dataset.id && range.start <= Number(block.dataset.end) && range.end >= Number(block.dataset.start));
+      block.toggleAttribute("data-selected", Boolean(range) && range.id === sheet.dataset.id && range.start <= Number(block.dataset.end) && range.end >= Number(block.dataset.start));
     });
   });
 }
 
+// The comment box sits in the margin of the sheet it is about, level with the first line of the selection and
+// above any card there. Returns what it sits beside.
+function placeEditor() {
+  const anchor = anchorOf(sheetOf(itemById(selection.id)).querySelector(".lines"), selection.start);
+  editor.style.top = anchor.offsetTop + "px";
+  return anchor;
+}
+
 function openEditor(item, start, end, note) {
+  // While the agent is changing the documents, a comment would land on text that is about to move.
+  if (working) { status(PAUSED); return; }
   selection = { id: item.id, start, end, key: note ? note.key : null };
   const first = item.lines[start];
-  const last = item.lines[end];
-  byId("quoted").textContent = (compare ? versionLabel(item) + ", " : "") + lineLabel(start, end) + ":\n" + first + (end > start ? (end > start + 1 ? "\n..." : "") + "\n" + last : "");
+  byId("quoted").replaceChildren(
+    element("span", "font-semibold text-zinc-700 dark:text-zinc-300", (compare ? versionLabel(item) + ", " : "") + lineLabel(start, end)),
+    element("span", "truncate border-l-2 border-zinc-300 pl-2 dark:border-zinc-600", first.trim() + (end > start ? " …" : "")),
+  );
   byId("comment").value = note ? note.comment : "";
   byId("clear").hidden = !note;
-  editor.classList.add("open");
+  sheetOf(item).querySelector(".margin").append(editor);
+  editor.hidden = false;
+  const anchor = placeEditor();
   highlight();
   byId("comment").focus({ preventScroll: true });
-  rowAt(sheetOf(item), start).scrollIntoView({ block: "center", behavior: "smooth" });
+  anchor.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 function openAt(item, start, end) {
@@ -700,7 +645,8 @@ function openAt(item, start, end) {
   else openEditor(item, start, end, null);
 }
 
-function closeEditor() { editor.classList.remove("open"); selection = null; highlight(); }
+// Closed, the comment box waits outside the sheets, so a render that replaces them never takes it along.
+function closeEditor() { editor.hidden = true; document.body.append(editor); selection = null; highlight(); }
 
 function render() { renderDocuments(); renderSheets(); highlight(); }
 
@@ -754,15 +700,28 @@ sheets.addEventListener("keydown", (event) => {
   }
 });
 
-byId("save").onclick = () => {
+// Keeps the open comment, if it has text. Returns the lines it covers, or null.
+function saveOpenComment() {
   const comment = byId("comment").value.trim();
-  if (!selection || !comment) return;
+  if (!selection || !comment) return null;
   const { id, start, end } = selection;
   const item = itemById(id);
   notes[selection.key || rangeKey(item, start, end)] = { comment };
-  persist(); closeEditor(); render();
-  const sheet = sheetOf(item);
-  for (let index = start; index <= end; index += 1) rowAt(sheet, index).classList.add("flash");
+  persist();
+  return { item, start, end };
+}
+
+byId("save").onclick = () => {
+  const saved = saveOpenComment();
+  if (!saved) return;
+  closeEditor(); render();
+  const sheet = sheetOf(saved.item);
+  for (let index = saved.start; index <= saved.end; index += 1) rowAt(sheet, index).classList.add("flash");
+};
+byId("send-now").onclick = () => {
+  saveOpenComment();
+  closeEditor(); render();
+  sendAll();
 };
 byId("clear").onclick = () => {
   if (selection && selection.key) { delete notes[selection.key]; persist(); }
@@ -770,7 +729,7 @@ byId("clear").onclick = () => {
 };
 byId("close").onclick = closeEditor;
 byId("comment").addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) byId("save").click();
+  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) byId("send-now").click();
 });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeEditor(); });
 window.addEventListener("resize", relayout);
@@ -781,7 +740,7 @@ if (DATA.reply) {
   byId("agent-reply").hidden = false;
   byId("agent-reply-text").replaceChildren(...DATA.reply.split("\n").filter((line) => line.trim()).map((line) => {
     const item = /^\s*[-*]\s+/.test(line);
-    const paragraph = element("p", item ? "item" : "");
+    const paragraph = element("p", item ? "pl-3 -indent-3" : "");
     paragraph.append(...(item ? ["• "] : []), ...inlineMarkdown(line.replace(/^\s*[-*]\s+/, ""), { insideCodeSpan: false }));
     return paragraph;
   }));
@@ -864,8 +823,8 @@ function showWorking() {
   const tick = () => {
     const seconds = Math.floor((Date.now() - started) / 1000);
     banner.replaceChildren("Sent. Claude is working on your comments · ",
-      element("b", "", Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0")),
-      ". This page reloads with the changes highlighted.");
+      element("b", "font-semibold tabular-nums", Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0")),
+      ". Commenting is paused while the documents change; this page reloads by itself with the changes highlighted.");
   };
   tick();
   banner.hidden = false;
@@ -885,21 +844,31 @@ function reloadWhenReopened() {
   }, 2000);
 }
 
-byId("send").onclick = async () => {
-  byId("send").disabled = true;
+const PAUSED = "Claude is changing these documents, so commenting is paused. You can comment again when the new version loads.";
+
+// Sends every saved comment and the instruction. Commenting and Send stay paused until the agent reopens the page.
+// While they are, the body carries data-working: commented lines dim and every card says it was sent.
+async function sendAll() {
+  working = true;
+  document.body.toggleAttribute("data-working", true);
+  byId("send").disabled = byId("send-now").disabled = true;
   status("Sending...");
   try {
     const body = JSON.stringify({ token: DATA.token, instruction: byId("instruction").value.trim(), text: asText(), ...collect() });
     const response = await fetch("/send", { method: "POST", headers: { "Content-Type": "application/json" }, body });
     if (!response.ok) throw new Error(String(response.status));
-    status("Sent. This page reloads when the agent reopens it.");
+    status(PAUSED);
     showWorking();
     reloadWhenReopened();
   } catch (error) {
-    byId("send").disabled = false;
-    status("Couldn't reach the agent (" + error.message + "). Use Copy for agent instead.");
+    working = false;
+    document.body.toggleAttribute("data-working", false);
+    byId("send").disabled = byId("send-now").disabled = false;
+    status("Couldn't reach the agent (" + error.message + "). Use Copy instead.");
   }
-};
+}
+
+byId("send").onclick = sendAll;
 
 render();
 </script>

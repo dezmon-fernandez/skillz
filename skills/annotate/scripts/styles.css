@@ -1,0 +1,35 @@
+/* annotate's styles, compiled to annotate.css beside this file by `npm run build` at the skillz root.
+   annotate.css is what ships: the helper puts it into the page, so the page makes no network call.
+   The page is styled with Tailwind's own classes, written whole in annotate.html. design.md says which.
+   The hand-written CSS below is only what classes cannot say. */
+@import "tailwindcss" source(none);
+@source "./annotate.html";
+
+/* The page sets data-theme on <html> from the system setting, so dark: follows that attribute. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Markdown tables. Each source line stays one row of the page, so a table cannot be a <table>. Its rows share
+   the table's columns through subgrid, with no gap, so the cell borders meet. The gutter and number keep their
+   own space, and drop to the cells' padding so the numbers line up with the text. */
+.md-table { display: grid; justify-content: start; }
+.md-table > .line { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; gap: 0; }
+.md-table .gutter, .md-table .number { margin-right: --spacing(3); padding-top: --spacing(1); }
+.md-cells { display: contents; }
+.md-head .md-cell { font-weight: 600; border-top-width: 1px; }
+/* The |---| line under a header draws as the header's underline, not as a row of its own. */
+.md-rule .gutter, .md-rule .number { font-size: 0; line-height: 0; padding-top: 0; }
+.md-rule .md-cell { padding: 0; }
+
+/* Diagrams. A drawn diagram may spread into the comment margin beside it, which holds no card: cards sit beside
+   numbered rows. 76px is what comes before it in its row (w-5, gap-3, w-8, gap-3). The reach after it is the row's
+   right padding, the gap and the margin: px-2, gap-8, w-80, or side by side px-2, gap-4, w-56. One wider still is
+   scaled down to fit, and a click shows it at full size. */
+.md-diagram { max-width: calc(100% - 76px + 360px); cursor: zoom-in; }
+[data-compare] .md-diagram { max-width: calc(100% - 76px + 248px); }
+.md-diagram svg { display: block; max-width: 100%; height: auto; }
+.md-diagram.zoomed { cursor: zoom-out; }
+.md-diagram.zoomed svg { max-width: none; }
+
+/* The lines of a comment just saved flash in the highlighter's colour, then fade to their own. */
+.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { from { background-color: var(--color-yellow-300); } }

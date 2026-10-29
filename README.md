@@ -109,8 +109,25 @@ hooks/
     hooks.json        # the fragment to merge into .claude/settings.json
 ```
 
-`CLAUDE.md` says how these must be built. Add a new one by creating its directory and
+`AGENTS.md` says how these must be built. Add a new one by creating its directory and
 adding a row to the table above.
+
+## Build and check
+
+Some skills ship a file a build makes, such as `annotate`'s compiled stylesheet in
+`skills/annotate/scripts/annotate.css`. The tooling lives only here: `package.json` and
+`node_modules` are never copied into a project, only what the build writes into `skills/`.
+
+```sh
+npm ci            # once, from the lockfile
+npm run build     # compiles every generated file in skills/
+npm run check     # rebuilds, fails if a committed generated file is stale, runs the skills' tests
+```
+
+Never edit a generated file by hand; edit its source and build. In a Claude Code session here,
+`.claude/hooks/rebuild-annotate-css.sh` rebuilds `annotate.css` after Claude edits the page or its
+Tailwind source; your own edits need `npm run build`. `.github/workflows/check.yml` runs
+`npm run check` on every push and pull request, so a stale build never merges.
 
 ## Maintaining copies in other repos
 

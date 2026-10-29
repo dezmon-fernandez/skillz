@@ -1,0 +1,17 @@
+{
+  "name": "skillz",
+  "private": true,
+  "description": "Build and check tooling for the skills. Nothing in package.json or node_modules is copied into a project; only what a build writes into skills/ ships.",
+  "scripts": {
+    "build": "npm run build:annotate",
+    "build:annotate": "tailwindcss -i skills/annotate/scripts/styles.css -o skills/annotate/scripts/annotate.css --minify",
+    "check": "npm run build && git diff --exit-code -- 'skills/*/scripts/*.css' && node --no-warnings --test 'skills/annotate/scripts/*.test.ts'"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  },
+  "allowScripts": {
+    "@parcel/watcher": false
+  }
+}

@@ -147,6 +147,10 @@ function replyImage(response: ServerResponse, sources: Source[], url: string) {
 // calls nothing outside this machine. Without the file the page leaves each block as its text.
 const MERMAID = join(import.meta.dirname, 'vendor', 'mermaid-11.17.2.min.js');
 
+// The page's styles, compiled from styles.css beside it by the build in skillz. The helper puts them into the page,
+// so it loads no stylesheet.
+const STYLES = join(import.meta.dirname, 'annotate.css');
+
 function replyMermaid(response: ServerResponse) {
   try {
     reply(response, 200, readFileSync(MERMAID), 'text/javascript; charset=utf-8');
@@ -206,6 +210,7 @@ async function main() {
   const data = JSON.stringify({ name, key, token, session, base, reply: agentReply, documents }).replaceAll('</', '<\\/');
   const escapedName = name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   const page = readFileSync(join(import.meta.dirname, 'annotate.html'), 'utf8')
+    .replace('__CSS__', () => readFileSync(STYLES, 'utf8'))
     .replace('__DATA__', () => data)
     .replace('__NAME__', () => escapedName);
 
