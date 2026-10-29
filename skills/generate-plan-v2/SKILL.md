@@ -124,7 +124,8 @@ yourself first.
 
    Record each check as `measured <how>, <when>`. The plan carries it. Save what the
    sample returned to `.agents/samples/<source>-<date>`, in the source's own format. The
-   feature's tests run on that file, never on values you make up. Made-up values are your
+   task that writes the tests copies it to where the project keeps its test data, and the
+   feature's tests run on that copy, never on values you make up. Made-up values are your
    guesses, the code gets written from the same guesses, and the test passes even when
    both are wrong.
 
@@ -248,6 +249,9 @@ Build part is the executor's.
 
 - Change nothing above it. A change you find you need there is a new decision, and it goes
   back through step 3. Settled decisions stay settled.
+- A fact the Build part rests on that the Definition or the Contract does not state, such as
+  an outside value, a timing, or anything a caller sees, goes back through step 3 as an
+  addition to them, with how it was checked. Never write it only into the Build part.
 - **Spec, not code.** Give the contract (signatures, types, rules, edge cases) and a
   pseudocode sketch. If the executor could paste it and be done, it is code, so write
   pseudocode instead. The exception is data models. A schema or type is its own spec, so
@@ -267,7 +271,7 @@ have to ask, the plan is not done.
 - each outside topic you did not research, and the `file:line` that made the skip safe
 - how many source files the plan expects to change, the key implementation risks, and a
   confidence score out of 10 that execution succeeds on the first try
-- the next step: `/review-plan-v2 <the plan's path>`
+- the next step: `/walk-plan-v2 <the plan's path>`
 
 The build starts on the developer's word, never on yours.
 

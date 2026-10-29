@@ -406,8 +406,9 @@ sections above have no home for.>
   does.
 - **TESTS.** Before the plan is done, check that every test the EDGE CASES section calls
   for is in some task's TESTS. One that is in none is built by nobody. A test of data from
-  outside the codebase names the saved sample under `.agents/samples/` that it runs on. If
-  nothing has been measured yet, the test waits for the Prerequisite that measures it.
+  outside the codebase runs on the saved sample, which the task that writes the test copies
+  from `.agents/samples/` to where the project keeps its test data. If nothing has been
+  measured yet, the test waits for the Prerequisite that measures it.
 
   ❌ `The test gives the parser a reply the planner wrote by hand.`
 

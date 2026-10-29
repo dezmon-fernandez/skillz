@@ -36,6 +36,13 @@ Two rules set the order:
 - A wrong assumption reshapes every task under it. Check assumptions before tasks.
 - The best code is often code nobody writes. Weigh every addition against doing less.
 
+File only what would make the built code wrong, or more complex than its goal needs. Never
+file the wording of a document or a comment. Never question how much the plan sets out to
+build: the developer settled that when it was planned. Question how it gets built.
+
+- ❌ `The PRD's data-sources line should be reworded to match.`
+- ✅ `The job asks for the new month's file on the 1st, but the source publishes it on the 3rd, so the job fails every hour for two days.`
+
 You cannot edit the plan or write code. Report and hand back.
 
 ## What to read, in order
@@ -93,7 +100,6 @@ Take the plan's sections in the order it wrote them. Run these five checks on ea
 - The standards in the project's docs, testing standards included.
 - Code planned for a shared location before enough callers justify it.
 - Behavior planned in a layer that does not own it.
-- Session jargon in names, or a word the codebase uses for something else.
 
 ## Then answer three questions about the whole plan
 
