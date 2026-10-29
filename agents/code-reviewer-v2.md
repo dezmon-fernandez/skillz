@@ -83,6 +83,9 @@ You cannot change code. Report findings and hand them back.
    - Mismatched values across a boundary, such as an id of one kind where another kind belongs.
    - State changed outside what the framework watches, so the screen never updates.
    - Missing error handling.
+   - One bad item that fails all the others: a read, parse or loop over many rows, records or
+     files where one bad one raises, or a join that silently drops the rest. It should skip
+     that item, name it in the log, and carry on.
    - Race conditions.
 
 3. **Security Issues**

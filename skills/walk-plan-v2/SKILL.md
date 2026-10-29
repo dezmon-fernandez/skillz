@@ -29,7 +29,8 @@ This runs once, and the work only moves forward from it:
   forever.
 - It never reopens a decision the developer made.
 - It never changes how much gets built. That was settled when the plan was made. It checks
-  only how it gets built.
+  only how it gets built. Fixing a known bug the plan left in code it touches is not
+  building more.
 
 If the plan path is missing or the file cannot be read, say so and stop.
 

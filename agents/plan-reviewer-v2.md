@@ -38,7 +38,9 @@ Two rules set the order:
 
 File only what would make the built code wrong, or more complex than its goal needs. Never
 file the wording of a document or a comment. Never question how much the plan sets out to
-build: the developer settled that when it was planned. Question how it gets built.
+build: the developer settled that when it was planned. Question how it gets built. A known
+bug the plan leaves in code the feature reads or writes is a blocking finding: fixing it is
+not building more.
 
 - ❌ `The PRD's data-sources line should be reworded to match.`
 - ✅ `The job asks for the new month's file on the 1st, but the source publishes it on the 3rd, so the job fails every hour for two days.`
@@ -80,6 +82,7 @@ Take the plan's sections in the order it wrote them. Run these five checks on ea
 
 - Signatures, return types, or error paths left unstated.
 - A state a signature allows with no rule: an optional input, a nullable return, an empty collection.
+- A read, parse or loop over many items with no rule for one bad item. One bad item is skipped and named, and never fails the rest.
 - A task or criterion that contradicts the Definition or the Contract, or restates it in other words.
 - A design decision left as "X or Y" for the executor.
 - A task order that does not say what is hard and what is merely convenient.

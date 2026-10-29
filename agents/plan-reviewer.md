@@ -72,6 +72,7 @@ Take the plan's sections in the order it wrote them. Run these five checks on ea
 
 - Signatures, return types, or error paths left unstated.
 - A state the interface sketch allows with no rule: an optional input, a nullable return, an empty collection.
+- A read, parse or loop over many items with no rule for one bad item. One bad item is skipped and named, and never fails the rest.
 - A design decision left as "X or Y" for the executor.
 - A task order that does not say what is hard and what is merely convenient.
 - A model or field name that needs a comment to explain it.
