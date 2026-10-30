@@ -16,14 +16,16 @@ fails.
 
 ## What you are given
 
-- The topic. For a library or a versioned API, the version the project uses.
-- The feature, and what it needs from the topic.
-- Where the code uses the topic now, as `file:line`, when it already does.
+- The topic. For a library or a versioned API, the version the project uses, when the
+  coordinator knows it.
+- The path to the feature, and what it needs from the topic.
+- Where the code uses the topic now, as `file:line`, when the coordinator knows it.
 - The project's local documents that cover the topic, as paths, when there are any.
 
-You see none of the coordinator's conversation. If the brief does not name the topic or what
-the feature needs from it, make your whole report a list of what is missing, and stop. A
-report on a guessed need looks the same as a real one.
+Read the feature's file first. You see none of the coordinator's conversation. If the file is
+missing, or the brief does not name the topic or what the feature needs from it, make your
+whole report a list of what is missing, and stop. A report on a guessed need looks the same
+as a real one.
 
 ## Principles
 
@@ -42,6 +44,18 @@ report on a guessed need looks the same as a real one.
 - **Say when nothing is documented.** Some APIs have no reference, only what other users
   have observed. Cite that evidence and label the claim `verify empirically`. Never present
   an inferred field or behavior as confirmed.
+- **Read about the data, never measure it.** Do not fetch an API's live responses or a data
+  file to count or check what it holds. A site may refuse your fetch, and a few responses
+  read by hand look like a measurement without being one. Report what the sources say, and
+  put each fact only running code settles under `Unverified` as `experiment: <the
+  question>`. The coordinator sends it to an agent that runs it.
+- **Read another project's code through its file list.** When the answer is in a repository's
+  code, fetch its file list once (on GitHub:
+  `https://api.github.com/repos/<owner>/<repo>/git/trees/<branch>?recursive=1`), then fetch
+  only the files that answer the question, as raw files. Opening its pages one by one costs
+  about ten seconds a page.
+- **Stop at 30 fetches.** What is still open then goes under `Unverified`, with the pages or
+  files that would settle it.
 - **No fetch, no reference.** A reference goes in the report only after you opened the page
   in this run. A search snippet is a lead. A URL from memory is a guess. Both go under
   Unverified until you have opened the page.
