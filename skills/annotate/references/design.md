@@ -7,7 +7,7 @@ name whole. Building a list from whole names is fine.
 - ❌ `"md-h" + level`, or `"bg-" + colour`.
 - ✅ `["text-lg font-semibold", "text-base font-semibold"][level]`.
 
-Semantic names (`line`, `sheet`, `lines`, `margin`, `card`, `badge`, `md-diagram-line`) are hooks the script
+Semantic names (`line`, `sheet`, `lines`, `badge`, `md-diagram-line`) are hooks the script
 queries. They carry no style. A state is a data attribute the script sets, styled with Tailwind's variants:
 `data-changed`, `data-commented`, `data-selected` on a row, and `data-working` and `data-compare` on the body
 (`group/page`). Never style a state with a new class and hand-written CSS.
@@ -42,7 +42,7 @@ class fits. When unsure, take the smaller standard step.
 - Type: `text-xs` (labels, numbers, code), `text-sm` (everything else), `text-lg` (the page title and a document's
   `#`), `text-base` (a document's `##`). Document rows are `text-sm/6`, so every row is 24px.
 - Weight: `font-normal` and `font-semibold`. Never bold.
-- Space: gap and padding 1, 2, 3, 4, 6, 8. Radius: `rounded-lg` for controls, cards and the comment box,
+- Space: gap and padding 1, 2, 3, 4, 6, 8. Radius: `rounded-lg` for controls, messages and the input,
   `rounded` for rows and inline code, `rounded-full` for pills and the switch.
 - Fonts: Tailwind's system stacks. No web font: the page makes no network call.
 
@@ -50,7 +50,7 @@ class fits. When unsure, take the smaller standard step.
 
 Three kinds, all `h-8 rounded-lg text-sm`, a 2px focus ring, and a disabled look. Pick by what the action does.
 
-- **Solid**, for the one action that matters: Send, in the sidebar and in the comment box. Never two in one place.
+- **Solid**, for the one action that matters: Send, under the input. Never two on the page.
   `h-8 cursor-pointer rounded-lg bg-zinc-900 px-3 text-sm font-semibold whitespace-nowrap text-white enabled:hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:enabled:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100`
 - **Quiet**, for a secondary action: Save, Copy for agent.
   `h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100`
@@ -58,22 +58,30 @@ Three kinds, all `h-8 rounded-lg text-sm`, a 2px focus ring, and a disabled look
   dark:hover:text-red-400` in place of the ink hover).
   `h-8 cursor-pointer rounded-lg px-2 text-sm whitespace-nowrap text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100`
 
-## The document and its margin
+## Two panes: the document, and the panel
+
+One panel on the left, `w-1/4 min-w-80`, holds everything but the document, top to bottom; the document fills the
+rest. On the left, the document's scroll bar runs down the window's edge, not the seam between the two. Never a third
+column, and nothing beside the document's lines.
 
 - A row (`ROW` in the script) is gutter (`w-5`), number (`min-w-8`), text. A block between rows (removed lines,
   "Show source") starts its text at the same place with two spacers. Never a measured padding.
 - Changed: `bg-emerald-50` and a `border-l-4` emerald edge. Removed: a red block with the old lines struck
   through. Selected: `bg-zinc-100` and an ink edge, over a change. Commented: the highlighter on the text only.
-- Comment cards sit in the margin level with their first line, `bg-yellow-50` with a rule border.
-- The comment box (`#editor`) opens in the margin of the sheet it is about, level with the first selected line,
-  above the cards: `absolute right-0 z-10 w-84`, `w-64` side by side, so it overlaps the text column a little.
-  Paper with a rule border and `shadow-lg`. Its actions: Send ⌘↵ (solid), Save (quiet), then Delete and Cancel
-  (text) on the right. Never a sheet fixed to the window.
+- **Files**, at most a quarter of the panel's height: one row per file, its Reviewed tick, its name above its
+  folder, and a highlighter count of the comments waiting on it.
+- **The conversation** fills the middle and scrolls to its end, so the newest message and any question sit just
+  above the input. A comment waiting to be sent wears the note colour with a highlighter edge. A sent comment is
+  quiet graphite with no border. The agent's answer is paper with a rule border; a question it asks carries an ink
+  edge and opens the input on its lines when clicked.
+- **The input** sits at the bottom: what it writes to (the selected lines as a highlighter chip, or the note for
+  the agent and the whole document as two pills), the field, then Send ⌘↵ (solid), Save and Copy (quiet), and
+  Delete (text, red on hover) on the right while it changes a saved comment.
 
 ## The hand-written CSS
 
-`scripts/styles.css` holds only what classes cannot say: tables built of rows (subgrid), a diagram's reach into
-the margin and its zoom, and the flash keyframes. Add to it only when no class can do the job. A rule there beats
+`scripts/styles.css` holds only what classes cannot say: tables built of rows (subgrid), a diagram's fit to
+its row and its zoom, and the flash keyframes. Add to it only when no class can do the job. A rule there beats
 every class, because it sits outside Tailwind's layers.
 
 ## Rebuild
