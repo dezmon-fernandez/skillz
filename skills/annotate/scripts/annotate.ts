@@ -10,8 +10,9 @@
 // With --base, each file's changes are shown against its text at that git ref instead of at the last Send, so an
 // edit proposed in the working tree shows as changed and removed lines before anything is committed.
 //
-// With --reply, the page shows that file under the Send box: the agent's answer to the last Send. It is not one of
-// the files, so the address and the developer's unsent comments stay the same.
+// With --reply, the page shows that file under the Send box: the agent's answer to the last Send, each item beside the
+// comment it answers (reply.ts reads it). It is not one of the files, so the address and the developer's unsent
+// comments stay the same.
 //
 // It listens on 127.0.0.1 only, and the page makes no other network calls.
 
@@ -23,6 +24,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { diffLines } from './changed-lines.ts';
 import { imageFile } from './image-file.ts';
+import { parseReply } from './reply.ts';
 
 interface Source {
   path: string;
@@ -207,7 +209,9 @@ async function main() {
     console.error(`--base ${base}: no such commit, or a file is outside a git repo`);
     process.exit(1);
   }
-  const data = JSON.stringify({ name, key, token, session, base, reply: agentReply, documents }).replaceAll('</', '<\\/');
+  const answer = agentReply === null ? null : parseReply(agentReply);
+  const data = JSON.stringify({ name, key, token, session, base, iteration: Boolean(iteration), reply: answer, documents })
+    .replaceAll('</', '<\\/');
   const escapedName = name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   const page = readFileSync(join(import.meta.dirname, 'annotate.html'), 'utf8')
     .replace('__CSS__', () => readFileSync(STYLES, 'utf8'))
