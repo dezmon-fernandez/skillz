@@ -42,6 +42,11 @@ report on a guessed need looks the same as a real one.
 - **Say when nothing is documented.** Some APIs have no reference, only what other users
   have observed. Cite that evidence and label the claim `verify empirically`. Never present
   an inferred field or behavior as confirmed.
+- **Read about the data, never measure it.** Do not fetch an API's live responses or a data
+  file to count or check what it holds. A site may refuse your fetch, and a few responses
+  read by hand look like a measurement without being one. Report what the sources say, and
+  put each fact only running code settles under `Unverified` as `experiment: <the
+  question>`. The coordinator sends it to an agent that runs it.
 - **No fetch, no reference.** A reference goes in the report only after you opened the page
   in this run. A search snippet is a lead. A URL from memory is a guess. Both go under
   Unverified until you have opened the page.
