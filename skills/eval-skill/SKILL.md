@@ -8,7 +8,8 @@ description: >-
   page. Either way, the
   developer comments on the output, and their comments decide what the skill changes next.
   Use when asked to "eval this skill", "test this skill change", "try the new version",
-  "compare the old and new version", "is the new version better", or "read my comments".
+  "compare the old and new version", "is the new version better", "read my comments", or
+  "status" of a round in progress.
 argument-hint: "[skill name, and the request or session to test it with]"
 ---
 
@@ -99,6 +100,19 @@ only in the skill they run. Anything else that differs is what the round measure
 - Record how long each step and each agent took, and what each cost, for both versions. The
   session transcripts hold it: every line is timestamped, and each agent's transcript names
   its type. A version that is slower or dearer for the same result is the worse one.
+- Write each step's stream to `real-work-<date>/<version>/<nn>-<label>.jsonl`, from
+  `claude -p --output-format stream-json --verbose`. `scripts/status.py` reads it there.
+- **Status.** When the developer asks where the round stands ("status", "where are we"), run
+  `uv run --script scripts/status.py <round folder>` and print its output as it is, in a code
+  block. It shows each step's time, cost and calls, what runs now and for how long, each
+  agent, and any comment page a session is waiting on. Run it before every report on a step
+  still running: a session waiting on a page nobody will send looks busy from its log.
+  Without `uv`, say so and read the logs by hand. Never run the script with `python3`.
+- **The round page.** Start the round with `uv run --script scripts/status.py <round folder>
+  --serve` running in the background, and give the developer its address. It shows the
+  status live, every open comment page, and the round's `now.md` on top. Keep `now.md` to what
+  is happening, what is next and when, and what waits on the developer, and rewrite it after
+  every step and every decision. Without it, the developer can only ask.
 - Put both outputs side by side for comments (see Judge by comment), and record the round in
   `real-work-<date>/comments.md`.
 

@@ -42,6 +42,11 @@ Keep the reason behind a rule only where a reader would assume the opposite.
 
 **Every `!` command must be safe to fail.** Injected shell runs before the model sees anything. Guard it (`2>/dev/null || echo "(none)"`) so a missing file reads as a fact, not an error.
 
+**Python scripts run with `uv run --script`, never `python3`.** The script declares its Python version and dependencies in an inline `# /// script` block, so it runs the same in every repo; `python3` runs whatever that machine has. A skill or hook with a Python script names `uv` as a dependency and says what to do without it.
+
+- ❌ `python3 -I scripts/status.py <round>`
+- ✅ `uv run --script scripts/status.py <round>`
+
 ## Hooks
 
 Skills say what the model should do. Hooks make the harness do it whether the model remembers or not. Reach for a hook when the rule must hold every time: a file that must never be committed, a check that must run after every edit, context that must load at session start.

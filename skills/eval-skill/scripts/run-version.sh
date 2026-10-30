@@ -114,7 +114,9 @@ if [ "${DRY_RUN:-0}" = 1 ]; then
   exit 0
 fi
 
-(cd "$copy" && claude -p "$prompt" --output-format json --permission-mode dontAsk \
+# `claude -p` stops a background agent still running 10 minutes after the last turn, which
+# cuts off a long review mid-run. 0 waits for it.
+(cd "$copy" && CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 claude -p "$prompt" --output-format json --permission-mode dontAsk \
     --settings "$run_dir/sandbox.json" \
     --allowedTools "${TOOLS[@]}" --disallowedTools "${DENIED[@]}") > "$run_dir/run.json"
 jq '.permission_denials // []' "$run_dir/run.json" > "$run_dir/denials.json"
