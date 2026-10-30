@@ -124,6 +124,61 @@ The decision this feeds: how to give every researcher the shared text without re
 - **Review works best with no shared context** (Cognition, 2026; Claude Code best practices). Keep
   the plan reviewer fresh.
 
+## Tools for answering "how is it wired, and what breaks"
+
+Not checked yet: from what is known of these tools, to verify before choosing. The research question
+they serve is the wiring and impact one, which today takes agents reading files.
+
+- **Grep (ripgrep).** Claude Code's Grep tool already runs on it. Finds text: comments, docs and
+  same-named functions included.
+- **ast-grep (`sg`).** Searches code by its structure: every call to a function named `fetch_*`,
+  every function under `@router.get`, every place that builds `PlayerRow(...)`, whatever the line
+  breaks. Knows the shape of code, not what a name refers to: two modules' functions with one name
+  come back mixed. One tool for any language, nothing kept running. Runs as a command (needs a
+  shell) or an MCP server (a read-only agent can keep no shell). It can also rewrite; research
+  allows search only.
+- **A language server** (pyright for Python, the TypeScript server, and so on). What an editor
+  uses for "go to definition" and "find all references". Follows imports and types, so it returns
+  only the callers of that exact function, including a file that imported it under another name.
+  One server per language, needs the project's dependencies installed, runs as a process. How
+  Claude Code connects one is not yet checked.
+
+Example: two modules each define `fetch_latest_lines`; who calls the one in `kernel/latest_lines.py`?
+
+| Tool | Returns |
+|---|---|
+| Grep | every line with the text: comments, docs, the other module's function, the real callers |
+| ast-grep | every call named `fetch_latest_lines`, from both modules, mixed |
+| Language server | only that function's callers, including an import under another name |
+
+- **A code map.** An index of the codebase built ahead of time, so the agent looks things up instead
+  of opening files. A parser (tree-sitter) reads every file once. Two shapes:
+  - *An outline in the prompt* (Aider calls it a repo map): each file with its functions' and
+    classes' names and signatures, ranked by how much the rest of the code uses them. The model sees
+    the whole codebase's shape before reading any file.
+  - *A queryable graph* over MCP: functions, classes, calls and imports stored as a graph, asked
+    "who calls this?" or "what does this module define?". Codebase-Memory
+    (https://arxiv.org/pdf/2603.27277) reports, against a grep-and-read agent, both on Claude Opus:
+    about 90% of the quality (0.83 against 0.92) for about 10 times fewer tokens and 2.1 times fewer
+    tool calls. From a search summary; the paper itself not yet read.
+
+  This is the "map" in the proposal that the main thread does the code research itself: it reads
+  the map, then opens only the files it needs.
+
+| Tool | What it answers |
+|---|---|
+| Code map | what exists and where, any language, built once |
+| ast-grep | everything shaped like X, searched each time |
+| Language server | exactly who calls this one function, one server per language |
+
+Measured elsewhere: a language server (pyright) on SWE-bench Verified moved one model from 68.4% to
+70.4% and 82 to 77 turns (SWE-Master, https://arxiv.org/html/2602.03411v1). The gains reported for
+all three are mostly speed and cost, not quality.
+
+For a team workflow across many repos, ast-grep or a code map is the easier rollout; a language
+server is the exact answer where one is set up. To test: give the code agents one of them and compare, on Story C, how
+fast and how completely the wiring and impact questions are answered.
+
 ## Open questions
 
 - Does the experiment agent start with the code researchers? It needs only the definition's

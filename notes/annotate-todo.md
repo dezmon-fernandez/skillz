@@ -105,3 +105,15 @@ and shipped compiled in the skill, like the CSS) when any one of these holds:
 
 Until then a framework adds a bundler, a second build and dependencies for one screen. When it comes,
 the Tailwind classes carry over into the components unchanged.
+
+## Mark the words that changed, not the whole line
+
+The developer, verbatim (2026-10-30, on the `v2-next` diff): "its confusing when most of the prior
+text looks the same. is it possible to highlight what actually changed when it was modified."
+
+With `--base`, a changed line is marked whole. A few inserted words re-wrap a paragraph, so three
+lines light up for one phrase. Fix: inside each changed block, run the same longest-common-subsequence
+diff `changed-lines.ts` runs on lines, over words, across the whole paragraph so re-wrapping is not a
+change, and mark only the inserted and removed words. The hard part is placing the marks in the
+rendered markdown (bold, code, links) without breaking it. A contained change to annotate, about an
+hour with tests.
