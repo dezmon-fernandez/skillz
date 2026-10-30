@@ -61,11 +61,24 @@ Each comment is the developer's request about the lines it marks. Work through a
 - A comment can reach beyond its lines ("same for the other steps"). Follow it there.
 - An overall comment applies to the whole document.
 
-Then write your reply, one line per comment: what you did, why you didn't, or your question back. Save it to a file
-outside the repository and reopen the page with the same command plus `--reply <that file>`, which shows it under
-the Send box, where the developer is looking. Give the same reply in your message. The page highlights the lines you
-changed since the Send, marks the lines you removed, and clears the comments on every file you edited. The
-developer's open tab reloads by itself.
+Then write your reply in the shape of the Send's own text, one item for every comment, each opening with what became
+of it: `Done.`, `Not done.` or `Question.`
+
+```
+## <the document, as the Send names it>
+- Lines <n>-<m>: Done. <what you changed>
+- Line <n>: Question. <what you need from the developer, and your recommendation>
+- Overall: Not done. <why>
+```
+
+Save it to a file outside the repository and reopen the page with the same command plus `--reply <that file>`. Under
+the Send box, where the developer is looking, the page lists each comment they sent with your answer beside it,
+questions first, and takes every sent comment out of the margin, so none looks open or goes out again. A comment
+your reply has no item for shows as `No answer`. The page highlights the lines you changed since the Send and marks
+the lines you removed. The developer's open tab reloads by itself.
+
+Give the same reply in your message. Ask each `Question.` there too, as a choice with your recommendation. A question
+left only on the page waits unseen.
 
 Stop the helper when the developer says they're done.
 

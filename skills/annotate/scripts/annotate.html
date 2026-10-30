@@ -25,9 +25,10 @@
       <button id="copy" class="h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100">Copy</button>
     </div>
     <p class="min-h-4 text-xs text-zinc-500 dark:text-zinc-400" id="status" role="status"></p>
-    <section class="max-h-80 overflow-y-auto border-l-2 border-zinc-200 pl-3 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400" id="agent-reply" aria-label="Agent's reply to your last Send" hidden>
-      <h3 class="mb-1 text-xs font-semibold text-zinc-900 dark:text-zinc-100">Agent's reply</h3>
-      <div class="grid gap-1" id="agent-reply-text"></div>
+    <section class="max-h-96 overflow-y-auto border-t border-zinc-200 pt-3 dark:border-zinc-800" id="agent-reply" aria-label="Reply to your last Send" hidden>
+      <h3 class="mb-2 text-xs font-semibold text-zinc-900 dark:text-zinc-100">Reply to your last Send <span class="font-normal text-zinc-500 dark:text-zinc-400" id="agent-reply-count"></span></h3>
+      <div class="grid gap-1 text-zinc-500 empty:hidden dark:text-zinc-400" id="agent-reply-text"></div>
+      <div class="mt-2 grid gap-1 empty:hidden" id="agent-reply-items"></div>
     </section>
   </div>
 </nav>
@@ -57,6 +58,7 @@
 const DATA = __DATA__;
 const STORAGE_KEY = "annotate:" + DATA.key;
 const META_KEY = STORAGE_KEY + ":meta";
+const SENT_KEY = STORAGE_KEY + ":sent";
 const notes = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const meta = JSON.parse(localStorage.getItem(META_KEY) || "{}");
 const byId = (id) => document.getElementById(id);
@@ -104,6 +106,11 @@ const persist = () => { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes))
 const known = new Set(DATA.documents.map((item) => item.id));
 Object.keys(notes).forEach((key) => { if (!known.has(key.slice(0, key.lastIndexOf(":")))) delete notes[key]; });
 Object.keys(meta).forEach((id) => { if (!known.has(id)) delete meta[id]; });
+// A Send marks the comments it carried (markSent). This page drops them, so none looks open or goes out twice; the
+// reply panel lists them with the agent's answers. Labels on eval outputs are never marked: feedback.json keeps them.
+Object.keys(notes).forEach((key) => { if (notes[key].sent) delete notes[key]; });
+Object.values(meta).forEach((entry) => { if (entry.sent) { entry.overall = ""; delete entry.sent; } });
+const sent = JSON.parse(localStorage.getItem(SENT_KEY) || "[]");
 persist();
 const lineLabel = (start, end) => (start === end ? "Line " + (start + 1) : "Lines " + (start + 1) + "-" + (end + 1));
 const sheetOf = (item) => document.querySelector('.sheet[data-id="' + CSS.escape(item.id) + '"]');
@@ -735,16 +742,87 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape") cl
 window.addEventListener("resize", relayout);
 
 byId("view").hidden = !DATA.documents.some(siblingOf);
-// The agent's answer to the last Send sits under the Send box. A reopen without one hides it.
-if (DATA.reply) {
-  byId("agent-reply").hidden = false;
-  byId("agent-reply-text").replaceChildren(...DATA.reply.split("\n").filter((line) => line.trim()).map((line) => {
+// The agent's answer to the last Send sits under the Send box: each comment that Send carried, with what the agent did
+// about it or asks back, questions first. A sent comment the reply has no item for says so, rather than vanish. A
+// reopen without a reply hides the panel.
+const REPLY_STATES = [
+  ["question", "Needs you", "rounded-full bg-zinc-900 px-2 text-xs/5 font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"],
+  ["missing", "No answer", "rounded-full bg-zinc-100 px-2 text-xs/5 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"],
+  ["not done", "Not done", "rounded-full bg-zinc-100 px-2 text-xs/5 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"],
+  [null, "Answered", "rounded-full bg-zinc-100 px-2 text-xs/5 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"],
+  ["done", "Done", "rounded-full bg-zinc-100 px-2 text-xs/5 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"],
+];
+
+// Each sent comment takes the reply item on its exact lines, then one that overlaps them, so an overlap never takes
+// the item meant for another comment. An item no comment took is listed on its own.
+function replyEntries() {
+  const items = DATA.reply.items.map((item) => ({ ...item, used: false }));
+  const take = (comment, fits) => {
+    const item = items.find((candidate) => !candidate.used && candidate.document === comment.document && fits(candidate));
+    if (item) item.used = true;
+    return item;
+  };
+  const exact = sent.map((comment) => take(comment, (item) => item.start === comment.start && item.end === comment.end));
+  const entries = sent.map((comment, index) => {
+    const item = exact[index] || take(comment, (item) => item.start !== null && comment.start !== null && item.start <= comment.end && item.end >= comment.start);
+    return { ...comment, status: item ? item.status : "missing", answer: item ? item.text : "" };
+  });
+  items.filter((item) => !item.used).forEach((item) => entries.push({ ...item, comment: "", answer: item.text }));
+  const rank = (entry) => REPLY_STATES.findIndex(([state]) => state === entry.status);
+  return entries.sort((first, second) => rank(first) - rank(second));
+}
+
+// Opens the document a reply entry is about and brings the lines the comment was on into view.
+function showLines(title, start, end) {
+  const index = DATA.documents.findIndex((item) => item.title === title);
+  if (index === -1) return;
+  current = index; lastClicked = null; closeEditor(); render();
+  const item = DATA.documents[index];
+  if (start === null || !item.lines.length) return;
+  const sheet = sheetOf(item);
+  const first = Math.min(start, item.lines.length) - 1;
+  const last = Math.min(end, item.lines.length) - 1;
+  anchorOf(sheet.querySelector(".lines"), first).scrollIntoView({ block: "center", behavior: "smooth" });
+  for (let line = first; line <= last; line += 1) rowAt(sheet, line).classList.add("flash");
+}
+
+function renderReply() {
+  if (!DATA.reply) return;
+  const entries = replyEntries();
+  const count = (state) => entries.filter((entry) => entry.status === state).length;
+  const asks = count("question");
+  const missing = count("missing");
+  byId("agent-reply-count").textContent = "· " + [
+    asks ? asks + (asks === 1 ? " needs" : " need") + " you" : "nothing needs you",
+    missing ? missing + " not answered" : "",
+  ].filter(Boolean).join(" · ");
+  byId("agent-reply-text").replaceChildren(...DATA.reply.notes.map((line) => {
     const item = /^\s*[-*]\s+/.test(line);
     const paragraph = element("p", item ? "pl-3 -indent-3" : "");
     paragraph.append(...(item ? ["• "] : []), ...inlineMarkdown(line.replace(/^\s*[-*]\s+/, ""), { insideCodeSpan: false }));
     return paragraph;
   }));
+  byId("agent-reply-items").replaceChildren(...entries.map((entry) => {
+    const [, label, pill] = REPLY_STATES.find(([state]) => state === entry.status);
+    const where = entry.document.slice(entry.document.lastIndexOf("/") + 1) + " · " +
+      (entry.start === null ? "overall" : lineLabel(entry.start - 1, entry.end - 1).toLowerCase());
+    const button = element("button", "grid w-full cursor-pointer gap-1 rounded-lg px-2 py-2 text-left hover:bg-zinc-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-zinc-900 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100");
+    const head = element("span", "flex min-w-0 items-center gap-2");
+    head.append(element("span", "flex-none " + pill, label), element("span", "truncate text-xs text-zinc-500 dark:text-zinc-400", where));
+    button.append(head);
+    if (entry.comment) button.append(element("span", "line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400", "You: " + entry.comment));
+    if (entry.answer) {
+      const answer = element("span", "text-zinc-900 dark:text-zinc-100");
+      answer.append(...inlineMarkdown(entry.answer, { insideCodeSpan: false }));
+      button.append(answer);
+    }
+    button.title = entry.document;
+    button.onclick = () => showLines(entry.document, entry.start, entry.end);
+    return button;
+  }));
+  byId("agent-reply").hidden = false;
 }
+renderReply();
 byId("changed-hint").hidden = !DATA.documents.some((item) => item.changed.length);
 byId("removed-hint").hidden = !DATA.documents.some((item) => (item.removed || []).length);
 if (DATA.base) {
@@ -846,6 +924,18 @@ function reloadWhenReopened() {
 
 const PAUSED = "Claude is changing these documents, so commenting is paused. You can comment again when the new version loads.";
 
+// What a Send handed over: the list the reply panel answers, and a mark on each comment so the next page drops it.
+function markSent() {
+  const list = DATA.documents.flatMap((item) => [
+    ...(metaOf(item).overall ? [{ document: item.title, start: null, end: null, comment: metaOf(item).overall }] : []),
+    ...notesOf(item).map((note) => ({ document: item.title, start: note.start + 1, end: note.end + 1, comment: note.comment })),
+  ]);
+  localStorage.setItem(SENT_KEY, JSON.stringify(list));
+  Object.values(notes).forEach((note) => { note.sent = true; });
+  DATA.documents.forEach((item) => { if (metaOf(item).overall) metaOf(item).sent = true; });
+  persist();
+}
+
 // Sends every saved comment and the instruction. Commenting and Send stay paused until the agent reopens the page.
 // While they are, the body carries data-working: commented lines dim and every card says it was sent.
 async function sendAll() {
@@ -857,6 +947,7 @@ async function sendAll() {
     const body = JSON.stringify({ token: DATA.token, instruction: byId("instruction").value.trim(), text: asText(), ...collect() });
     const response = await fetch("/send", { method: "POST", headers: { "Content-Type": "application/json" }, body });
     if (!response.ok) throw new Error(String(response.status));
+    if (!DATA.iteration) markSent();
     status(PAUSED);
     showWorking();
     reloadWhenReopened();
