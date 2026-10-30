@@ -71,11 +71,11 @@ of it: `Done.`, `Not done.` or `Question.`
 - Overall: Not done. <why>
 ```
 
-Save it to a file outside the repository and reopen the page with the same command plus `--reply <that file>`. Under
-the Send box, where the developer is looking, the page lists each comment they sent with your answer beside it,
-questions first, and takes every sent comment out of the margin, so none looks open or goes out again. A comment
-your reply has no item for shows as `No answer`. The page highlights the lines you changed since the Send and marks
-the lines you removed. The developer's open tab reloads by itself.
+Save it to a file outside the repository and reopen the page with the same command plus `--reply <that file>`. In
+the conversation on the left, the page puts your answer under each comment the developer sent, questions last,
+just above the input, and clears every sent comment from the document, so none looks open or goes out again. A
+comment your reply has no item for shows as `No answer`. The page highlights the lines you changed since the Send
+and marks the lines you removed. The developer's open tab reloads by itself.
 
 Give the same reply in your message. Ask each `Question.` there too, as a choice with your recommendation. A question
 left only on the page waits unseen.

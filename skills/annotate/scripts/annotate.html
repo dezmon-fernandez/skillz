@@ -7,66 +7,58 @@
 </head>
 <!-- Styled with Tailwind's own classes only; references/design.md says which each element uses. -->
 <body class="group/page flex h-screen bg-zinc-50 text-sm text-zinc-900 dark:bg-zinc-900 dark:text-zinc-200">
-<nav aria-label="Documents" class="flex w-68 flex-none flex-col border-r border-zinc-200 bg-white dark:border-white/5 dark:bg-zinc-950/30">
-  <div class="min-h-0 flex-1 overflow-auto px-3 py-4">
-    <h2 class="mx-2 mb-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">Documents</h2>
+<!-- One panel: the files on top, the conversation in the middle, the input at the bottom. -->
+<aside aria-label="Files and comments" class="flex w-1/4 min-w-80 flex-none flex-col border-r border-zinc-200 bg-white dark:border-white/5 dark:bg-zinc-950/30">
+  <section aria-label="Files" class="max-h-1/4 flex-none overflow-auto border-b border-zinc-200 px-3 py-3 dark:border-zinc-800">
+    <h2 class="mx-2 mb-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400">Files</h2>
     <div id="documents"></div>
-    <div class="mt-4 grid gap-1 px-2 text-xs text-zinc-500 dark:text-zinc-400">
+    <div class="mt-2 grid gap-1 px-2 text-xs text-zinc-500 dark:text-zinc-400">
       <p class="flex items-center gap-2" id="changed-hint" hidden><span class="size-3 flex-none border-l-4 border-emerald-500 bg-emerald-50 dark:border-emerald-400/70 dark:bg-emerald-400/10"></span><span id="changed-label">Changed since your last Send</span></p>
       <p class="flex items-center gap-2" id="removed-hint" hidden><span class="size-3 flex-none border-l-4 border-rose-500 bg-rose-50 dark:border-rose-400/70 dark:bg-rose-400/10"></span><span id="removed-label">Removed since your last Send</span></p>
-      <p>Click a line to comment. ⌘↵ sends.</p>
     </div>
-  </div>
-  <div class="grid gap-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
-    <label for="instruction" class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Note for the agent (optional)</label>
-    <textarea id="instruction" rows="2" placeholder="e.g. apply these, then tighten the intro" class="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-2 focus:-outline-offset-1 focus:outline-zinc-900 dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:outline-zinc-100"></textarea>
-    <div class="flex gap-2">
-      <button id="send" class="h-8 flex-1 cursor-pointer rounded-lg bg-zinc-900 px-3 text-sm font-semibold whitespace-nowrap text-white enabled:hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:enabled:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100">Send</button>
+  </section>
+  <section aria-label="Comments and replies" class="min-h-0 flex-1 overflow-auto px-3 py-3" id="chat">
+    <div class="grid gap-3" id="thread"></div>
+  </section>
+  <section aria-label="Write a comment" class="grid flex-none gap-2 border-t border-zinc-200 p-3 dark:border-zinc-800">
+    <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs" id="target"></div>
+    <label for="comment" class="sr-only">Comment</label>
+    <textarea id="comment" rows="3" class="max-h-48 min-h-16 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 field-sizing-content placeholder:text-zinc-400 focus:border-transparent focus:outline-2 focus:-outline-offset-1 focus:outline-zinc-900 dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:outline-zinc-100"></textarea>
+    <div class="flex flex-wrap items-center gap-2">
+      <button id="send" title="Save what you wrote and send every comment (⌘↵)" class="h-8 cursor-pointer rounded-lg bg-zinc-900 px-3 text-sm font-semibold whitespace-nowrap text-white enabled:hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:enabled:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100">Send<span class="ml-2 text-xs font-normal opacity-60">⌘↵</span></button>
+      <button id="save" class="h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100">Save</button>
       <button id="copy" class="h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100">Copy</button>
+      <button id="clear" class="ml-auto h-8 cursor-pointer rounded-lg px-2 text-sm whitespace-nowrap text-zinc-500 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-red-400 dark:focus-visible:outline-zinc-100" hidden>Delete</button>
     </div>
     <p class="min-h-4 text-xs text-zinc-500 dark:text-zinc-400" id="status" role="status"></p>
-    <section class="max-h-96 overflow-y-auto border-t border-zinc-200 pt-3 dark:border-zinc-800" id="agent-reply" aria-label="Reply to your last Send" hidden>
-      <h3 class="mb-2 text-xs font-semibold text-zinc-900 dark:text-zinc-100">Reply to your last Send <span class="font-normal text-zinc-500 dark:text-zinc-400" id="agent-reply-count"></span></h3>
-      <div class="grid gap-1 text-zinc-500 empty:hidden dark:text-zinc-400" id="agent-reply-text"></div>
-      <div class="mt-2 grid gap-1 empty:hidden" id="agent-reply-items"></div>
-    </section>
-  </div>
-</nav>
+  </section>
+</aside>
 <main class="min-w-0 flex-1 overflow-auto px-8 pt-6 pb-64">
-  <p class="sticky top-0 z-20 mx-auto mb-4 max-w-7xl rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 shadow-sm group-data-compare/page:max-w-none dark:border-white/10 dark:bg-zinc-800" id="working" role="status" hidden></p>
-  <div class="mx-auto mb-6 flex max-w-7xl items-start justify-between gap-6 group-data-compare/page:max-w-none">
+  <p class="sticky top-0 z-20 mx-auto mb-4 max-w-4xl rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 shadow-sm group-data-compare/page:max-w-none dark:border-white/10 dark:bg-zinc-800" id="working" role="status" hidden></p>
+  <div class="mx-auto mb-6 flex max-w-4xl items-start justify-between gap-6 group-data-compare/page:max-w-none">
     <h1 class="min-w-0 text-lg/6 font-semibold wrap-anywhere" id="title"></h1>
     <label class="inline-flex flex-none cursor-pointer items-center gap-2 text-zinc-500 dark:text-zinc-400" id="view" hidden><input type="checkbox" role="switch" id="compare" class="relative h-4 w-7 cursor-pointer appearance-none rounded-full bg-zinc-200 transition-colors after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-white after:shadow-sm after:transition-transform checked:bg-zinc-900 checked:after:translate-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-700 dark:after:bg-zinc-950 dark:checked:bg-zinc-100 dark:focus-visible:outline-zinc-100"> Side by side</label>
   </div>
   <div class="group-data-compare/page:grid group-data-compare/page:grid-cols-2 group-data-compare/page:gap-8" id="sheets"></div>
 </main>
-<!-- The comment box. Closed, it waits here; open, it sits in the margin beside the lines it is about (openEditor). -->
-<section class="absolute right-0 z-10 grid w-84 gap-2 group-data-compare/page:w-64 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl shadow-black/10 dark:border-white/10 dark:bg-zinc-800 dark:shadow-black/40" id="editor" aria-label="Comment on this section" hidden>
-  <p class="grid gap-1 text-xs text-zinc-500 dark:text-zinc-400" id="quoted"></p>
-  <label for="comment" class="sr-only">Comment</label>
-  <textarea id="comment" class="min-h-20 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 field-sizing-content placeholder:text-zinc-400 focus:border-transparent focus:outline-2 focus:-outline-offset-1 focus:outline-zinc-900 dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:outline-zinc-100"></textarea>
-  <div class="flex flex-wrap items-center gap-2">
-    <button id="send-now" title="Save this comment and send every comment (⌘↵)" class="h-8 cursor-pointer rounded-lg bg-zinc-900 px-3 text-sm font-semibold whitespace-nowrap text-white enabled:hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:enabled:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100">Send<span class="ml-2 text-xs font-normal opacity-60">⌘↵</span></button>
-    <button id="save" class="h-8 cursor-pointer rounded-lg bg-zinc-100 px-3 text-sm whitespace-nowrap text-zinc-900 enabled:hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:enabled:hover:bg-zinc-700 dark:focus-visible:outline-zinc-100">Save</button>
-    <span class="ml-auto flex gap-2">
-      <button id="clear" class="h-8 cursor-pointer rounded-lg px-2 text-sm whitespace-nowrap text-zinc-500 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-red-400 dark:focus-visible:outline-zinc-100">Delete</button>
-      <button id="close" class="h-8 cursor-pointer rounded-lg px-2 text-sm whitespace-nowrap text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100">Cancel</button>
-    </span>
-  </div>
-</section>
 <script>
 const DATA = __DATA__;
 const STORAGE_KEY = "annotate:" + DATA.key;
 const META_KEY = STORAGE_KEY + ":meta";
 const SENT_KEY = STORAGE_KEY + ":sent";
+const NOTE_KEY = STORAGE_KEY + ":note";
 const notes = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const meta = JSON.parse(localStorage.getItem(META_KEY) || "{}");
+// The note for the agent, sent with the comments: what to do with them as a whole.
+let instruction = localStorage.getItem(NOTE_KEY) || "";
 const byId = (id) => document.getElementById(id);
-const editor = byId("editor");
+// With no lines selected, the input writes the note for the agent or a comment on the whole document.
+let composeTo = "note";
 let current = 0;
 let compare = localStorage.getItem("annotate:compare") === "true";
 let working = false; // true from a Send until the agent reopens the page
 let selection = null;
+let editing = false; // the input holds a saved comment, the note or a whole-document comment, to change
 let hovered = null;
 let drag = null;
 let lastClicked = null;
@@ -107,10 +99,12 @@ const known = new Set(DATA.documents.map((item) => item.id));
 Object.keys(notes).forEach((key) => { if (!known.has(key.slice(0, key.lastIndexOf(":")))) delete notes[key]; });
 Object.keys(meta).forEach((id) => { if (!known.has(id)) delete meta[id]; });
 // A Send marks the comments it carried (markSent). This page drops them, so none looks open or goes out twice; the
-// reply panel lists them with the agent's answers. Labels on eval outputs are never marked: feedback.json keeps them.
+// conversation shows them with the agent's answers. Labels on eval outputs are never marked: feedback.json keeps them.
 Object.keys(notes).forEach((key) => { if (notes[key].sent) delete notes[key]; });
 Object.values(meta).forEach((entry) => { if (entry.sent) { entry.overall = ""; delete entry.sent; } });
-const sent = JSON.parse(localStorage.getItem(SENT_KEY) || "[]");
+const lastSend = JSON.parse(localStorage.getItem(SENT_KEY) || "[]");
+const sent = Array.isArray(lastSend) ? lastSend : lastSend.comments || [];
+const sentNote = Array.isArray(lastSend) ? "" : lastSend.note || "";
 persist();
 const lineLabel = (start, end) => (start === end ? "Line " + (start + 1) : "Lines " + (start + 1) + "-" + (end + 1));
 const sheetOf = (item) => document.querySelector('.sheet[data-id="' + CSS.escape(item.id) + '"]');
@@ -141,20 +135,31 @@ function shownItems() {
   return [item, sibling].sort((first, second) => Number(isBaseline(first)) - Number(isBaseline(second)));
 }
 
+// One row per file: whether it is reviewed, its name, and how many comments wait on it. The tick is its own button,
+// so marking a file reviewed never opens it.
 function renderDocuments() {
   byId("documents").replaceChildren(...DATA.documents.map((item, index) => {
     // aria-[current=true] is an arbitrary variant because Tailwind has no aria-current one.
-    const button = element("button", "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-zinc-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-zinc-900 aria-[current=true]:bg-zinc-200/70 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100 dark:aria-[current=true]:bg-zinc-700/60");
-    button.setAttribute("aria-current", String(shownItems().some((shown) => shown.id === item.id)));
-    const done = element("span", "flex-none text-zinc-500 empty:hidden dark:text-zinc-400", metaOf(item).reviewed ? "✓" : "");
-    const count = element("span", "min-w-5 flex-none rounded-full bg-amber-200/50 px-2 text-center text-xs/5 empty:hidden dark:bg-amber-300/15", notesOf(item).length || "");
+    const row = element("div", "flex items-center gap-1 rounded-lg hover:bg-zinc-100 aria-[current=true]:bg-zinc-200/70 dark:hover:bg-zinc-800 dark:aria-[current=true]:bg-zinc-700/60");
+    row.setAttribute("aria-current", String(shownItems().some((shown) => shown.id === item.id)));
+    const reviewed = metaOf(item).reviewed;
+    const tick = element("button", reviewed
+      ? "flex size-6 flex-none cursor-pointer items-center justify-center rounded text-zinc-900 focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-100 dark:focus-visible:outline-zinc-100"
+      : "flex size-6 flex-none cursor-pointer items-center justify-center rounded text-zinc-300 hover:text-zinc-500 focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-700 dark:hover:text-zinc-400 dark:focus-visible:outline-zinc-100", "✓");
+    tick.setAttribute("aria-pressed", String(reviewed));
+    tick.title = reviewed ? "Reviewed. Click to unmark." : "Mark reviewed";
+    tick.onclick = () => { metaOf(item).reviewed = !reviewed; persist(); renderDocuments(); };
+    const open = element("button", "flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-1 pr-2 text-left focus-visible:outline-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100");
+    const waiting = notesOf(item).length + (metaOf(item).overall ? 1 : 0);
+    const count = element("span", "min-w-5 flex-none rounded-full bg-amber-200/50 px-2 text-center text-xs/5 empty:hidden dark:bg-amber-300/15", waiting || "");
     const cut = item.title.lastIndexOf("/");
     const name = element("span", "min-w-0 flex-1");
     name.append(element("span", "block truncate", item.title.slice(cut + 1)), element("span", "block truncate text-xs text-zinc-500 empty:hidden dark:text-zinc-400", item.title.slice(0, cut + 1)));
-    name.title = item.title;
-    button.append(done, name, count);
-    button.onclick = () => { current = index; lastClicked = null; closeEditor(); render(); };
-    return button;
+    open.title = item.title;
+    open.append(name, count);
+    open.onclick = () => { keepDraft(); current = index; lastClicked = null; selection = null; render(); };
+    row.append(tick, open);
+    return row;
   }));
 }
 
@@ -166,7 +171,6 @@ function markdownImage(token, state) {
   const image = element("img", "my-1 block h-auto max-w-full rounded border border-zinc-200 dark:border-zinc-800");
   image.alt = alt || path;
   image.src = state.imageBase + path;
-  image.addEventListener("load", relayout);
   return image;
 }
 
@@ -384,7 +388,6 @@ async function drawDiagrams(diagrams) {
       frameDiagram(diagram, key);
     } else diagram.block.remove();
   }
-  relayout();
 }
 
 // A drawn diagram carries its first and last line numbers, and a click on either comments on
@@ -418,7 +421,6 @@ function frameDiagram(diagram, key) {
     if (shownSources.has(key)) shownSources.delete(key);
     else shownSources.add(key);
     show(shownSources.has(key));
-    relayout();
   };
   show(shownSources.has(key));
   const row = element("div", "mb-2 flex gap-3 border-l-4 border-transparent px-2");
@@ -438,7 +440,6 @@ function zoomDiagram(figure, event) {
   const after = svg.getBoundingClientRect();
   figure.scrollLeft = after.left - figure.getBoundingClientRect().left + figure.scrollLeft + x * after.width - (event.clientX - figure.getBoundingClientRect().left);
   window.scrollBy(0, after.top + y * after.height - event.clientY);
-  relayout();
 }
 
 function renderLines(container, item) {
@@ -528,82 +529,38 @@ function anchorOf(lines, index) {
   return row.hidden && diagram ? diagram : row;
 }
 
-function renderMargin(margin, lines, item) {
-  margin.querySelectorAll(".card").forEach((card) => card.remove());
-  let nextFreeTop = 0;
-  notesOf(item).forEach((note) => {
-    const card = element("button", "card absolute right-0 left-0 cursor-pointer rounded-lg border border-zinc-200 border-l-2 border-l-amber-400 dark:border-l-amber-300/70 bg-amber-50 px-3 py-2 text-left shadow-xs hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:bg-amber-300/10 dark:focus-visible:outline-zinc-100");
-    card.append(
-      element("span", "float-right ml-2 hidden rounded-full border border-zinc-200 px-2 text-xs text-zinc-500 group-data-working/page:inline-block dark:border-zinc-700 dark:text-zinc-400", "sent · Claude is on it"),
-      element("div", "text-xs text-zinc-500 dark:text-zinc-400", lineLabel(note.start, note.end).toLowerCase()),
-      element("div", "whitespace-pre-wrap", note.comment),
-    );
-    card.setAttribute("aria-label", "Edit comment on " + lineLabel(note.start, note.end).toLowerCase() + ": " + note.comment);
-    card.onclick = () => openEditor(item, note.start, note.end, note);
-    card.onmouseenter = () => { hovered = { id: item.id, start: note.start, end: note.end }; highlight(); };
-    card.onmouseleave = () => { hovered = null; highlight(); };
-    card.onfocus = card.onmouseenter;
-    card.onblur = card.onmouseleave;
-    margin.append(card);
-    const top = Math.max(anchorOf(lines, note.start).offsetTop, nextFreeTop);
-    card.style.top = top + "px";
-    nextFreeTop = top + card.offsetHeight + 8;
-  });
-  margin.style.minHeight = Math.max(lines.offsetHeight, nextFreeTop) + "px";
+// Where a comment the agent answered sits now, in the page's 0-based lines. A line's text moves when the agent edits
+// above it, so a sent comment's line is found again by its text, nearest first.
+function placeOf(entry) {
+  const item = DATA.documents.find((candidate) => candidate.title === entry.document);
+  if (!item || entry.start === null) return { item, at: null, until: null };
+  const last = Math.max(item.lines.length - 1, 0);
+  let shift = 0;
+  if (entry.quote !== undefined && item.lines[entry.start - 1] !== entry.quote) {
+    const found = item.lines
+      .map((text, index) => (text === entry.quote ? index - (entry.start - 1) : null))
+      .filter((delta) => delta !== null)
+      .sort((first, second) => Math.abs(first) - Math.abs(second));
+    if (found.length) shift = found[0];
+  }
+  return { item, at: Math.min(entry.start - 1 + shift, last), until: Math.min(entry.end - 1 + shift, last) };
 }
 
 function renderSheets() {
-  // The open comment box lives in a margin this replaces, so it closes first.
-  if (byId("sheets").contains(editor)) closeEditor();
   const items = shownItems();
   const title = items.length > 1 ? items[0].group : items[0].title;
   const folder = title.slice(0, title.lastIndexOf("/") + 1);
   byId("title").replaceChildren(title.slice(folder.length), element("span", "block text-xs font-normal text-zinc-400 dark:text-zinc-500", folder));
   document.body.toggleAttribute("data-compare", items.length > 1);
-  const container = byId("sheets");
-  container.replaceChildren(...items.map((item) => {
-    const sheet = element("div", "sheet mx-auto w-full min-w-0 max-w-7xl");
+  byId("sheets").replaceChildren(...items.map((item) => {
+    const sheet = element("div", "sheet mx-auto w-full min-w-0 max-w-4xl");
     sheet.dataset.id = item.id;
-    // One row above the sheet, as wide as it: the version (side by side), the overall comment link, Reviewed.
-    const head = element("div", "mb-2 flex max-w-4xl items-center gap-4");
-    if (items.length > 1) head.append(element("h2", "font-semibold", versionLabel(item)));
-    const reviewed = element("label", "ml-auto inline-flex cursor-pointer items-center gap-2 text-zinc-500 dark:text-zinc-400");
-    const box = element("input", "size-4 cursor-pointer accent-zinc-900 dark:accent-zinc-100");
-    box.type = "checkbox";
-    box.checked = metaOf(item).reviewed;
-    box.onchange = () => { metaOf(item).reviewed = box.checked; persist(); renderDocuments(); };
-    reviewed.append(box, " Reviewed");
-    head.append(reviewed);
-    const overall = element("textarea", FIELD + " mb-3 block min-h-9 max-w-4xl field-sizing-content");
-    overall.rows = 1;
-    overall.placeholder = "Overall comment on this document (optional)";
-    overall.setAttribute("aria-label", "Overall comment on " + item.title);
-    overall.value = metaOf(item).overall;
-    overall.oninput = () => { metaOf(item).overall = overall.value; persist(); };
-    const addOverall = element("button", "cursor-pointer text-sm text-zinc-500 hover:text-zinc-900 hover:underline focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100", "Add an overall comment");
-    addOverall.type = "button";
-    overall.hidden = !metaOf(item).overall;
-    addOverall.hidden = !overall.hidden;
-    addOverall.onclick = () => { addOverall.hidden = true; overall.hidden = false; overall.focus(); };
-    head.insertBefore(addOverall, reviewed);
-    // The margin is position: relative, and cards and the comment box take their top from a row's offsetTop.
-    const body = element("div", "relative flex gap-8 group-data-compare/page:gap-4");
-    const lines = element("div", "lines min-w-0 max-w-4xl flex-1 rounded-xl bg-white py-2 ring-1 ring-zinc-200 dark:bg-zinc-800/40 dark:ring-white/5");
-    const margin = element("div", "margin pointer-events-none relative w-80 flex-none group-data-compare/page:w-56 *:pointer-events-auto");
-    body.append(lines, margin);
-    sheet.append(head, overall, body);
+    if (items.length > 1) sheet.append(element("h2", "mb-2 font-semibold", versionLabel(item)));
+    const lines = element("div", "lines min-w-0 rounded-xl bg-white py-2 ring-1 ring-zinc-200 dark:bg-zinc-800/40 dark:ring-white/5");
+    sheet.append(lines);
     renderLines(lines, item);
     return sheet;
   }));
-  relayout();
-}
-
-function relayout() {
-  shownItems().forEach((item) => {
-    const sheet = sheetOf(item);
-    renderMargin(sheet.querySelector(".margin"), sheet.querySelector(".lines"), item);
-  });
-  if (selection && !editor.hidden) placeEditor();
 }
 
 function highlight() {
@@ -619,31 +576,161 @@ function highlight() {
   });
 }
 
-// The comment box sits in the margin of the sheet it is about, level with the first line of the selection and
-// above any card there. Returns what it sits beside.
-function placeEditor() {
-  const anchor = anchorOf(sheetOf(itemById(selection.id)).querySelector(".lines"), selection.start);
-  editor.style.top = anchor.offsetTop + "px";
-  return anchor;
+// The conversation's messages. A comment waiting to be sent wears the highlighter, like its lines; what was sent is
+// quiet; the agent's answer is paper, and a question it asks back carries an ink edge.
+const BUBBLE = {
+  pending: "grid w-full cursor-pointer gap-1 rounded-lg border border-zinc-200 border-l-2 border-l-amber-400 bg-amber-50 px-3 py-2 text-left hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:border-l-amber-300/70 dark:bg-amber-300/10 dark:focus-visible:outline-zinc-100",
+  sent: "grid w-full cursor-pointer gap-1 rounded-lg px-3 py-1 text-left text-zinc-500 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100",
+  answer: "grid w-full cursor-pointer gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left shadow-xs hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:outline-zinc-100",
+  question: "grid w-full cursor-pointer gap-1 rounded-lg border border-zinc-200 border-l-2 border-l-zinc-900 bg-white px-3 py-2 text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:border-l-zinc-100 dark:bg-zinc-900 dark:focus-visible:outline-zinc-100",
+};
+const fileName = (title) => title.slice(title.lastIndexOf("/") + 1);
+const whereOf = (title, at, until) => fileName(title) + " · " + (at === null ? "whole document" : lineLabel(at, until).toLowerCase());
+
+// One message: who wrote it and what about, then its text, a line at a time so the agent's lists keep their shape.
+function bubble(kind, label, text, pill) {
+  const node = element("button", BUBBLE[kind]);
+  const head = element("span", "flex min-w-0 items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400");
+  if (pill) head.append(element("span", "flex-none " + pill[1], pill[0]));
+  head.append(element("span", "truncate", label));
+  if (kind === "pending") head.append(element("span", "ml-auto hidden flex-none rounded-full border border-zinc-200 px-2 group-data-working/page:inline-block dark:border-zinc-700", "sent · Claude is on it"));
+  node.append(head);
+  text.split("\n").filter((line) => line.trim()).forEach((line) => {
+    const listed = /^\s*[-*]\s+/.test(line);
+    const row = element("span", listed ? "block pl-3 -indent-3 wrap-anywhere" : "block wrap-anywhere");
+    row.append(...(listed ? ["• "] : []), ...inlineMarkdown(line.replace(/^\s*[-*]\s+/, ""), { insideCodeSpan: false }));
+    node.append(row);
+  });
+  return node;
 }
 
+// Hovering a message about lines lights them, when their document is the one shown.
+function pointAt(node, item, at, until) {
+  if (!item || at === null) return;
+  node.onmouseenter = () => {
+    if (!shownItems().includes(item)) return;
+    hovered = { id: item.id, start: at, end: until };
+    highlight();
+  };
+  node.onmouseleave = () => { hovered = null; highlight(); };
+}
+
+// The conversation: the last Send, each comment with the agent's answer under it, questions last; then what is saved
+// and not yet sent. Whatever needs the developer ends up just above the input.
+function renderThread() {
+  const thread = [];
+  const divider = (text) => element("p", "text-center text-xs text-zinc-400 dark:text-zinc-500", text);
+  if (DATA.reply) {
+    const entries = replyEntries();
+    const asks = entries.filter((entry) => entry.status === "question").length;
+    const missing = entries.filter((entry) => entry.status === "missing").length;
+    thread.push(divider("Your last Send · " + [
+      asks ? asks + (asks === 1 ? " needs" : " need") + " you" : "nothing needs you",
+      missing ? missing + " not answered" : "",
+    ].filter(Boolean).join(" · ")));
+    if (sentNote) thread.push(bubble("sent", "You · note for Claude", sentNote));
+    if (DATA.reply.notes.length) thread.push(bubble("answer", "Claude", DATA.reply.notes.join("\n")));
+    [...entries].reverse().forEach((entry) => {
+      const { item, at, until } = placeOf(entry);
+      const where = whereOf(entry.document, at, until);
+      if (entry.comment) {
+        const you = bubble("sent", "You · " + where, entry.comment);
+        you.onclick = () => showLines(entry.document, at, until);
+        pointAt(you, item, at, until);
+        thread.push(you);
+      }
+      const [, label, pill] = REPLY_STATES.find(([state]) => state === entry.status);
+      const asking = entry.status === "question" && item && at !== null;
+      const answer = bubble(entry.status === "question" ? "question" : "answer",
+        "Claude" + (entry.comment ? "" : " · " + where) + (asking ? " · click to reply" : ""),
+        entry.answer || "No answer to this comment.", [label, pill]);
+      answer.onclick = () => (asking ? openEditor(item, at, until, null) : showLines(entry.document, at, until));
+      pointAt(answer, item, at, until);
+      thread.push(answer);
+    });
+  }
+  const waiting = [];
+  if (instruction) {
+    const note = bubble("pending", "You · note for Claude", instruction);
+    note.onclick = () => editSlot("note", documentAt());
+    waiting.push(note);
+  }
+  DATA.documents.forEach((item) => {
+    if (metaOf(item).overall) {
+      const overall = bubble("pending", "You · " + whereOf(item.title, null, null), metaOf(item).overall);
+      overall.onclick = () => editSlot("document", item);
+      waiting.push(overall);
+    }
+    notesOf(item).forEach((note) => {
+      const comment = bubble("pending", "You · " + whereOf(item.title, note.start, note.end), note.comment);
+      comment.onclick = () => openEditor(item, note.start, note.end, note);
+      pointAt(comment, item, note.start, note.end);
+      waiting.push(comment);
+    });
+  });
+  if (waiting.length) thread.push(divider("Not sent yet"), ...waiting);
+  if (!thread.length) thread.push(divider("Click a line to comment on it. With no line picked, write a note for Claude or a comment on the whole document."));
+  byId("thread").replaceChildren(...thread);
+  byId("chat").scrollTop = byId("chat").scrollHeight;
+}
+
+// What the input writes to: the selected lines, or with none, the note for the agent or the whole document shown.
+function renderTarget() {
+  const field = byId("comment");
+  if (selection) {
+    const item = itemById(selection.id);
+    const chip = element("span", "flex min-w-0 flex-1 items-center gap-2");
+    chip.append(
+      element("span", "flex-none rounded-full bg-amber-200/50 px-2 font-semibold text-zinc-900 dark:bg-amber-300/15 dark:text-zinc-100", (compare ? versionLabel(item) + ", " : "") + lineLabel(selection.start, selection.end)),
+      element("span", "truncate text-zinc-500 dark:text-zinc-400", item.lines[selection.start].trim() + (selection.end > selection.start ? " …" : "")),
+    );
+    const drop = element("button", "flex-none cursor-pointer rounded px-1 text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100", "✕");
+    drop.title = "Not about these lines (Esc)";
+    drop.onclick = () => { saveDraft(); selection = null; render(); };
+    byId("target").replaceChildren(chip, drop);
+    field.placeholder = "Comment on " + lineLabel(selection.start, selection.end).toLowerCase();
+  } else {
+    const choice = (value, text) => {
+      const button = element("button", value === composeTo
+        ? "h-6 cursor-pointer rounded-full bg-zinc-900 px-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:focus-visible:outline-zinc-100"
+        : "h-6 cursor-pointer rounded-full bg-zinc-100 px-2 text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100", text);
+      button.setAttribute("aria-pressed", String(value === composeTo));
+      button.onclick = () => { saveDraft(); composeTo = value; render(); field.focus(); };
+      return button;
+    };
+    byId("target").replaceChildren(choice("note", "Note for Claude"), choice("document", "Whole document"),
+      element("span", "text-zinc-400 dark:text-zinc-500", "or click a line"));
+    field.placeholder = composeTo === "note" ? "What should Claude do with your comments?" : "A comment on the whole of " + fileName(documentAt().title);
+  }
+  byId("clear").hidden = !editing;
+}
+
+// Puts the note or a document's overall comment back in the input to change it.
+function editSlot(slot, item) {
+  if (working) { status(PAUSED); return; }
+  saveDraft();
+  current = DATA.documents.indexOf(item);
+  selection = null;
+  composeTo = slot;
+  editing = true;
+  byId("comment").value = slot === "note" ? instruction : metaOf(item).overall;
+  render();
+  byId("comment").focus();
+}
+
+// Selecting lines points the input at them; a comment already on them comes back to be changed.
 function openEditor(item, start, end, note) {
   // While the agent is changing the documents, a comment would land on text that is about to move.
   if (working) { status(PAUSED); return; }
+  saveDraft();
+  if (!shownItems().includes(item)) { current = DATA.documents.indexOf(item); selection = null; render(); }
   selection = { id: item.id, start, end, key: note ? note.key : null };
-  const first = item.lines[start];
-  byId("quoted").replaceChildren(
-    element("span", "font-semibold text-zinc-700 dark:text-zinc-300", (compare ? versionLabel(item) + ", " : "") + lineLabel(start, end)),
-    element("span", "truncate border-l-2 border-zinc-300 pl-2 dark:border-zinc-600", first.trim() + (end > start ? " …" : "")),
-  );
+  editing = Boolean(note);
   byId("comment").value = note ? note.comment : "";
-  byId("clear").hidden = !note;
-  sheetOf(item).querySelector(".margin").append(editor);
-  editor.hidden = false;
-  const anchor = placeEditor();
+  renderTarget();
   highlight();
   byId("comment").focus({ preventScroll: true });
-  anchor.scrollIntoView({ block: "center", behavior: "smooth" });
+  anchorOf(sheetOf(item).querySelector(".lines"), start).scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 function openAt(item, start, end) {
@@ -652,10 +739,26 @@ function openAt(item, start, end) {
   else openEditor(item, start, end, null);
 }
 
-// Closed, the comment box waits outside the sheets, so a render that replaces them never takes it along.
-function closeEditor() { editor.hidden = true; document.body.append(editor); selection = null; highlight(); }
+// Keeps what the input holds on its target, so switching targets never loses it. A new note or whole-document
+// comment joins the one already there. Returns false when the input held nothing.
+function saveDraft() {
+  const text = byId("comment").value.trim();
+  if (!text) return false;
+  if (selection) {
+    notes[selection.key || rangeKey(itemById(selection.id), selection.start, selection.end)] = { comment: text };
+  } else {
+    const before = composeTo === "note" ? instruction : metaOf(documentAt()).overall;
+    const value = editing || !before ? text : before + "\n\n" + text;
+    if (composeTo === "note") { instruction = value; localStorage.setItem(NOTE_KEY, value); }
+    else metaOf(documentAt()).overall = value;
+  }
+  persist();
+  byId("comment").value = "";
+  editing = false;
+  return true;
+}
 
-function render() { renderDocuments(); renderSheets(); highlight(); }
+function render() { renderDocuments(); renderSheets(); renderThread(); renderTarget(); highlight(); }
 
 const sheets = byId("sheets");
 sheets.addEventListener("mousedown", (event) => {
@@ -707,44 +810,59 @@ sheets.addEventListener("keydown", (event) => {
   }
 });
 
-// Keeps the open comment, if it has text. Returns the lines it covers, or null.
-function saveOpenComment() {
-  const comment = byId("comment").value.trim();
-  if (!selection || !comment) return null;
-  const { id, start, end } = selection;
-  const item = itemById(id);
-  notes[selection.key || rangeKey(item, start, end)] = { comment };
-  persist();
-  return { item, start, end };
-}
-
 byId("save").onclick = () => {
-  const saved = saveOpenComment();
-  if (!saved) return;
-  closeEditor(); render();
-  const sheet = sheetOf(saved.item);
-  for (let index = saved.start; index <= saved.end; index += 1) rowAt(sheet, index).classList.add("flash");
+  const lines = selection;
+  if (!saveDraft()) return;
+  selection = null;
+  render();
+  if (lines) flash(itemById(lines.id), lines.start, lines.end);
 };
-byId("send-now").onclick = () => {
-  saveOpenComment();
-  closeEditor(); render();
+byId("send").onclick = () => {
+  saveDraft();
+  selection = null;
+  render();
   sendAll();
 };
+// Delete takes away what the input was changing: a comment on lines, the note, or a whole-document comment.
 byId("clear").onclick = () => {
-  if (selection && selection.key) { delete notes[selection.key]; persist(); }
-  closeEditor(); render();
+  if (selection && selection.key) delete notes[selection.key];
+  else if (!selection && composeTo === "note") { instruction = ""; localStorage.removeItem(NOTE_KEY); }
+  else if (!selection) metaOf(documentAt()).overall = "";
+  persist();
+  byId("comment").value = "";
+  editing = false;
+  selection = null;
+  render();
 };
-byId("close").onclick = closeEditor;
 byId("comment").addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) byId("send-now").click();
+  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) byId("send").click();
 });
-document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeEditor(); });
-window.addEventListener("resize", relayout);
+// Esc drops what the input holds and the lines it was about.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  byId("comment").value = "";
+  editing = false;
+  selection = null;
+  renderTarget();
+  highlight();
+});
+
+// Lights lines for a moment, so the eye finds them after a jump.
+function flash(item, start, end) {
+  const sheet = sheetOf(item);
+  if (!sheet) return;
+  for (let index = start; index <= end; index += 1) {
+    const row = rowAt(sheet, index);
+    if (!row) continue;
+    row.classList.remove("flash");
+    void row.offsetWidth;
+    row.classList.add("flash");
+  }
+}
 
 byId("view").hidden = !DATA.documents.some(siblingOf);
-// The agent's answer to the last Send sits under the Send box: each comment that Send carried, with what the agent did
-// about it or asks back, questions first. A sent comment the reply has no item for says so, rather than vanish. A
-// reopen without a reply hides the panel.
+// What became of each comment the last Send carried, as the conversation shows it. A sent comment the reply has no
+// item for says so, rather than vanish. A reopen without a reply shows none of them.
 const REPLY_STATES = [
   ["question", "Needs you", "rounded-full bg-zinc-900 px-2 text-xs/5 font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"],
   ["missing", "No answer", "rounded-full bg-zinc-100 px-2 text-xs/5 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"],
@@ -772,57 +890,17 @@ function replyEntries() {
   return entries.sort((first, second) => rank(first) - rank(second));
 }
 
-// Opens the document a reply entry is about and brings the lines the comment was on into view.
-function showLines(title, start, end) {
+// Opens the document a message is about and brings its lines into view, in the page's 0-based lines.
+function showLines(title, at, until) {
   const index = DATA.documents.findIndex((item) => item.title === title);
   if (index === -1) return;
-  current = index; lastClicked = null; closeEditor(); render();
   const item = DATA.documents[index];
-  if (start === null || !item.lines.length) return;
-  const sheet = sheetOf(item);
-  const first = Math.min(start, item.lines.length) - 1;
-  const last = Math.min(end, item.lines.length) - 1;
-  anchorOf(sheet.querySelector(".lines"), first).scrollIntoView({ block: "center", behavior: "smooth" });
-  for (let line = first; line <= last; line += 1) rowAt(sheet, line).classList.add("flash");
+  if (!shownItems().includes(item)) { saveDraft(); current = index; lastClicked = null; selection = null; render(); }
+  if (at === null || !item.lines.length) return;
+  anchorOf(sheetOf(item).querySelector(".lines"), at).scrollIntoView({ block: "center", behavior: "smooth" });
+  flash(item, at, until);
 }
 
-function renderReply() {
-  if (!DATA.reply) return;
-  const entries = replyEntries();
-  const count = (state) => entries.filter((entry) => entry.status === state).length;
-  const asks = count("question");
-  const missing = count("missing");
-  byId("agent-reply-count").textContent = "· " + [
-    asks ? asks + (asks === 1 ? " needs" : " need") + " you" : "nothing needs you",
-    missing ? missing + " not answered" : "",
-  ].filter(Boolean).join(" · ");
-  byId("agent-reply-text").replaceChildren(...DATA.reply.notes.map((line) => {
-    const item = /^\s*[-*]\s+/.test(line);
-    const paragraph = element("p", item ? "pl-3 -indent-3" : "");
-    paragraph.append(...(item ? ["• "] : []), ...inlineMarkdown(line.replace(/^\s*[-*]\s+/, ""), { insideCodeSpan: false }));
-    return paragraph;
-  }));
-  byId("agent-reply-items").replaceChildren(...entries.map((entry) => {
-    const [, label, pill] = REPLY_STATES.find(([state]) => state === entry.status);
-    const where = entry.document.slice(entry.document.lastIndexOf("/") + 1) + " · " +
-      (entry.start === null ? "overall" : lineLabel(entry.start - 1, entry.end - 1).toLowerCase());
-    const button = element("button", "grid w-full cursor-pointer gap-1 rounded-lg px-2 py-2 text-left hover:bg-zinc-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-zinc-900 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100");
-    const head = element("span", "flex min-w-0 items-center gap-2");
-    head.append(element("span", "flex-none " + pill, label), element("span", "truncate text-xs text-zinc-500 dark:text-zinc-400", where));
-    button.append(head);
-    if (entry.comment) button.append(element("span", "line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400", "You: " + entry.comment));
-    if (entry.answer) {
-      const answer = element("span", "text-zinc-900 dark:text-zinc-100");
-      answer.append(...inlineMarkdown(entry.answer, { insideCodeSpan: false }));
-      button.append(answer);
-    }
-    button.title = entry.document;
-    button.onclick = () => showLines(entry.document, entry.start, entry.end);
-    return button;
-  }));
-  byId("agent-reply").hidden = false;
-}
-renderReply();
 byId("changed-hint").hidden = !DATA.documents.some((item) => item.changed.length);
 byId("removed-hint").hidden = !DATA.documents.some((item) => (item.removed || []).length);
 if (DATA.base) {
@@ -836,7 +914,7 @@ byId("compare").onchange = () => {
   // Off falls back to the newer version, never the baseline the pair was showing beside it.
   const sibling = siblingOf(documentAt());
   if (!compare && sibling && isBaseline(documentAt())) current = DATA.documents.indexOf(sibling);
-  closeEditor(); render();
+  saveDraft(); selection = null; render();
 };
 
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
@@ -924,42 +1002,45 @@ function reloadWhenReopened() {
 
 const PAUSED = "Claude is changing these documents, so commenting is paused. You can comment again when the new version loads.";
 
-// What a Send handed over: the list the reply panel answers, and a mark on each comment so the next page drops it.
+// What a Send handed over: the note and the comments the next page shows with the agent's answers, and a mark on each
+// comment so that page drops it. Labels on eval outputs are never marked, as feedback.json keeps them; the note
+// always goes, since it belongs to one Send.
 function markSent() {
-  const list = DATA.documents.flatMap((item) => [
+  const comments = DATA.iteration ? [] : DATA.documents.flatMap((item) => [
     ...(metaOf(item).overall ? [{ document: item.title, start: null, end: null, comment: metaOf(item).overall }] : []),
-    ...notesOf(item).map((note) => ({ document: item.title, start: note.start + 1, end: note.end + 1, comment: note.comment })),
+    ...notesOf(item).map((note) => ({ document: item.title, start: note.start + 1, end: note.end + 1, comment: note.comment, quote: item.lines[note.start] })),
   ]);
-  localStorage.setItem(SENT_KEY, JSON.stringify(list));
-  Object.values(notes).forEach((note) => { note.sent = true; });
-  DATA.documents.forEach((item) => { if (metaOf(item).overall) metaOf(item).sent = true; });
+  localStorage.setItem(SENT_KEY, JSON.stringify({ note: instruction, comments }));
+  localStorage.removeItem(NOTE_KEY);
+  if (!DATA.iteration) {
+    Object.values(notes).forEach((note) => { note.sent = true; });
+    DATA.documents.forEach((item) => { if (metaOf(item).overall) metaOf(item).sent = true; });
+  }
   persist();
 }
 
-// Sends every saved comment and the instruction. Commenting and Send stay paused until the agent reopens the page.
-// While they are, the body carries data-working: commented lines dim and every card says it was sent.
+// Sends every saved comment and the note. Commenting and Send stay paused until the agent reopens the page. While
+// they are, the body carries data-working: commented lines dim and every waiting message says it was sent.
 async function sendAll() {
   working = true;
   document.body.toggleAttribute("data-working", true);
-  byId("send").disabled = byId("send-now").disabled = true;
+  byId("send").disabled = byId("save").disabled = byId("comment").disabled = true;
   status("Sending...");
   try {
-    const body = JSON.stringify({ token: DATA.token, instruction: byId("instruction").value.trim(), text: asText(), ...collect() });
+    const body = JSON.stringify({ token: DATA.token, instruction: instruction.trim(), text: asText(), ...collect() });
     const response = await fetch("/send", { method: "POST", headers: { "Content-Type": "application/json" }, body });
     if (!response.ok) throw new Error(String(response.status));
-    if (!DATA.iteration) markSent();
+    markSent();
     status(PAUSED);
     showWorking();
     reloadWhenReopened();
   } catch (error) {
     working = false;
     document.body.toggleAttribute("data-working", false);
-    byId("send").disabled = byId("send-now").disabled = false;
+    byId("send").disabled = byId("save").disabled = byId("comment").disabled = false;
     status("Couldn't reach the agent (" + error.message + "). Use Copy instead.");
   }
 }
-
-byId("send").onclick = sendAll;
 
 render();
 </script>

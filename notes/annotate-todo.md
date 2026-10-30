@@ -117,3 +117,13 @@ diff `changed-lines.ts` runs on lines, over words, across the whole paragraph so
 change, and mark only the inserted and removed words. The hard part is placing the marks in the
 rendered markdown (bold, code, links) without breaking it. A contained change to annotate, about an
 hour with tests.
+
+## Scrolling into things
+
+The developer, verbatim (2026-10-30, on the two-pane page): "okay dig this huge improvemtn. scrolling
+into things can be imrpoved. but this is much beter"
+
+Not yet pinned down which scroll. The two candidates: clicking a message scrolls the document to its
+lines and flashes them for a moment, which may be too faint or too quick to find; and selecting a line
+puts the focus in the input at the panel's foot without moving the document, so the selection can sit at
+the window's edge. Ask the developer which one before changing either.

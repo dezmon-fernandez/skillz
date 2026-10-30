@@ -20,12 +20,9 @@
 .md-rule .gutter, .md-rule .number { font-size: 0; line-height: 0; padding-top: 0; }
 .md-rule .md-cell { padding: 0; }
 
-/* Diagrams. A drawn diagram may spread into the comment margin beside it, which holds no card: cards sit beside
-   numbered rows. 76px is what comes before it in its row (w-5, gap-3, w-8, gap-3). The reach after it is the row's
-   right padding, the gap and the margin: px-2, gap-8, w-80, or side by side px-2, gap-4, w-56. One wider still is
+/* Diagrams. A drawn diagram fits its row: 76px is what comes before it (w-5, gap-3, w-8, gap-3). One wider is
    scaled down to fit, and a click shows it at full size. */
-.md-diagram { max-width: calc(100% - 76px + 360px); cursor: zoom-in; }
-[data-compare] .md-diagram { max-width: calc(100% - 76px + 248px); }
+.md-diagram { max-width: calc(100% - 76px); cursor: zoom-in; }
 .md-diagram svg { display: block; max-width: 100%; height: auto; }
 .md-diagram.zoomed { cursor: zoom-out; }
 .md-diagram.zoomed svg { max-width: none; }
