@@ -1,12 +1,16 @@
 # Plan template
 
-A plan has three parts. The developer reads the Definition and the Contract and confirms
-them before the Build part is written. The executor builds from all three.
+A plan has three parts, and a Research part at its end. The developer reads the Definition
+and the Contract and confirms them before the Build part is written. The executor builds
+from all of it.
 
 - The Definition is plain words. A reader who knows the product but not the code can judge
   it: is this the right thing, and the right approach?
 - The Contract is code and diagrams: what changes for whoever calls it, the models, and how
   it works. The models are the contract the code is written to.
+- The Research part numbers what the agents were sent to check, E1 and T1, and what came
+  back. A brief is the plan's path and one number, so the plan is written before any agent
+  starts.
 - Each section answers the question in its placeholder, and only that. A task never
   restates another section. It points at it: a function or a model by name, a criterion by
   number, a rule or a case by its opening words. A fact written twice gets changed in one
@@ -16,8 +20,9 @@ them before the Build part is written. The executor builds from all three.
   it.
 - Write every code block in the codebase's own language. The skeleton shows Python and
   SQL.
-- The Definition and the Contract name no source file, test, or line number. The Build part
-  carries those.
+- The Definition and the Contract name no source file, test, or line of code. The Build and
+  Research parts carry those. A line quoted from the request or a document it links to
+  carries its path:line.
 
 ---
 
@@ -46,6 +51,14 @@ Numbered, one each. Each is provable by a test or a named manual check. Tasks ci
 number (AC #3), so the numbering is fixed once written.>
 
 1. Given <the starting state>, when <the trigger>, then <what is observably true>.
+
+## Examples
+
+<What will the developer run to judge the build? Two or three real cases, one where
+something goes wrong. Tasks cite them by number (Example 2).>
+
+1. <the real case: a record, a day, or a name the developer can look up> → <what the user
+   sees>. <The sample that holds it, once measured.>
 
 ## Solution Statement
 
@@ -80,7 +93,7 @@ Also changes:
 
 Assuming:
 
-- <A fact about outside data the criteria rest on>. <`measured <how>, <when>`, or the
+- <A fact about outside data the criteria rest on>. <`E<n>, measured <how>, <when>`, or the
   Prerequisite that checks it.>
 
 # CONTRACT
@@ -243,8 +256,8 @@ set yet, late, corrected, renamed, removed.>
 `<unit>`:
 - <condition, and the input that reaches it>: <what must happen>
 
-**Every line here becomes a named test. So does every acceptance criterion, every rule in
-the Contract, each diagram in How it works end to end, each refused branch on it, and each
+**Every line here becomes a named test. So does every acceptance criterion, every Example,
+every rule in the Contract, each diagram in How it works end to end, each refused branch on it, and each
 Run again, Stops midway, and Shows it broke line. A test that walks none of these adds its
 case here first.**
 
@@ -308,7 +321,8 @@ A CREATE, UPDATE, REMOVE, REFACTOR or MIRROR task has these three fields:
 
 - **BUILDS**: the functions and models this task delivers, by name. Never restate them.
 - **TESTS**: the named tests this task writes before its code, each with what it proves:
-  a criterion (AC #3), an EDGE CASES line, or a Contract rule, by its opening words. A
+  a criterion (AC #3), an Example (Example 2), an EDGE CASES line, or a Contract rule, by
+  its opening words. A
   task writes the tests for the code it adds, never a later task. `none` says why, as a
   REFACTOR's does.
 - **VALIDATE**: `<executable command>` that runs this task's tests. For a task with nothing
@@ -342,9 +356,11 @@ Run every command. Together they prove no regressions and a correct feature.
   loading, error, denied. For a UI change, check keyboard focus and run an accessibility
   check on the changed view.
 
-  Run the feature once against each real outside source it reads, read-only, and compare
-  what comes back with what the plan measured. A run that needs a key or money the
-  developer has not given is marked `not run`, with what it would have shown.
+  Run each Example on the real data, read-only, and put what comes back beside what the
+  Example says the user sees. The developer judges the build by these. Run the feature
+  once against each other outside source it reads, and compare what comes back with what
+  the plan measured. A run that needs a key or money the developer has not given is marked
+  `not run`, with what it would have shown.
 
 - **Level 5: Additional.** <any other check this feature needs>
 
@@ -355,6 +371,26 @@ Run every command. Together they prove no regressions and a correct feature.
 
 <Your decisions that nobody outside the code would see, one line each, and context the
 sections above have no home for.>
+
+# RESEARCH
+
+## Experiments
+
+<What did each experiment check, did the developer approve it, and what came back? One per
+source. Numbers are never reused or renumbered: a brief names one.>
+
+E1. <the source, how it is reached, and how much of it is read>. Checks: <the assumptions
+    it settles>. Cost: <free, a price, or the key it needs>. <approved | declined>
+    Result: <`measured <how>, <n> of <total>, <when>`. Sample: <path>. Or, when declined,
+    the Prerequisite that checks it.>
+
+## Outside topics
+
+<What does the feature need from outside the codebase, and where was it researched?>
+
+T1. <the topic, and its version in use when known>. Needs: <what the feature needs from
+    it>. Used at: <`file:line`, or `not yet`>. Documents: <local paths, or none>.
+    <Or `skipped`, with the `file:line` where the code already calls the exact API.>
 ````
 
 ---
@@ -381,7 +417,7 @@ sections above have no home for.>
   returns it, marked `Existing, unchanged`. One that a new model nests appears only as a
   field's type. Say in a model's comment what it reuses from an existing model.
 - **A value from outside the codebase** answers, in its field's comment: where it comes
-  from; how it was checked, as `measured <how>, <when>`, or the Prerequisite that checks
+  from; how it was checked, as `E<n>, measured <how>, <when>`, or the Prerequisite that checks
   it; whether it can be missing; whether it can change after it is first seen; and whether
   it can disappear. Each yes has a criterion.
 - **How it works.** One diagram for each change in What changes for the user, such as a

@@ -16,13 +16,11 @@ argument-hint: "[a ticket key or URL, a feature description, or empty to plan fr
 
 ## Feature: $ARGUMENTS
 
-**Write no code here.** The output is a plan in the three parts of
-`references/plan-template.md`: the Definition, the Contract, and the Build. The developer
-confirms the Definition and the Contract before the Build is written. An executor with no
+**Write no code here.** The output is a plan in the parts of
+`references/plan-template.md`: the Definition, the Contract, the Build, and the Research
+its agents are briefed from. The developer confirms the Definition and the Contract before
+the Build is written. An executor with no
 memory of this conversation must be able to finish the Build on the first try.
-
-Four steps: define, research and check, design, write. Stop for the developer after step 1
-and again after step 3.
 
 ## Step 1: Define
 
@@ -42,10 +40,14 @@ Problem: <what is wrong or missing today, for whom, and what shows it>
 Criteria:
 1. Given <the starting state>, when <the trigger>, then <what is observably true>.
 2. (assumed) Given <...>, when <...>, then <...>.
+Examples:
+1. <a real case the developer can look up> → <what the user sees>
+2. <a real case where something goes wrong> → <what the user sees>
 Will not do: <what the feature will not do>
-Settled: <a decision the input or a document it links to already made, or none>
+Settled: <each decision the input or a document it links to already made, quoted, with its path:line; or none>
 Assuming: <each fact about data from outside the codebase the criteria rest on, or none>
-Experiments: <for each assumption, the check that settles it and its cost: free, a price, or the key it needs>
+Experiments:
+E1. <the source, and how much of it is read>. Checks: <the assumptions it settles>. Cost: <free, a price, or the key it needs>.
 ```
 
 - Write outcomes, with no file, function, or type name. You have read no code, so a name
@@ -60,13 +62,18 @@ Experiments: <for each assumption, the check that settles it and its cost: free,
   boundary such as midnight, zero, or the maximum. Each one the feature must handle is a
   criterion. When unsure whether a case can happen, write it and mark it `(assumed)`: the
   developer cuts a line faster than a reviewer finds one missing.
+- Under `Examples`, write two or three cases from the real world, each with what the user
+  sees: a record, a day, or a name the developer can look up, never one you made up. One
+  shows something going wrong. Each becomes a test on the record the experiment saves, and
+  the developer judges the build by running them. When you know no real case, name its
+  kind and mark it `(assumed)`; the experiment on that source picks a real one.
 - Under `Assuming`, list what the criteria take for granted about outside data: what it
   holds, what it calls things, how often it arrives, and whether it can change or vanish.
   Step 2 checks each one. When unsure whether something is an assumption, list it.
-- Under `Experiments`, give each assumption the check that settles it: what is read, how
-  much of it, and what that costs. Plan to read the whole set when it is free. The
-  developer's corrections decide which checks run. A check that costs money or needs a key
-  runs only if they leave it in, and one they cut becomes a Prerequisite.
+- Under `Experiments`, number one experiment per source, E1, E2: what is read, how much of
+  it, the assumptions it settles, and what that costs. Every assumption is in one. Plan to
+  read the whole set when it is free. The developer's corrections decide which run: one
+  they leave in is approved, and one they cut is declined and becomes a Prerequisite.
 
 ❌ `1. An owner can archive a record.` and nothing else.
 
@@ -74,20 +81,42 @@ Experiments: <for each assumption, the check that settles it and its cost: free,
 the server confirms.` and `2. Given the server refuses, when they archive a record, then
 the row stays and the reason shows.`
 
+❌ `Example: a customer with three orders sees three orders.`
+
+✅ `Example: the customer whose order 10482 was refunded in part on 3 March sees it once, at
+its net total, marked refunded.`
+
 Stop and wait for the developer's corrections. Research starts from the block as they
 agreed it. A line they agreed changes only in step 3.
 
 ## Step 2: Research and check
 
-Agents do the reading, so your context stays clear for the plan. Do not search the codebase
-yourself first.
+Agents do the bulk reading, so your context stays clear for the plan. Do not search the
+codebase yourself first.
 
-1. **Scout, and measure.** In one message, send one `codebase-scout-agent-v2` the step 1
-   block, word for word, and one `experiment-agent-v2` per data source under the agreed
-   `Experiments`. The scout's report gives the route through the code, the files the
-   feature would change or add, and the slices that need a researcher. Give each experiment
-   agent the step 1 block, its claims, the source and how to reach it, and what the
-   developer approved it to spend or use.
+**Create the plan file first,** at `.agents/plans/<kebab-case-descriptive-name>.md`, creating
+the directory if missing. From the template, write the Definition and the Research part and
+nothing else yet. The step 1 block goes in as agreed, word for word: `Feature` under
+Feature Description, the story under User Story, `Problem` under Problem Statement, the
+criteria under ACCEPTANCE CRITERIA, `Examples` under Examples, and `Will not do`, `Settled`
+and `Assuming` under Solution Statement. Each experiment goes under Experiments with its E
+number, marked `approved` or `declined`; each outside topic (item 4) under Outside topics as
+T1, T2.
+
+Every agent reads the plan. A brief is the plan's path and one item, nothing else. Never
+paste the definition into a brief: retyped, it costs minutes per agent and staggers their
+start.
+
+❌ A brief holding the whole definition: 12,000 characters, retyped for every agent.
+
+✅ `plan=.agents/plans/archive-records.md experiment=E2`
+
+1. **Send the research out, in one message:**
+   - One `codebase-scout-agent-v2`: `plan=<path>`. It is the only agent that reads the code.
+     Its map gives the route, the files that would change or be added, the patterns to
+     copy, the wiring, what calls the code that changes, and what it did not cover.
+   - One `experiment-agent-v2` per approved experiment: `plan=<path> experiment=E<n>`.
+   - One `external-research-agent-v2` per outside topic: `plan=<path> topic=T<n>`.
 2. **Size the work** from the scout's file counts. A mechanical change, such as a rename,
    counts as one file.
    - **About five or fewer:** it needs no plan. Say so, name the files and any decision
@@ -96,46 +125,45 @@ yourself first.
      not read a change that size. Say so, say where you would cut it, and stop. The
      `decompose-feature-v2` skill cuts it.
    - **In between:** plan it.
-3. **Research each slice.** Send one `codebase-research-agent-v2` per slice the scout named,
-   and skip none. Send them all in one message so they run in parallel. Give each these,
-   whole, because a summary drops whatever you did not think mattered:
-   - the step 1 block
-   - the scout's report
-   - its slice, by the name the scout gave it
-   - any other question the plan must answer about its slice
-
-   Before you send, check that each brief holds the scout's report itself. A brief that
-   names the report, or holds a placeholder for it, sends the researcher in blind.
-4. **Research outside topics.** List what the feature needs from outside the codebase, one
-   topic each: a library, an external API or service, a standard or protocol, a technique
-   the codebase has no example of, or a function or option of an installed library that
-   the codebase does not call yet. Two needs from the same library are one topic. Send one
-   `external-research-agent-v2` per topic, all in one message. Past five topics, send first
-   the five that decide a design choice. Give each:
-   - the feature, and what it needs from the topic
-   - the topic, and for a library the version the codebase researchers found in use
-   - where the code uses it now, as `file:line`
+3. **Read the code yourself, from the map.** You hold the whole design, so the reading that
+   decides it is yours. Read each file the map marks `change`: the whole file when it is a
+   few hundred lines or shorter, otherwise each function that changes and its callers. Read
+   the cited range of each `mirror`, `reuse`, `match` or `follow as a test`, and widen it
+   when it does not show what the map claims. When the map lists no callers for code that
+   changes, Grep for them. When the map names an area it did not cover, read it, or send a
+   second `codebase-scout-agent-v2` to that area alone. Do not read every file the map lists
+   in full.
+4. **Outside topics,** sent in item 1. List what the feature needs from outside the
+   codebase, one topic each: a library, an external API or service, a standard or protocol,
+   a technique the codebase has no example of, or a function or option of an installed
+   library that the codebase does not call yet. Two needs from the same library are one
+   topic. Past five topics, send first the five that decide a design choice. Write each in
+   the plan as a T line, with:
+   - what the feature needs from the topic
+   - the topic, and for a library the version in use when you know it
+   - where the code uses it now, as `file:line`, when you know it
    - the local documents that cover it, as paths
 
    Skip a topic only when you can name the `file:line` where the codebase already calls
-   the exact API the feature will use. An installed library is not a reason to skip. When
-   unsure, dispatch.
-5. **Run what research raised.** Send each `experiment:` line from the reports, and any
-   other question the design rests on that only running code answers, to an
+   the exact API the feature will use. A skipped topic keeps its T line, marked `skipped`
+   with that `file:line`. An installed library is not a reason to skip. When unsure,
+   dispatch.
+5. **Run what research raised.** Each `experiment:` line from the reports, and any other
+   question the design rests on that only running code answers, goes to an
    `experiment-agent-v2`: what real data or a live service returns, such as a payload's
    shape, the names it uses, how many rows a query reads, or whether a value can change or
    vanish; how long a query takes; what a library call does; how much memory a load needs.
-   Do not run these in this session: what you read here fills the context the agents keep
-   clear.
-   - **Free and needs no key or credentials:** send it now.
+   Write it into the plan first as the next E line, then brief its number. Do not run
+   these in this session: what you read here fills the context the agents keep clear.
+   - **Free and needs no key or credentials:** mark it `approved` and send it now.
    - **Costs money, or needs a key or credentials:** ask the developer now, before
      anything is designed. Say what it settles, what it costs, and what it needs from
-     them. On a yes, send it.
-   - **Declined, or it cannot be taken:** it becomes a check in the plan's
-     `## Prerequisite` section, and the build waits for it.
+     them. On a yes, mark it `approved` and send it.
+   - **Declined, or it cannot be taken:** mark it `declined`. It becomes a check in the
+     plan's `## Prerequisite` section, and the build waits for it.
 
-   Record each check as `measured <how>, <n> of <total>, <when>`, from the agent's report.
-   The plan carries it. The agent saves what it measured under `.agents/samples/`. The task
+   Record each result on its E line as `measured <how>, <n> of <total>, <when>`, from the
+   agent's report. The agent saves what it measured under `.agents/samples/`. The task
    that writes the tests copies it to where the project keeps its test data, and the
    feature's tests run on that copy, never on values you make up. Made-up values are your
    guesses, the code gets written from the same guesses, and the test passes even when
@@ -153,11 +181,6 @@ yourself first.
   output.
 - For an experiment report, open the saved sample behind each count the design turns on,
   and check that count. A count you did not check is cited as the agent's, not as fact.
-- Read first-hand what the plan changes: the whole file when it is a few hundred lines or
-  shorter, otherwise each function the plan changes and its callers in that file. For a
-  file to mirror, reuse, match, or follow as a test, read the cited range, and widen it
-  when it does not show what the report claims. Do not read every listed file in full: it
-  fills the context the agents kept clear.
 - Open only the outside references that decide a design choice. Record each one the plan
   uses with why the executor needs it.
 - Do not redo what a report covers.
@@ -173,8 +196,9 @@ report that shows the feature could land in two different places, and a sample t
 money or needs a key (item 5).
 
 **Research is done when** every section of the Definition and the Contract can be filled
-from a report line, a file you read, or a sample you took, and every assumption is either
-measured or a Prerequisite. A section you would have to guess is a gap. Settle it now.
+from a report line, a file you read, or a sample you took, every E line holds its result or
+is declined, and every T line has its report or is skipped. A section you would have to
+guess is a gap. Settle it now.
 
 ## Step 3: Design, and confirm it with the developer
 
@@ -187,8 +211,8 @@ measured or a Prerequisite. A section you would have to guess is a gap. Settle i
    showed cannot hold, or costs far more than it looked.
 3. **Settle what is already answered.** If the codebase, a standard, the request, or an
    earlier developer decision answers it, take that answer and record its source. Never
-   ask what you can verify, and never recommend against a decision the developer already
-   made.
+   ask what you can verify. A design that differs from a `Settled` line goes under `Decide`,
+   quoting the line, never under `Shown`.
 4. **Sort the rest** by one test: if the developer objected to this choice after the plan
    was written, what would it cost?
    - **A replan: ask.** Which system, or which query, does the work. How much gets
@@ -199,11 +223,8 @@ measured or a Prerequisite. A section you would have to guess is a gap. Settle i
      lives, a helper, how something is tested. Take the option that adds least, and check
      it works in the code. Put each name and meaning a caller will see under `Shown:` in
      the report, so the developer can correct it there.
-5. **Write the Definition and the Contract** to `.agents/plans/<kebab-case-descriptive-name>.md`,
-   creating the directory if missing, from the template. The step 1 block goes in word for
-   word: `Feature` under Feature Description, the story under User Story, `Problem` under
-   Problem Statement, the criteria under ACCEPTANCE CRITERIA, and `Will not do`, `Settled`
-   and `Assuming` under Solution Statement. Research adds to them. Mark each decision the
+5. **Finish the Definition and write the Contract** in the plan, from the template. The
+   step 1 lines stay word for word. Research adds to them. Mark each decision the
    developer made as theirs. A decision still open is written as your recommendation and
    listed under `Decide` below.
 6. **Check that it covers the criteria** before you show it. Every criterion has a place in
@@ -285,17 +306,17 @@ have to ask, the plan is not done.
 - each outside topic you did not research, and the `file:line` that made the skip safe
 - how many source files the plan expects to change, the key implementation risks, and a
   confidence score out of 10 that execution succeeds on the first try
-- the next step: `/walk-plan-v2 <the plan's path>`
+- the next step: `/execute-plan-v2 <the plan's path>`. Or first, when the developer wants
+  to go over the plan, `/walk-plan-v2 <the plan's path>`, best in a new session.
 
 The build starts on the developer's word, never on yours.
 
 ## Note
 
-Step 2 uses the `codebase-scout-agent-v2`, `codebase-research-agent-v2`,
-`external-research-agent-v2` and `experiment-agent-v2` agents, all installed alongside this
-skill. The `deny-credential-reads` hook, when the project installs it, blocks every agent and
-this session from reading a file that holds keys or passwords. The experiment agent's own rules
-forbid it without the hook. If you dispatch and
+Step 2 uses the `codebase-scout-agent-v2`, `external-research-agent-v2` and
+`experiment-agent-v2` agents, all installed alongside this skill. The `deny-credential-reads`
+hook, when the project installs it, blocks every agent and this session from reading a file
+that holds keys or passwords. The experiment agent's own rules forbid it without the hook. If you dispatch and
 an agent is missing, say so and stop. Do not research in this session instead: it fills
 the context the agents keep clear, and the plan looks finished when it is not.
 

@@ -216,9 +216,10 @@ def build_plan(window: list[dict]) -> Path | None:
         if e.get("type") != "user" or not isinstance(content, str):
             continue
         name = re.search(r"<command-name>/?(\S+?)</command-name>", content)
-        path = re.search(r"<command-args>\s*(/\S+?\.md)", content)
-        if name and "execute" in name.group(1) and path and Path(path.group(1)).is_file():
-            plan = Path(path.group(1))
+        path = re.search(r"<command-args>\s*(\S+?\.md)", content)
+        # A relative path is the session's own: joining an absolute one keeps it as it is.
+        plan = Path(e.get("cwd") or ".") / path.group(1) if path else None
+        if name and "execute" in name.group(1) and plan and plan.is_file():
             return plan if plan_tasks(plan) else None
     return None
 
