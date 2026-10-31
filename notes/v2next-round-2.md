@@ -94,3 +94,5 @@ Story E, re-timed from the session transcripts on 2026-10-31. Minutes; planning 
   the next day.
 - One run per arm. The middle four could swap on a rerun: with the same plan, arm B's review
   caught the bad game-id cell that fails the whole load, and v2-next's did not.
+
+The eval ledger, `notes/eval-ledger.md`, now holds what recurs across rounds and what held; read it before choosing the next round's changes.
