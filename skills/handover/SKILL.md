@@ -2,7 +2,7 @@
 name: handover
 description: >-
   Distill the live session into .agents/handover.md so a fresh session can resume at
-  full speed after /prime, often going straight into /generate-plan. Use when asked
+  full speed after /prime, often going straight into /piv-plan-implementation. Use when asked
   to "do a handover" or "hand this off", or before the developer clears context mid-task.
 ---
 
@@ -10,7 +10,7 @@ description: >-
 
 `.agents/handover.md` is **live session state. It is read once and then deleted.** The
 reader is the next session. It has no memory of this conversation, and it will act on
-whatever this file says. Its first real step is often `/generate-plan`. The handover does
+whatever this file says. Its first real step is often `/piv-plan-implementation`. The handover does
 not do that research. It focuses it.
 
 A handover holds the task, what is done toward it, where it stopped, what the next session
@@ -97,7 +97,7 @@ disproven beliefs as disproven so they are not revived.>
 ## Explore
 
 <Directions worth researching next, and what each would settle. This feeds the next
-session's /generate-plan. List open decisions waiting on the developer, and what each
+session's /piv-plan-implementation. List open decisions waiting on the developer, and what each
 one unblocks. Every skill, doc, repo, or file outside this conversation that the next
 session will need carries its exact path or URL. A description in words sends it
 searching for something it could have been pointed straight at.>

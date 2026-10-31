@@ -20,7 +20,7 @@ docs to read before planning any slice, each with what it provides.>
   merely finished. That keeps the checklist trustworthy across context clears.
 - When a task settles a convention or teaches a lesson, write it into Running practices with
   its reasoning. It binds every later task.
-- Heavyweight slices get a full /generate-plan. Light ones may be handled inline. A fresh
+- Heavyweight slices get a full /piv-plan-implementation. Light ones may be handled inline. A fresh
   session needs only this document plus /prime to continue correctly.
 
 ## Background

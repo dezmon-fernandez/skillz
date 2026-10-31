@@ -11,11 +11,10 @@ into a project and adapted there.
 | `handover` | Distill the live session into `.agents/handover.md` so a fresh session can resume via `/prime`. |
 | `create-prd` | Turn a conversation or notes into `.agents/PRD.md`, the source of truth `/prime` reads. |
 | `decompose-feature` | Break a feature too large for one plan into `.agents/roadmaps/<feature>.md`: dependency-ordered slices, one architecture decision each, with the background and working rules that carry the effort across context clears. |
-| `generate-plan` | Turn a feature request, ticket, or conversation into a context-rich implementation plan, settling every open question with the operator first. |
-| `walk-plan` | Render a developer's walkthrough of a plan so the design can be judged before anything is built: what gets built, the entry points, the data, the decisions, the call path, every function and model, and the rules traced on one worked value. Opens in annotate, so its diagrams draw. Changes nothing in the plan. |
-| `review-plan` | Gate before `execute-plan`: delegate the cold read to the `plan-reviewer` agent, relay every finding, and settle the decisions with the developer before revising the plan. |
-| `execute-plan` | Implement a plan task by task, validating each one, and write the execution report. |
-| `review-code` | Gate after `execute-plan`: delegate to the `code-reviewer` agent, save the report, triage the findings. |
+| `piv-plan-implementation` | Turn a ticket or feature request into a context-rich implementation plan through a short clarifying interview, codebase analysis, and external research. |
+| `piv-implement` | Implement a plan task by task, validating at every step. |
+| `piv-review-changes` | Review recently changed files for bugs, security issues, and standards compliance, and write a report. |
+| `piv-fix-review-findings` | Triage a review's findings, fix the chosen ones one at a time with tests, defer and log the rest, then validate. |
 | `commit` | Stage the current work and write one atomic commit in the repo's own convention. |
 | `hooks-create` | Author a working hook from a plain-English description, wire it in, and prove it fires. |
 | `review-prose` | Rewrite one skill, agent, or document in place so it is short and plain, keeping every rule and every name other files depend on. Invoked by hand. |
@@ -24,29 +23,27 @@ into a project and adapted there.
 
 `handover` and `prime` are a pair: `handover` writes the file, `prime` consumes and deletes it.
 
-`create-prd` → `generate-plan` → `review-plan` → `execute-plan` → `review-code` → `commit`
-is the feature loop; each step reads what the previous one wrote.
+`create-prd` → `piv-plan-implementation` → `piv-implement` → `piv-review-changes` →
+`piv-fix-review-findings` → `commit` is the feature loop; each step reads what the previous one
+wrote. The four `piv-` skills and the `research-agent` agent are copied verbatim from the
+agentic-coding-course repo at `13a0c2d`, the planning loop the other sets are measured against.
+They name skills that are not copied here (`piv-validate`, `piv-commit`, `piv-create-pr`,
+`piv-review-pr`) and a `codebase-analyst` agent; a session that reaches one says it is missing.
 
 `decompose-feature` comes before the loop when a feature is too large for one plan. It
-writes a roadmap of slices, and each slice enters the loop at `generate-plan`.
-
-`walk-plan` sits beside the loop. Run it after `generate-plan` or after a plan is revised.
-It changes nothing in the plan.
+writes a roadmap of slices, and each slice enters the loop at `piv-plan-implementation`.
 
 ## Agents
 
 | Agent | Purpose |
 |-------|---------|
-| `code-reviewer` | Read-only reviewer. Checks a finished implementation against its plan and execution report, and judges the design now that the code exists. Spawned by `review-code`. |
-| `plan-reviewer` | Read-only reviewer. Reads a plan cold, verifies its claims against the code, and returns blocking issues, the smallest design that meets the goal, and the decisions the operator should confirm. Spawned by `review-plan`. |
-| `codebase-research-agent` | Read-only explorer. Investigates one slice of the codebase and reports the files to read, each with why, plus its findings and `file:line` citations. Spawned in parallel by `generate-plan`, one per subsystem. |
-| `external-research-agent` | Read-only researcher. Researches one topic from outside the codebase (a library, an external API, a standard, or a technique), local docs first, and reports section-anchored links and local paths, each with why, plus pitfalls and breaking changes. Spawned in parallel by `generate-plan`, one per topic. |
+| `research-agent` | Explores one part of the codebase or one outside topic and reports back. Spawned several at once by `piv-plan-implementation`. |
 | `code-quality-pragmatist` | Reviews recent code for over-engineering and unnecessary complexity relative to the project's actual needs, and recommends simplifications. Invoked by hand. |
 
 ## Second set (`-v2`)
 
 A second version of the feature loop, tried beside the first. Its skills run only when typed,
-so a request to plan still reaches `generate-plan`. Each `-v2` file names only `-v2`
+so a request to plan still reaches `piv-plan-implementation`. Each `-v2` file names only `-v2`
 siblings, so the two sets never mix. Once one set wins, the other is deleted.
 
 `decompose-feature-v2` → `generate-plan-v2` → `walk-plan-v2` → `execute-plan-v2` →
@@ -79,7 +76,7 @@ Skills and agents are directories to copy:
 
 ```sh
 cp -R skills/prime skills/handover /path/to/project/.claude/skills/
-cp agents/code-reviewer.md /path/to/project/.claude/agents/
+cp agents/research-agent.md /path/to/project/.claude/agents/
 ```
 
 A hook is a script plus a settings fragment. Copy the script, then merge `hooks.json` into

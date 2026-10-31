@@ -2,7 +2,7 @@
 name: decompose-feature
 description: >-
   Break a feature too large for one plan into a roadmap of small, dependency-ordered
-  slices, each carrying one architecture decision that one /generate-plan and one build
+  slices, each carrying one architecture decision that one /piv-plan-implementation and one build
   session can finish. Writes .agents/roadmaps/<feature>.md, a working document that
   carries the effort's background and working rules across context clears. Use when asked
   to "decompose this feature", "break this into slices", "roadmap this", or when a feature
@@ -22,7 +22,7 @@ they come out small.
 
 A slice entry says **what it develops, the problem it solves, and the constraints it must
 respect**, and stops there. No signatures, data shapes, enums, file layout, or tests.
-Deciding how to build a slice is `/generate-plan`'s job, and the plan finds what to read on
+Deciding how to build a slice is `/piv-plan-implementation`'s job, and the plan finds what to read on
 its own. Write each entry to be read at a glance: plain words, one idea per line, the
 deliverable first. An entry that needs a wall of detail is two slices, or you have started
 planning it.
@@ -85,7 +85,7 @@ Fill in `references/roadmap-template.md` and write it to `.agents/roadmaps/<feat
 Create the directory if missing. The template's "How to work this roadmap" section is
 verbatim. Copy it word for word into every roadmap. Every box starts unchecked.
 
-Those working rules send the executing sessions to `/generate-plan` and `/prime`. If the
+Those working rules send the executing sessions to `/piv-plan-implementation` and `/prime`. If the
 repo lacks either skill, keep the rules as written and say so in the report. Do not rewrite
 them around a substitute.
 
