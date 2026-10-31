@@ -20,8 +20,9 @@ from all of it.
   it.
 - Write every code block in the codebase's own language. The skeleton shows Python and
   SQL.
-- The Definition and the Contract name no source file, test, or line number. The Build and
-  Research parts carry those.
+- The Definition and the Contract name no source file, test, or line of code. The Build and
+  Research parts carry those. A line quoted from the request or a document it links to
+  carries its path:line.
 
 ---
 

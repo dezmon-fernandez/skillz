@@ -44,7 +44,7 @@ Examples:
 1. <a real case the developer can look up> → <what the user sees>
 2. <a real case where something goes wrong> → <what the user sees>
 Will not do: <what the feature will not do>
-Settled: <a decision the input or a document it links to already made, or none>
+Settled: <each decision the input or a document it links to already made, quoted, with its path:line; or none>
 Assuming: <each fact about data from outside the codebase the criteria rest on, or none>
 Experiments:
 E1. <the source, and how much of it is read>. Checks: <the assumptions it settles>. Cost: <free, a price, or the key it needs>.
@@ -211,8 +211,8 @@ guess is a gap. Settle it now.
    showed cannot hold, or costs far more than it looked.
 3. **Settle what is already answered.** If the codebase, a standard, the request, or an
    earlier developer decision answers it, take that answer and record its source. Never
-   ask what you can verify, and never recommend against a decision the developer already
-   made.
+   ask what you can verify. A design that differs from a `Settled` line goes under `Decide`,
+   quoting the line, never under `Shown`.
 4. **Sort the rest** by one test: if the developer objected to this choice after the plan
    was written, what would it cost?
    - **A replan: ask.** Which system, or which query, does the work. How much gets
@@ -306,7 +306,8 @@ have to ask, the plan is not done.
 - each outside topic you did not research, and the `file:line` that made the skip safe
 - how many source files the plan expects to change, the key implementation risks, and a
   confidence score out of 10 that execution succeeds on the first try
-- the next step: `/walk-plan-v2 <the plan's path>`
+- the next step: `/execute-plan-v2 <the plan's path>`. Or first, when the developer wants
+  to go over the plan, `/walk-plan-v2 <the plan's path>`, best in a new session.
 
 The build starts on the developer's word, never on yours.
 
