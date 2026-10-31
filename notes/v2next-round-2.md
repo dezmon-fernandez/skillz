@@ -9,6 +9,11 @@ Next round: v1 is the original piv loop, v2 is v3 (now on main), v3 is v2-next w
 
 ## Fixes
 
+Decided 2026-10-31: fix 1 went in as `Settled` quoted with its source line, and a design that
+differs from it goes under Decide. The walk became the developer's opt-in review, with no
+reviewer agent. Fixes 2 to 8 are out: each moved too little to measure, or only restated a rule
+the skill already had.
+
 1. **A departure from the roadmap goes under Decide, with the roadmap's line quoted.** The
    roadmap said rest is "days since the team's previous game ... from the schedule". The scout
    flagged it and named the line. The planner wrote "`rest_days` is the player's own gap;
@@ -36,6 +41,50 @@ Next round: v1 is the original piv loop, v2 is v3 (now on main), v3 is v2-next w
 7. **The plan template drops the roadmap's walkthrough rule.** Only the original honoured it.
 8. **Levers not yet tried:** the thinking level; break only the lines that guard a rule; write the
    walk's result as the original's short walkthrough; put each task's spec under the task.
+
+## Where the time goes
+
+Story E, re-timed from the session transcripts on 2026-10-31. Minutes; planning includes the walk.
+
+| Arm | Planning | Build | Review | Total |
+|---|---|---|---|---|
+| original (piv) | 28.7 | 35.9 | 26.0 | 90.6 |
+| v2 | 57.2 | 62.4 | 32.9 | 152.5 |
+| v3 | 59.2 | 51.4 | 32.5 | 143.1 |
+| v2-next | 65.5 | 51.6 | 34.7 | 151.8 |
+
+- **Planning is still where the time goes:** 29 to 37 min more than the original, against 15 to
+  26 more for the build.
+- **Research takes 26 to 28 min in every layout tried.** Main-thread thinking (16 to 19 min) and
+  the slowest agent set it.
+  - v2-next's one-line briefs cut research cost from $16.61 to $10.01, but saved only about 1.5
+    min. The main thread's own reading (6.2 min) and the second round (3.8 min) took back the
+    rest.
+  - Fix 2 would move time between the main thread and agents, not cut it.
+- **The walk is its own 26.5 min.** Build and review took the same time with it (86.3 min) and
+  without it (arm B, 87.0). The judge credits it with one catch, memory. It counts the dropped
+  repair lane and the scope creep against it.
+- **Every step ran Opus 5.5 at `xhigh`,** with thinking on and fast mode off
+  (`sdk_opt_in_required`). The plan reviewer ran Opus at `xhigh`, and the research agents ran
+  Sonnet 5.5 at `high`. Each session transcript records it on every turn (`perTurnEffort`); the
+  step's stream does not.
+
+## Next experiment: execution at Opus 5.5 medium
+
+- **Why:** a build is mostly model time (v2-next's: 31 of 52 min writing and thinking), working
+  from a plan that is already settled. Medium is Opus 5.5's default, and Anthropic's effort guide
+  starts well-specified agentic coding at medium.
+- **How:** every runner pins effort per model with `--settings`, never `--effort`: Opus 5.5
+  `xhigh` and Sonnet 5.5 `high` for planning and review, as Story E ran, and Opus 5.5 `medium`
+  for the build. So the arms still differ only in the planner. Tested on 2026-10-31:
+  - `--effort xhigh` alone pushes every agent to `xhigh`, so a Sonnet agent ran `xhigh`.
+  - Per-model `--settings` gives each model its own level; the Sonnet agent ran `medium`.
+  - An agent's own `effort` field beats both.
+  Check each step's transcript (`perTurnEffort`) to confirm the level.
+- **Judged on:** what the blind judge and the review find. Story F is a different story from
+  Story E, so its build times show what medium costs, not what it saved.
+- **What it saved, after Story F:** rebuild one Story E plan at medium. Its `xhigh` build and the
+  judge's expected figures are already saved, so effort is the only difference.
 
 ## Known, left as is
 
