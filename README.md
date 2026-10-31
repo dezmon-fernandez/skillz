@@ -64,13 +64,14 @@ siblings, so the two sets never mix. Once one set wins, the other is deleted.
 | `codebase-scout-agent-v2` | Read-only scout. Traces the most similar existing feature end to end and reports the route, the files the new feature would change or add, and the slices that need a researcher. Spawned first by `generate-plan-v2`, one per plan. |
 | `codebase-research-agent-v2` | Read-only explorer with no shell (Read, Glob, Grep). Investigates one slice of the codebase and reports the files to read, each with why, plus what exists today, the data touched, and `file:line` citations. Spawned in parallel by `generate-plan-v2`, one per slice the scout names. |
 | `external-research-agent-v2` | Read-only researcher. Researches one topic from outside the codebase (a library, an external API, a standard, or a technique), local docs first, and reports section-anchored links and local paths, each with why, plus pitfalls and breaking changes. Spawned in parallel by `generate-plan-v2`, one per topic. |
-| `experiment-agent-v2` | Answers, by running read-only code, the questions a plan rests on that only running code answers: what real data holds, a query's result or speed, a library call's behavior, memory. Measures the whole set when free and reports every answer as `n of total`, saving what it measured. Spawned by `generate-plan-v2`, one per data source under the experiments the developer approved at step 1. |
+| `experiment-agent-v2` | Answers, by running read-only code, the questions a plan rests on that only running code answers: what real data holds, a query's result or speed, a library call's behavior, memory. Measures the whole set when free and reports every answer as `n of total`, saving what it measured. Never reads credential files and never runs what it downloads. Spawned by `generate-plan-v2`, one per data source under the experiments the developer approved at step 1. |
 
 ## Hooks
 
 | Hook | Enforces |
 |------|----------|
 | `require-read-before-edit` | Denies shell commands that modify files (redirects, in-place `sed`/`perl`, `tee`), so every change goes through Edit/Write and their required prior Read. Writes to `/dev/null` and `/tmp` pass. |
+| `deny-credential-reads` | Denies reading a file that holds keys or passwords (`.env` and `.env.<name>`, `.envrc`, `.netrc`, package-registry and cloud credentials, private keys) through Read, Grep, or a shell command. `.env.example` and public keys pass. Fails open when `jq` is missing. Needs `jq`. |
 
 ## Install into a project
 

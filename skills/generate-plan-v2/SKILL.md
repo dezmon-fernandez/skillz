@@ -293,7 +293,9 @@ The build starts on the developer's word, never on yours.
 
 Step 2 uses the `codebase-scout-agent-v2`, `codebase-research-agent-v2`,
 `external-research-agent-v2` and `experiment-agent-v2` agents, all installed alongside this
-skill. If you dispatch and
+skill. The `deny-credential-reads` hook, when the project installs it, blocks every agent and
+this session from reading a file that holds keys or passwords. The experiment agent's own rules
+forbid it without the hook. If you dispatch and
 an agent is missing, say so and stop. Do not research in this session instead: it fills
 the context the agents keep clear, and the plan looks finished when it is not.
 
