@@ -1,5 +1,5 @@
 ---
-name: research-agent
+name: piv-research-agent
 description: Use this agent for parallel codebase exploration and external research. Spawn multiple instances at once to investigate different parts of a codebase, map patterns and integration points, or gather external documentation — ideal for the brownfield-onboarding parallel-Explorer pattern where several research agents fan out simultaneously and report back to a coordinator. Trigger when you need broad, fast discovery before planning, not when you need to write code.
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet

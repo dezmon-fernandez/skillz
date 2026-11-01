@@ -26,10 +26,12 @@ into a project and adapted there.
 
 `create-prd` → `piv-plan-implementation` → `piv-implement` → `piv-review-changes` →
 `piv-fix-review-findings` → `commit` is the feature loop; each step reads what the previous one
-wrote. The four `piv-` skills and the `research-agent` agent are copied verbatim from the
-agentic-coding-course repo at `13a0c2d`, the planning loop the other sets are measured against.
-They name skills that are not copied here (`piv-validate`, `piv-commit`, `piv-create-pr`,
-`piv-review-pr`) and a `codebase-analyst` agent; a session that reaches one says it is missing.
+wrote. The four `piv-` skills and the `piv-research-agent` and `piv-codebase-analyst` agents are
+copied from the agentic-coding-course repo at `13a0c2d`, the planning loop the other sets are
+measured against: verbatim, except that the two agents (`research-agent` and `codebase-analyst`
+there) carry a `piv-` prefix so they never mix with another set's. They name skills that are not
+copied here (`piv-validate`, `piv-commit`, `piv-create-pr`, `piv-review-pr`); a session that
+reaches one says it is missing.
 
 `decompose-feature` comes before the loop when a feature is too large for one plan. It
 writes a roadmap of slices, and each slice enters the loop at `piv-plan-implementation`.
@@ -38,7 +40,8 @@ writes a roadmap of slices, and each slice enters the loop at `piv-plan-implemen
 
 | Agent | Purpose |
 |-------|---------|
-| `research-agent` | Explores one part of the codebase or one outside topic and reports back. Spawned several at once by `piv-plan-implementation`. |
+| `piv-research-agent` | Explores one part of the codebase or one outside topic and reports back. Spawned several at once by `piv-plan-implementation`. |
+| `piv-codebase-analyst` | Maps how an existing codebase or subsystem is built: its architecture, how data and control flow, its conventions and integration points, and the risks a change would hit. Spawned beside `piv-research-agent` by `piv-plan-implementation` for medium and high complexity work. |
 | `code-quality-pragmatist` | Reviews recent code for over-engineering and unnecessary complexity relative to the project's actual needs, and recommends simplifications. Invoked by hand. |
 
 ## Second set (`-v2`)
@@ -75,7 +78,7 @@ Skills and agents are directories to copy:
 
 ```sh
 cp -R skills/prime skills/handover /path/to/project/.claude/skills/
-cp agents/research-agent.md /path/to/project/.claude/agents/
+cp agents/piv-research-agent.md /path/to/project/.claude/agents/
 ```
 
 A hook is a script plus a settings fragment. Copy the script, then merge `hooks.json` into

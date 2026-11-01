@@ -62,7 +62,7 @@ So that <benefit/value>
 
 **Fan out when the complexity earns it:**
 
-If Estimated Complexity (from Phase 1) is Medium or High, dispatch `codebase-analyst` and `research-agent` in
+If Estimated Complexity (from Phase 1) is Medium or High, dispatch `piv-codebase-analyst` and `piv-research-agent` in
 parallel, in a single message. Wait for both to report back before continuing. Use their findings for the Patterns
 to Follow and Relevant Documentation sections. For Low complexity, skip the subagents and read the files directly.
 
