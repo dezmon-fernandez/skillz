@@ -54,7 +54,7 @@ The agent marks each finding `choice: none` or `choice: developer`.
 - **`developer`**: a decision the plan marks as the developer's stands, and so does anything they told you in this session. Keep the agent's case against it for the report, and ask only when the code shows the decision does not work. A fix that is cheap to undo, as a label or a default is, you make. The rest goes to the developer in step 4, with any fix that needs a change in another system, new storage, or a design the plan did not choose. Never start one of those inside the review.
 - **The agent's questions**: answer them from the code, the code of the systems it calls, and the running app. One you cannot settle is a note in the report.
 
-When unsure, take the fix that adds least. The developer reverses a reported fix in one line. A question costs them a review they have not read.
+When the service or the code already does the job, use it, even if new code that does the same would be shorter. Otherwise, when unsure, take the fix that adds least. The developer reverses a reported fix in one line. A question costs them a review they have not read.
 
 `fix goes` says where the defect came from:
 

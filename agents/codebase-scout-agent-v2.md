@@ -85,9 +85,15 @@ Would be added (<count>):
 **Patterns to Copy**
 - <path/to/file:lines>   <mirror | reuse | match | follow as a test>   <what it shows>
 
-**Wiring**
-- <how a feature like this is registered or run: a route, command, schedule, setting, or
-  startup step>   <path/to/file:line>
+**Integration Points**
+For each piece of data the feature shows or saves:
+- <the data>   comes from <which service, file or table>
+  - every way to get it from there, each with its address: <a request it answers, a stream
+    that pushes each change, a scheduled job>   <path/to/file:line>
+  - the way the most similar feature gets it   <path/to/file:line>
+  - a way the Definition rules out goes here too, marked `ruled out by the Definition`
+How a feature like this is hooked in:
+- <a route, command, schedule, setting, or startup step>   <path/to/file:line>
 
 **Callers**
 - <code the feature changes>   called at <path/to/file:line>, <path/to/file:line>
