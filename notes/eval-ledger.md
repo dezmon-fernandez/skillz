@@ -46,7 +46,7 @@ one.
 
 | # | Problem | Stories | Also in | Test case? | Number | Today | Fix tried (kind) · held? |
 |---|---|---|---|---|---|---|---|
-| 1 | The planner departs from a decision the request or a linked document made, without asking | E, F, G | FT, FT-S | **yes (3)** | builds that break a definition the input set, without the developer's say | G: 1 of 3 (v2) | `304ceca` (field: Settled quoted, a departure goes under Decide) · held for v3 in F, **not in G**: v2 quoted the Settled line and departed from it |
+| 1 | The planner departs from a decision the request or a linked document made, without asking | E, F, G | FT, FT-S | **yes (3)** | builds that break a definition the input set, without the developer's say | G: 1 of 3 (v2) | `304ceca` (field: Settled quoted, a departure goes under Decide) · held for v3 in F, **not in G**: v2 quoted the Settled line and departed from it. `2bd6d16` (step 3 laid out as labeled parts) · held in G's rerun v2b, which put the layout under Decide, sketched |
 | 2 | A review passes a criterion because a test named for it passed, though the design is wrong | E, F | FT | no (2) | criteria a review ticks that the judge finds broken | 2 of 3 (v2, piv: rest) | none |
 | 3 | Auto-accepting the recommendations cuts required scope, or adds scope | A, E, F, G | WA, FT-S | **yes (4)** | required parts dropped, and scope added, per build | G: v2 added an AGENTS.md rule and a lint plugin from its review's recommendation | `c0264e5` (prose) · **no**, back in E. `304ceca` (step: walk opt in) · held for v3 in F |
 | 4 | One bad item fails the whole batch, read or run | B, C, D, E | WA | **yes (4)** | builds where one bad item fails more than itself | 0 of 3 | `5a8d848` (prose) · **no**, back in E. Named in F's roadmap · held, 3 of 3 |
@@ -65,9 +65,10 @@ one.
 | 17 | The plan is too long for the developer to read | C, D | FT | no (2) | words per plan | piv 6,483 · v2 7,061 · v3 10,948, found readable | none |
 | 18 | A build decides something happened from data being absent, instead of a fact the source records | E, F | none | no (2) | builds with a judge-found bug of this kind | 2 of 3 (v2, piv) | none. Related to 5 |
 | 19 | Research answers how a source changes over time from one snapshot | F | none | no (1) | research claims about a source's history the judge refutes | 1 (v2) | none |
-| 20 | A scope line the planner marks `(assumed)` before reading any code stands, and research is kept off it | G | none | no (1) | `(assumed)` lines from before research that decide a user-facing behaviour in the final plan | G: 1 (v2: no stream, so live scores poll every 30 s beside a free stream). Related to 1 and 3 | none |
+| 20 | A scope line the planner marks `(assumed)` before reading any code stands, and research is kept off it | G | none | no (1) | `(assumed)` lines from before research that decide a user-facing behaviour in the final plan | G: 1 (v2: no stream, so live scores poll every 30 s beside a free stream). Related to 1 and 3 | `2bd6d16` (field: the scout's Integration Points; rule: use what already does the job) · v2b kept the stream through design, but its definition named it before research, so the rerun cannot credit the change |
 | 21 | A build waits on an event in the world before it finishes | G | none | no (1) | minutes a build sits idle waiting | G: 39 (v2) | none |
 | 22 | A value the source did not serve is drawn as zero | G | none | no (1) | builds with a judge-found zero for an unserved value | G: 1 (mine: `0 GAMES` while the count is unserved, pinned by its tests) | none. The roadmap named the rule |
+| 23 | An experiment measures far longer than its decision needs | G | none | no (1) | minutes an experiment runs past the reads that settle its question | G: about 17 of E2's 23 minutes (v2b), timing a free stream's credit cost the contract states | none |
 
 **The pattern so far:** prose fixes (`5a8d848`, `c0264e5`) failed to hold. Step fixes (`eeeacef`,
 `1f0118b`, `304ceca`) held. The runner fix `2effeaf` failed until the runner blocked the reads. A
@@ -141,9 +142,21 @@ requirement the roadmap names holds in every build (row 4 in F); left to the pla
   decision the developer never made. piv and mine stream, as football does.
 - **20, judged:** v2 ran up to 30 s behind the engine at a 75-second sample; piv and mine matched
   it (`G/judge/report.md:87`).
+- **1 and 20, the rerun:** v2b, from `main` with `2bd6d16`, stopped its design with "What shape
+  should the page take before Story B has a pane to fill?", each option sketched, and a design
+  built on the stream, quoting the Settled line it differs from (`G/v2b/03-plan-research.jsonl:1608`).
 - **21:** `G/v2/07-build.jsonl:359`: "Still waiting on the 22:00Z tip-off" (idle 21:32:37 to
   22:11:39 UTC, after its gate was green).
 - **22:** `G/judge/report.md:19`.
+- **23:** v2b's E2, 00:20 to 00:43 UTC (`G/v2b/03-plan-research.jsonl:559`). Its season reads and
+  stream captures took about 5 minutes. The rest was a watcher waiting for a game to go live, a
+  6-minute `until … date ≥ 00:36` wait, and 48 reads of the credit counter (`:1023`, `:1160`)
+  to show the stream spends nothing, which the contract states ("FREE: a connection is a
+  subscription to what the runner already holds") and E1 had read in the engine's code. Five of
+  the night's seven games were live throughout (its own reads at 00:29 and 00:36), so any one of
+  them showed the stream pushing within seconds. The
+  developer: "a 30 minute time test isnt warranted for wiring up an api stream with a contract",
+  and "if it needs to expxlore unknowns yes but even then it likely can be done m ore efficitnely".
 
 ## What works: keep
 
@@ -172,4 +185,5 @@ requirement the roadmap names holds in every build (row 4 in F); left to the pla
 | The coordinator ran builds one at a time; the arms run in parallel | G: piv waited 47 min between build and review, mine about 20 min before its build; builds ran under different load and live slates | Each arm moves on the moment its step ends |
 | The arms share `/tmp` | G: mine's build found `/tmp/nba-mutate.py` overwritten by another arm's script (`G/mine/07-build.jsonl:102`); it did not run it | Give each arm its own `TMPDIR` in the runner |
 | A session printed the proxy's `CF_Authorization` cookie into its log | G: `piv/02-plan`, `piv/07-build` and `mine/02-plan` logs | none yet |
+| piv ran without its `codebase-analyst` agent, which skillz never copied, and borrowed mine's `codebase-research-agent` in its place | G: piv's plan was researched by another loop's agent, twice; its last place is not a clean verdict on piv | Before a round, check every agent and skill each arm's files name is installed in its worktree |
 | The coordinator's `git reset -- src` cleared an arm's staged rename | G: v2's index wrong for about 2 min during its review; restored exactly | Measure with `git diff <base>` and never touch an arm's index |
