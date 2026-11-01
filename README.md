@@ -18,6 +18,7 @@ into a project and adapted there.
 | `commit` | Stage the current work and write one atomic commit in the repo's own convention. |
 | `hooks-create` | Author a working hook from a plain-English description, wire it in, and prove it fires. |
 | `review-prose` | Rewrite one skill, agent, or document in place so it is short and plain, keeping every rule and every name other files depend on. Invoked by hand. |
+| `structure-prose` | Rebuild the layout of one skill, agent, or document so it scans: a bold label per part, one rule per line, a blank line between groups, with every rule and its words kept. Shown side by side with the original before it is kept. Invoked by hand. |
 | `annotate` | Open a local page where the developer comments line by line on markdown you are writing together, or on the outputs of a skill-creator eval iteration, then act on the comments when they press Send. Highlights code blocks and draws `mermaid` blocks from a bundled copy of Mermaid (MIT). Needs Node 22.18 or later. |
 | `eval-skill` | Test a change to a skill, with the developer as the judge: set up worktrees to try the new version on real work, or run the old and new versions on the same pinned request, each sandboxed so it cannot read other folders, and put the results side by side on one page. The developer comments on what needs to change, and every comment comes back as one list of edits to approve or reject. Uses `skill-creator` when installed. Invoked by hand, because every run spends the account's usage. |
 
