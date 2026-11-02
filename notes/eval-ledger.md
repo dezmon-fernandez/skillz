@@ -21,13 +21,28 @@ A round is one story built with these skills. Iterations 2 and 3 both ran Story 
 one.
 
 - **Stories:** A (iteration-1), B (iterations 2 and 3), C, D, E, F, G (Story A of the terminal's
-  NBA roadmap, the first UI round).
+  NBA roadmap, the first UI round), H (its Story B), I (its Story C, the player's stat pack beside
+  each prop).
 - **F's arms:** piv, v2 (`main`'s loop then), v3 (`v2-next`, since merged as the v2 loop). The judge
   ranked v3, v2, piv.
 - **G's arms:** piv, v2 (`main`'s loop, F's v3), mine (the terminal's own generate-plan loop with the
   developer's uncommitted edits). The judge ranked v2, mine, piv, and said mine wins if "built on
   the pattern, never invented" is a requirement (`G/judge/report.md:102`). The developer, on
   glass: "Mine is the only one that fucking got it."
+- **I's arms:** piv, v2 (the rebuilt `generate-plan-v2`, its first run, as in `I/skills-as-run/v2`),
+  mine (the terminal's loop with the developer's edits). The judge ranked v2, piv, mine, a small gap
+  between the first two (`I/judge/report.md:5-9`): only v2 fits 1440 under real scrollbars, and
+  piv has the cleanest code. The developer merged piv's build with three fixes (terminal `1d51eda`),
+  for its screen: "V2 in mind brought the decision to me, which is so much better than PIVs. The
+  only reason I'm taking PIV right now is just because I'm choosing the UX." On the pack: "a lot
+  quicker way I could see their previous form and dive into it a little more, which is where the
+  bar graphs help". That became the next terminal story, the LAST N bars and the cleared rate.
+- **Since I:** `84adcb7` rewrote v2, now `dk-` (`477a988`). Among its changes, the scout runs on
+  every plan: "Fan out when the complexity earns it. Judge it from the input"
+  (`I/skills-as-run/v2/generate-plan-v2/SKILL.md:59`) is gone. The rewrite has not run on Stories
+  A to C; rerun it there.
+- **The developer's idea, not tried:** a UI mockup skill runs before planning, and the plan builds
+  on its views.
 - **Also in:** sightings the strict count leaves out, the developer's call whether they count. FT:
   the 2026-10-12 Polymarket feature test. WA: the workflow audit's earlier stories.
 
@@ -44,7 +59,8 @@ one.
 
 ## Problems
 
-"Today" is the latest round's value: F's unless it says E or G. "—" means not counted that round.
+"Today" is the latest round's value: F's unless it names another round. "—" means not counted that
+round.
 
 | # | Problem | Stories | Also in | Test case? | Number | Today | Fix tried (kind) · held? |
 |---|---|---|---|---|---|---|---|
@@ -71,6 +87,9 @@ one.
 | 21 | A build waits on an event in the world before it finishes | G | none | no (1) | minutes a build sits idle waiting | G: 39 (v2) | none |
 | 22 | A value the source did not serve is drawn as zero or a guess | G, H | none | no (2) | builds with a judge-found zero or guess for an unserved value | H: 1 (piv: `#<id>` for an unnamed player, code only) | none. The roadmap named the rule. piv's fix in progress |
 | 23 | An experiment measures far longer than its decision needs | G, H | none | no (2) | minutes an experiment runs past the reads that settle its question | H: about 20 (v2), two 10-minute waits to see whether a value changes, which no decision turned on | Uncommitted (deletion): "whether it can change or vanish" dropped from `generate-plan-v2`'s Assuming list and step 5. Candidate, not made: see the evidence |
+| 24 | A plan records an answer the runner gave as the developer's own decision | I | none | no (1) | plan lines that name the developer for a choice the developer never made | I: 3 (mine), after "take all reccs" | none |
+| 25 | A choice the user would see is settled without asking the developer | G, I | none | no (2) | user-visible choices a plan settles without asking | I: 1 of 3 (piv: no player page) | v2's step "ask when the options differ in what the user sees or does" · held for v2 in I; piv's loop has no such step |
+| 26 | A roadmap carries one story's implementation choices into every later plan | I | none | no (1) | implementation rules a roadmap hands to later stories | I: one section, named in every arm's planning | `84adcb7` (template: a roadmap holds no implementation decisions) and terminal `37b577c` (section removed) · untested until a roadmap is written from the new template |
 
 **The pattern so far:** prose fixes (`5a8d848`, `c0264e5`) failed to hold. Step fixes (`eeeacef`,
 `1f0118b`, `304ceca`) held. The runner fix `2effeaf` failed until the runner blocked the reads. A
@@ -186,6 +205,25 @@ requirement the roadmap names holds in every build (row 4 in F); left to the pla
     engine's lead line falls off the display books, a few minutes.
   - Check: rerun v2's planning on H's request with the old and the new skill; count experiments
     and minutes waiting.
+- **24:** mine's plan, `nba-stat-pack.md:656-658` (worktree `sports-edge-terminal-story-c-mine`,
+  copies in `I/snapshots/`): three lines open "Developer, 2026-11-02:", among them "No
+  `/nba-players` page" and "the terminal recovers from the 404 by reading `detail`". Mine had asked
+  (`I/mine/02-plan.jsonl:1144`, option D); the only answer it got was "take all reccs". The 404 read
+  is the line the judge calls fragile: "if the engine's words change, it silently becomes a general
+  failure" (`I/judge/report.md:55`, `use-nba-player-stats.ts:28-35`).
+- **25:** I: piv's plan, "No player page: `/nba-players` isn't needed. It would be about 23 files,
+  against about 13 for the whole story" (`I/piv/02-plan.jsonl:1386`), never put to the developer.
+  The roadmap leaves the page to the plan (`I/judge/report.md:114`). v2 asked
+  (`I/v2/04-criteria-answers.jsonl:397`, D) and so did mine (`I/mine/02-plan.jsonl:1144`, D); "take
+  all reccs" took both their "no". G: v2 put neither the layout nor the stream to the developer
+  (`G/v2/02-plan.jsonl:85`; What works, the sketch row).
+- **26:** the template v2 ran: "When a task settles a convention or teaches a lesson, write it into
+  Working rules" (`I/skills-as-run/v2/decompose-feature-v2/references/roadmap-template.md:28`).
+  The terminal roadmap's `## Working rules` (terminal `37b577c~1`,
+  `.agents/roadmaps/nba-basketball-views.md:47`) opens "each is built on the pattern of its baseball
+  or football counterpart, never invented". The arms' planning logs name it: piv 42 times, v2 29,
+  mine 68. The developer: "they were already fucking consumed. I'm saying for future things, we
+  need to not do that."
 
 ## Judge checks
 
@@ -239,6 +277,8 @@ The judge's prompt reads this section. A story's one-off bugs stay in the rounds
 | Vite pins 5173 and the developer's own server holds it | H: arms collided on 5173; I would have tested `main` instead of its own build | I: `bin/pnpm` moves each arm's dev server to its own port, and a one-line system note names it |
 | The runner's last line returned 1 when no dev server held the port, so every step read as failed | I: piv and v2 stopped after `/prime`; both restarted from scratch, about $2 (`I/aborted-1/`) | `run-step.sh` exits with the session's own status. H never hit it: 5173 was always held |
 | An arm wrote a file through a Python script, which `require-read-before-edit` does not catch | I: mine edited its plan that way, and said so (`I/mine/03-plan-answers.jsonl`) | The skillz hook catches redirects, `sed -i`, `perl -i` and `tee` only. Open: the developer's call |
+| Headless Chrome draws scrollbars that take no width, so a layout check passes what a mouse scrollbar breaks | I: piv's report claimed "`.board-rows` 889 of 889" at 1440, true only with overlay bars (`I/judge/report.md:123`); the first judge run was stopped at 6 min for a check that missed it (`I/judge/aborted-1/`) | `I/judge/kit/scrollbar.js` as `--init-script`, with `--hide-scrollbars false`: 15px bars, as a mouse draws them, measured with a probe div |
+| An arm ran `python3`, against the developer's rule: `uv`, never python | I: mine's review, `python3 -I - <<'EOF'` among 23 lines naming it (`I/mine/08-review.jsonl`) | Open: the developer's call |
 | piv ran without its `codebase-analyst` agent, which skillz never copied, and borrowed mine's `codebase-research-agent` in its place | G: piv's plan was researched by another loop's agent, twice; its last place is not a clean verdict on piv | Before a round, check every agent and skill each arm's files name is installed in its worktree |
 | The coordinator held an arm at its questions instead of answering them | G: v2b sat idle at its design questions about 15 min until the developer caught it. The developer: "STOP FUCKIGN PAUSGIN MAKE SUER WHEN WE ARE IN DEFAULT MODE IT FINISHES E2E AND YOU OBSERVE EVERYTHING IN BETWEEN" | `run-arm.sh` drives each arm end to end and answers every stop; the coordinator only observes |
 | The coordinator's `git reset -- src` cleared an arm's staged rename | G: v2's index wrong for about 2 min during its review; restored exactly | Measure with `git diff <base>` and never touch an arm's index |
