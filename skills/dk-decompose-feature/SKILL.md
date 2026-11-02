@@ -1,5 +1,5 @@
 ---
-name: decompose-feature-v2
+name: dk-decompose-feature
 disable-model-invocation: true
 description: >-
   Break a feature too large for one plan into a roadmap: what is being built, why, and how
@@ -11,7 +11,7 @@ description: >-
 argument-hint: "[feature, PRD section, or feature-idea doc]"
 ---
 
-# decompose-feature-v2: a roadmap of user stories, each one plan's worth
+# dk-decompose-feature: a roadmap of user stories, each one plan's worth
 
 ## Feature: $ARGUMENTS
 
@@ -28,7 +28,7 @@ size allows. Built in order, each story is planned against what the earlier ones
 A story says **who wants what and why, what must be true when it is done, and what its plan
 must find out**, and stops there. No research findings: no measured facts, costs, or code
 details. No signatures, data shapes, file layout, or tests. No decisions either: deciding
-how to build a story is `/generate-plan-v2`'s job, after its own research, and it puts the
+how to build a story is `/dk-generate-plan`'s job, after its own research, and it puts the
 decisions to the developer there.
 
 **Write in plain words.** Name the thing itself. No metaphors and no jargon. A term the repo
@@ -45,7 +45,7 @@ defines may be used as the repo defines it.
   they gave them.
 - **Correctness rule**: the rule that must hold at every step. Take it from the repo's rules
   (CLAUDE.md) and requirements document (PRD). Do not invent it.
-- **Scout the codebase to size and split, nothing else.** Send one `codebase-scout-agent-v2`
+- **Scout the codebase to size and split, nothing else.** Send one `dk-codebase-scout-agent`
   the feature as the developer gave it, word for word. Its route, file counts, and slices
   show what exists today and how big each story is. Use them to cut and order the stories.
   Copy none of its findings into the roadmap. Send no other agent, and do not search
@@ -106,7 +106,7 @@ Fill in `references/roadmap-template.md` and write it to `.agents/roadmaps/<feat
 Create the directory if missing. Copy the template's "How to work this roadmap" word for
 word. Every box starts unchecked.
 
-Those rules send the executing sessions to `/generate-plan-v2` and `/prime`. If the
+Those rules send the executing sessions to `/dk-generate-plan` and `/prime`. If the
 repo lacks either skill, keep the rules as written and say so in the report. Do not rewrite
 them around a substitute.
 
@@ -144,6 +144,6 @@ Then add only:
 
 ## Note
 
-Sizing uses the `codebase-scout-agent-v2` agent, installed alongside this skill. If it is
+Sizing uses the `dk-codebase-scout-agent` agent, installed alongside this skill. If it is
 missing, say so and stop. Do not scout in this session instead: the sizes would look
 measured when they are not.

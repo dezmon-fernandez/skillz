@@ -1,5 +1,5 @@
 ---
-name: codebase-scout-agent-v2
+name: dk-codebase-scout-agent
 description: Use this agent when planning a feature, as the one agent that reads the codebase. It lists every similar feature with what a user can do in each against the plan, traces the most similar one end to end, and returns a map with `file:line` for every entry - the route hop by hop, what each hop lacks for the new feature, the files that would change or be added, the patterns to copy, how such a feature is wired in, what calls the code that changes, the traps, and what it did not cover. Spawn one per plan. Brief it with `plan=<path>`, the plan whose Definition the developer agreed, because it sees none of your conversation. Trigger to map a feature's path through the code, not to design anything.
 tools: Read, Glob, Grep
 model: sonnet

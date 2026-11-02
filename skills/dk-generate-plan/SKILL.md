@@ -1,5 +1,5 @@
 ---
-name: generate-plan-v2
+name: dk-generate-plan
 disable-model-invocation: true
 description: >-
   Turn a feature request, a tracker ticket, or the current conversation into an
@@ -10,7 +10,7 @@ description: >-
 argument-hint: "[a ticket key or URL, a feature description, or empty to plan from the conversation]"
 ---
 
-# generate-plan-v2: the plan an executor can finish in one pass
+# dk-generate-plan: the plan an executor can finish in one pass
 
 ## Feature: $ARGUMENTS
 
@@ -58,9 +58,9 @@ Settled: <each decision already made, quoted, with its path:line; or none>
 **Fan out.** Send the agents in one message, each briefed with the plan's path and one item,
 nothing else:
 
-- one `codebase-scout-agent-v2`: `plan=<path>`. Always, however small the request looks. A
+- one `dk-codebase-scout-agent`: `plan=<path>`. Always, however small the request looks. A
   missed read costs the plan's correctness; an extra scout costs minutes
-- one `external-research-agent-v2` per outside topic: `plan=<path> topic=T<n>`. A topic is a
+- one `dk-external-research-agent` per outside topic: `plan=<path> topic=T<n>`. A topic is a
   library, API or standard the feature uses in a way the code does not already call. Write it
   into the plan first as a T line
 - No outside topic? Send the scout alone
@@ -91,7 +91,7 @@ Take each part of a report to where the plan uses it. Never redo what a report a
 **Size**
 
 - About five files or fewer: no plan. Name the files and stop
-- More than about twenty: too big. Say where to cut it, and stop. `decompose-feature-v2` cuts it
+- More than about twenty: too big. Say where to cut it, and stop. `dk-decompose-feature` cuts it
 
 ## Step 3: Requirements, examples and experiments
 
@@ -150,7 +150,7 @@ Experiments: <one line each; or none>
 **Stop and wait for the developer's corrections.** Then:
 
 - Write the agreed requirements and examples into the plan's Definition
-- Send one `experiment-agent-v2` per approved experiment: `plan=<path> experiment=E<n>`
+- Send one `dk-experiment-agent` per approved experiment: `plan=<path> experiment=E<n>`
 - Write each result on its E line. Open the saved sample behind any count the design uses
 - A declined experiment becomes a check under `## Prerequisite`. The build waits for it
 
@@ -228,13 +228,13 @@ Decide, worst first (or "Decide: none"):
 - The full path to the plan
 - Each outside topic skipped, and the `file:line` that made the skip safe
 - How many source files change, the key risks, and a confidence score out of 10
-- The next step: `/execute-plan-v2 <path>`, or first `/walk-plan-v2 <path>` in a new session
+- The next step: `/dk-execute-plan <path>`, or first `/dk-walk-plan <path>` in a new session
 
 The build starts on the developer's word, never on yours.
 
 ## Depends on
 
-- The `codebase-scout-agent-v2`, `external-research-agent-v2` and `experiment-agent-v2`
+- The `dk-codebase-scout-agent`, `dk-external-research-agent` and `dk-experiment-agent`
   agents. One missing when you send it? Say so and stop. Doing its research here makes the
   plan look finished when it is not
 - The `deny-credential-reads` hook, when installed, blocks reading files that hold keys

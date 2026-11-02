@@ -1,5 +1,5 @@
 ---
-name: execute-plan-v2
+name: dk-execute-plan
 disable-model-invocation: true
 description: >-
   Implement a finished plan task by task. Run each task's own validation before starting
@@ -8,7 +8,7 @@ description: >-
 argument-hint: "[path to the plan]"
 ---
 
-# execute-plan-v2: one pass, validated at every step
+# dk-execute-plan: one pass, validated at every step
 
 ## Plan: $ARGUMENTS
 

@@ -1,5 +1,5 @@
 ---
-name: external-research-agent-v2
+name: dk-external-research-agent
 description: Use this agent to find what a coordinator must read from outside the codebase before planning a feature. It researches one topic (a library, an external API or service, a standard or protocol, or a technique) and reports references, each a section-anchored link or a local document path with the exact thing it documents and why, plus pitfalls and breaking changes. Spawn several at once, one per topic. Brief each with `plan=<path> topic=T<n>`, because it sees none of your conversation: the plan's numbered topic holds what the feature needs from it, the version in use, where the code uses it now, and the local documents that cover it. Trigger for outside-the-repo research, not for exploring the codebase.
 tools: WebSearch, WebFetch, Read, Glob, Grep
 model: sonnet

@@ -1,5 +1,5 @@
 ---
-name: walk-plan-v2
+name: dk-walk-plan
 disable-model-invocation: true
 description: >-
   Go over a written plan with the developer before the build, when they want to. It prints
@@ -12,7 +12,7 @@ description: >-
 argument-hint: "[path to the plan]"
 ---
 
-# walk-plan-v2: the developer reviews the plan, and you point
+# dk-walk-plan: the developer reviews the plan, and you point
 
 ## Plan: $ARGUMENTS
 
@@ -77,7 +77,7 @@ Write each decision as theirs, with the date. Never add to what gets built, and 
 decision they made. Reopen the page as the `annotate` skill says, and reply with one line per
 comment: changed, answered, or left.
 
-Then stop. The next step is `/execute-plan-v2 <the plan's path>`, on the developer's word.
+Then stop. The next step is `/dk-execute-plan <the plan's path>`, on the developer's word.
 
 ## Without annotate
 

@@ -1,22 +1,22 @@
 ---
-name: review-code-v2
+name: dk-review-code
 disable-model-invocation: true
 description: >-
-  The gate after execute-plan-v2. It gathers the change, hands the close review to the
-  read-only code-reviewer-v2 agent, saves the report, fixes every finding that has one sound
+  The gate after dk-execute-plan. It gathers the change, hands the close review to the
+  read-only dk-code-reviewer agent, saves the report, fixes every finding that has one sound
   fix, and asks the developer only what is theirs to decide. Use when asked to "review the
   code" or before raising a pull request. Run it in a fresh session so the review is not
   done by the session that wrote the code.
 argument-hint: "[path to the execution report]"
 ---
 
-# review-code-v2: the gate after execute-plan-v2
+# dk-review-code: the gate after dk-execute-plan
 
 ## Execution report: $ARGUMENTS
 
 Goal: decide whether this implementation is ready to raise for review.
 
-You gather the change and act on the findings. The `code-reviewer-v2` agent does the close review. It is read-only, so it cannot quietly fix what it finds. You get a report, not edits to hunt for.
+You gather the change and act on the findings. The `dk-code-reviewer` agent does the close review. It is read-only, so it cannot quietly fix what it finds. You get a report, not edits to hunt for.
 
 ## 1. Gather
 
@@ -35,7 +35,7 @@ If the base looks wrong, ask which branch to compare against. Do not review the 
 
 ## 2. Delegate
 
-Start the `code-reviewer-v2` agent. Give it:
+Start the `dk-code-reviewer` agent. Give it:
 
 - the execution report path
 - the plan path
@@ -82,4 +82,4 @@ In this order:
 
 ## Note
 
-This skill needs the `code-reviewer-v2` agent installed alongside it. If the agent is missing, say so and stop. Reviewing the diff in this session defeats the purpose.
+This skill needs the `dk-code-reviewer` agent installed alongside it. If the agent is missing, say so and stop. Reviewing the diff in this session defeats the purpose.

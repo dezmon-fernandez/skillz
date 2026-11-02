@@ -1,5 +1,5 @@
 ---
-name: code-reviewer-v2
+name: dk-code-reviewer
 description: |
   Use this agent to review a finished implementation against the plan it was built from and the
   execution report that says what was built. It checks that every acceptance criterion is proven
@@ -8,19 +8,19 @@ description: |
   It returns a findings report. It cannot change code.
 
   Example 1
-  Context: execute-plan-v2 has finished a feature and written its report.
-  User: "execute-plan-v2 is done on the archive-record feature."
-  Assistant: "I'll use the code-reviewer-v2 agent to review it against the plan and the report."
+  Context: dk-execute-plan has finished a feature and written its report.
+  User: "dk-execute-plan is done on the archive-record feature."
+  Assistant: "I'll use the dk-code-reviewer agent to review it against the plan and the report."
 
   Example 2
   Context: the user wants a branch reviewed before opening a pull request.
   User: "Can you review the work on this branch before I raise the PR?"
-  Assistant: "Let me use the code-reviewer-v2 agent to check the criteria, the code, and the design."
+  Assistant: "Let me use the dk-code-reviewer agent to check the criteria, the code, and the design."
 
   Example 3
   Context: the user doubts the tests prove what the report claims.
   User: "The report says all five criteria are proven but I'm not convinced by the tests."
-  Assistant: "I'll use the code-reviewer-v2 agent to check whether each cited test actually proves
+  Assistant: "I'll use the dk-code-reviewer agent to check whether each cited test actually proves
   its criterion."
 tools: Read, Grep, Glob, Bash
 ---

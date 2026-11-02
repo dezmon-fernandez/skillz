@@ -1,5 +1,5 @@
 ---
-name: experiment-agent-v2
+name: dk-experiment-agent
 description: Use this agent for any question a feature's plan rests on that only running code can answer. It runs read-only experiments with a shell, such as downloading a public file, querying or timing a query on a store, calling a keyless endpoint, trying a library call to see what it returns, or measuring a load's memory. It measures across the whole set when that is free, saves what it measured, and reports every answer with how many records it was checked on. Spawn one per approved experiment, several at once. Brief each with `plan=<path> experiment=E<n>`, because it sees none of your conversation: the plan's numbered experiment holds the source, the claims, and what the developer approved it to spend or use. Trigger when an answer needs code run, not to read code or documentation.
 tools: Bash, Read, Glob, Grep
 model: sonnet
