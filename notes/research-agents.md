@@ -188,3 +188,31 @@ fast and how completely the wiring and impact questions are answered.
 - The main thread still reads with `sed` (about 1,260 lines on Story D). If its own citations stay
   wrong, a hook on its shell reads comes next.
 - `generate-plan-v2` then depends on three research agents, and must say what to do when one is missing.
+
+## Tabled: a fixed input and output for every research agent (2026-11-02)
+
+The developer, verbatim: "it feels like I need a more rigorous testing around the research process
+and how what gets passed to it and what comes out of it. Because it feels like the one thing I don't
+like about agents is I'm leaving you just to do whatever the fuck you want in terms of input and
+output, and it just feels like a moving target. I need to really think about how to like input and
+output in every scenario. That's the hard part."
+
+- **What it would settle:** whether a missed capability is the brief's fault, the agent's, or the
+  main thread's. Story B could not tell: mine's whole-slate question came from one brief's wording
+  and one agent's reading, and nothing fixed either.
+- **Where it starts:** the similar-implementations table in the handover's Explore. Each research
+  agent fills a fixed table, one line per thing a user or caller can do, and the main thread matches
+  its own list against it.
+- **What it needs first:** the infrastructure to test a research agent alone: a pinned brief in, its
+  report out, checked against a known answer. Story B's parity table is the first known answer.
+
+## Tabled: all research in the main thread, the agent beside it (2026-11-02)
+
+The developer, verbatim: "I want to try moving everything to the main thread and let the agent do
+its thing as an experiment. But we'll do that once we get this finalized and we're happy with V2."
+
+- **When:** after the `generate-plan-v2` rewrite is final and the developer is happy with v2.
+- **The lean it tests:** "erring on the side of caution to main is the rihgt move for now esepcailly
+  as models get more adcacned." Option B already moves the check on research to the main thread.
+- **What it would settle:** which of the scout's findings the main thread finds on its own, and
+  which only the agent finds.

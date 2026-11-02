@@ -37,6 +37,8 @@ one.
 | E | `GP/real-work-2026-10-29-story-e` |
 | F | `GP/real-work-2026-10-31-story-f` |
 | G | `GP/real-work-2026-10-31-story-a` |
+| H | `GP/real-work-2026-10-31-story-b` |
+| I | `GP/real-work-2026-11-02-story-c` |
 | SE | `/Users/dezmonf/projects/sports-edge/sports-edge-service/.agents` |
 | WA | `/Users/dezmonf/projects/sports-edge/sports-edge-terminal/.agents/reference/workflow-audit` |
 
@@ -67,8 +69,8 @@ one.
 | 19 | Research answers how a source changes over time from one snapshot | F | none | no (1) | research claims about a source's history the judge refutes | 1 (v2) | none |
 | 20 | A scope line the planner marks `(assumed)` before reading any code stands, and research is kept off it | G | none | no (1) | `(assumed)` lines from before research that decide a user-facing behaviour in the final plan | G: 1 (v2: no stream, so live scores poll every 30 s beside a free stream). Related to 1 and 3 | `2bd6d16` (field: the scout's Integration Points; rule: use what already does the job) · v2b kept the stream through design, but its definition named it before research, so the rerun cannot credit the change |
 | 21 | A build waits on an event in the world before it finishes | G | none | no (1) | minutes a build sits idle waiting | G: 39 (v2) | none |
-| 22 | A value the source did not serve is drawn as zero | G | none | no (1) | builds with a judge-found zero for an unserved value | G: 1 (mine: `0 GAMES` while the count is unserved, pinned by its tests) | none. The roadmap named the rule |
-| 23 | An experiment measures far longer than its decision needs | G | none | no (1) | minutes an experiment runs past the reads that settle its question | G: about 17 of E2's 23 minutes (v2b), timing a free stream's credit cost the contract states | none |
+| 22 | A value the source did not serve is drawn as zero or a guess | G, H | none | no (2) | builds with a judge-found zero or guess for an unserved value | H: 1 (piv: `#<id>` for an unnamed player, code only) | none. The roadmap named the rule. piv's fix in progress |
+| 23 | An experiment measures far longer than its decision needs | G, H | none | no (2) | minutes an experiment runs past the reads that settle its question | H: about 20 (v2), two 10-minute waits to see whether a value changes, which no decision turned on | Uncommitted (deletion): "whether it can change or vanish" dropped from `generate-plan-v2`'s Assuming list and step 5. Candidate, not made: see the evidence |
 
 **The pattern so far:** prose fixes (`5a8d848`, `c0264e5`) failed to hold. Step fixes (`eeeacef`,
 `1f0118b`, `304ceca`) held. The runner fix `2effeaf` failed until the runner blocked the reads. A
@@ -157,6 +159,54 @@ requirement the roadmap names holds in every build (row 4 in F); left to the pla
   them showed the stream pushing within seconds. The
   developer: "a 30 minute time test isnt warranted for wiring up an api stream with a contract",
   and "if it needs to expxlore unknowns yes but even then it likely can be done m ore efficitnely".
+- **23, H:** v2's definition listed A11, "A prop can vanish between reads, or a line can move", from
+  the skill's Assuming line "whether it can change or vanish". Its E3 re-asked A11 by reading the
+  next day's props twice, "at least 10 minutes after the first, to diff" (E3 in the plan,
+  `H/snapshots/v2-03-plan-research-files.tgz`), while
+  that day held no quotes, so it diffed two empty reads; planning waited on it. Its last step
+  waited 10 more minutes for a second read of the first posted quotes; nothing moved. The board
+  draws what the engine serves, so no answer changed the code. Most of E1's 12-day sweep confirmed
+  what the generated types state. The developer: "Do we not fucking trust our types? I literally
+  own the fucking repo."
+- **23, the fix to make (the developer: "a quick candidate to fix early"):**
+  - Run an experiment only to learn something nobody has written down. If the code, an API spec,
+    its types or the docs answer it, read the answer there.
+  - Suggest experiments after the code and docs are read, never before. Before then everything
+    looks unknown.
+  - Put each one to the developer in one line: the question, what in the plan changes with the
+    answer, why nothing written answers it, what it reads, how long and what it costs. It runs only
+    on a yes. Nothing runs without asking, free or not.
+  - The experiment agent stays, with one added line: never wait for something to change; measure
+    what is there now.
+  - Comes out of `generate-plan-v2`: measuring every assumption about outside data, the experiment
+    list approved before any code is read, one experiment per assumption, and sending free
+    experiments without asking.
+  - Should move: H's 20 minutes of waiting to none; v2's research from 33 minutes toward mine's
+    19; H's 3 experiments (26 minutes) to the 2 that mattered, read size and how often the
+    engine's lead line falls off the display books, a few minutes.
+  - Check: rerun v2's planning on H's request with the old and the new skill; count experiments
+    and minutes waiting.
+
+## Judge checks
+
+A check is a kind of problem, not one bug. It joins only when all four hold:
+
+1. It is a general class that can show up in any feature
+2. It was seen in more than one round
+3. A fix was seen to remove it, with a test that fails without the fix
+4. The judge can detect it the same way in any build
+
+The judge's prompt reads this section. A story's one-off bugs stay in the rounds' evidence.
+
+| Check | Seen | Fix shown to remove it | How the judge detects it |
+|---|---|---|---|
+| A guard no test can fail (row 16) | A, B, D | `eeeacef` (break each guarded line), held in E | Break each guard and rule the change adds, in a copy, and run the tests. A break no test catches is a finding |
+
+**Pending:** one condition missing.
+
+| Check | Seen | Missing | How the judge detects it |
+|---|---|---|---|
+| A value the source did not serve shows as zero or a guess (row 22) | G (mine: `0 GAMES` while the count is unserved), H (piv: `#<id>` for an unnamed player, code only) | the fix: piv's, in progress, seen to work | For each value the feature shows from a source, make the source leave it empty or omit it. Anything shown but the no-value mark (a zero, a default, an id, a guess) is a finding |
 
 ## What works: keep
 
@@ -173,6 +223,7 @@ requirement the roadmap names holds in every build (row 4 in F); left to the pla
 | Asking before a keyed or paid read | iteration-3 `turn-2.md:13`; D `GP/real-work-2026-10-29/comments.md:97-101` |
 | Code review in a fresh session | E's judge credits review fixes in v3, piv and arm B (`E/judge/report.md:107-111`) |
 | Putting every choice the user would see to the developer, each option sketched | G: mine's rule "a decision is the developer's when its options differ in what the product's user sees or does", shown as "a sketch of each screen" (the developer's uncommitted edit to the terminal's `generate-plan/SKILL.md`). Mine sketched rail against full width (`G/mine/02-plan.jsonl:1653`); the developer, on glass: "Mine is the only one that fucking got it." v2 put neither the layout nor the stream to the developer |
+| A monitor event per finished step, and the coordinator reads that step's last reply, sets it beside the other arms at the same point, and flags what breaks the round's rules | I: the monitor tails `times.tsv` and each arm's run log, one line per step; the reply is the step log's `result`. It surfaced piv's and mine's opposite calls on the refused player and mine's hook bypass while the arms ran. The developer: "This is so much more freaking informative for this eval skill" and "Getting informative information with each step". The monitor expires every 30 min and is re-armed. The base for the `bakeoff` skill |
 
 ## Running the round: fix before the next one
 
@@ -184,6 +235,10 @@ requirement the roadmap names holds in every build (row 4 in F); left to the pla
 | The Mac slept with the round running; the developer had asked for caffeine | G: every arm frozen 19:56:48 to 20:55:04 UTC; piv's plan response was cut and resumed; step times corrected from `pmset -g log` (`G/asleep-windows.tsv`) | Start `caffeinate` before the first step |
 | The coordinator ran builds one at a time; the arms run in parallel | G: piv waited 47 min between build and review, mine about 20 min before its build; builds ran under different load and live slates | Each arm moves on the moment its step ends |
 | The arms share `/tmp` | G: mine's build found `/tmp/nba-mutate.py` overwritten by another arm's script (`G/mine/07-build.jsonl:102`); it did not run it | Give each arm its own `TMPDIR` in the runner |
-| A session printed the proxy's `CF_Authorization` cookie into its log | G: `piv/02-plan`, `piv/07-build` and `mine/02-plan` logs | none yet |
+| A session printed the proxy's `CF_Authorization` cookie into its log | G: `piv/02-plan`, `piv/07-build` and `mine/02-plan` logs; H: `piv/02-plan`, `v2/03-plan-research` and two agent transcripts | I: a hook in the runner blocks `curl -i`, `-I`, `-v`, `-D` and `--trace` (`I/hooks/deny-curl-headers.sh`) |
+| Vite pins 5173 and the developer's own server holds it | H: arms collided on 5173; I would have tested `main` instead of its own build | I: `bin/pnpm` moves each arm's dev server to its own port, and a one-line system note names it |
+| The runner's last line returned 1 when no dev server held the port, so every step read as failed | I: piv and v2 stopped after `/prime`; both restarted from scratch, about $2 (`I/aborted-1/`) | `run-step.sh` exits with the session's own status. H never hit it: 5173 was always held |
+| An arm wrote a file through a Python script, which `require-read-before-edit` does not catch | I: mine edited its plan that way, and said so (`I/mine/03-plan-answers.jsonl`) | The skillz hook catches redirects, `sed -i`, `perl -i` and `tee` only. Open: the developer's call |
 | piv ran without its `codebase-analyst` agent, which skillz never copied, and borrowed mine's `codebase-research-agent` in its place | G: piv's plan was researched by another loop's agent, twice; its last place is not a clean verdict on piv | Before a round, check every agent and skill each arm's files name is installed in its worktree |
+| The coordinator held an arm at its questions instead of answering them | G: v2b sat idle at its design questions about 15 min until the developer caught it. The developer: "STOP FUCKIGN PAUSGIN MAKE SUER WHEN WE ARE IN DEFAULT MODE IT FINISHES E2E AND YOU OBSERVE EVERYTHING IN BETWEEN" | `run-arm.sh` drives each arm end to end and answers every stop; the coordinator only observes |
 | The coordinator's `git reset -- src` cleared an arm's staged rename | G: v2's index wrong for about 2 min during its review; restored exactly | Measure with `git diff <base>` and never touch an arm's index |
