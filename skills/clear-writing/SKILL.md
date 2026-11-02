@@ -1,23 +1,25 @@
 ---
-name: structure-prose
+name: clear-writing
 description: >-
   Rebuild the layout of a skill, agent, or other instruction file so it scans: each part
-  under a bold label, one rule per line, a blank line between groups. Layout only: every
-  rule and its words stay. Use when asked to "break up this wall of text", "make this
+  under a bold label, one rule per line, a blank line between groups, each part in the form
+  its job takes. Every rule stays, and its words stay except where a procedure sentence
+  becomes a command. Use when asked to "break up this wall of text", "make this
   easier to read", "structure this file", or "format it like piv". The operator runs it by
   hand, on one file.
 argument-hint: "[path to the file to restructure]"
 disable-model-invocation: true
 ---
 
-# structure-prose: the same rules, laid out to scan
+# clear-writing: the same rules, each part in the form its job takes
 
 The output is the file at `$ARGUMENTS`, rewritten in place: the same rules, in a layout a
 reader can scan and an editor can extend in the same style. The developer reads it side by
 side with the original before it is kept. A rule lost in the move is a rule no session
 follows, so step 3 matters more than the layout.
 
-This skill changes layout only. To cut or reword, use `review-prose`.
+This skill changes layout, and turns a procedure's sentences into commands. To cut or reword
+anything else, use `review-prose`.
 
 ## Step 1: Find the walls
 
@@ -31,6 +33,33 @@ Read the whole file. A wall is:
 Leave alone what already scans: short bullets, templates, code, tables.
 
 ## Step 2: Rebuild each wall in this shape
+
+**Pick the form**
+
+Each part of a file has one job. Lay it out in that job's form:
+
+- **Procedure** (steps a reader follows): one command per line, verb first, in the shape below
+- **Comparison** (versions or options side by side): a table, one row per thing compared
+- **Decision** (a call for the developer): the question, a recommendation, what each option
+  costs, sketched where they differ on screen
+- **Briefing** (where things stand, for someone coming back): one short paragraph
+
+**Write a procedure line**
+
+- One action per line, and when it happens
+- Start with the verb
+- A line with two actions becomes two lines. Each new line keeps the words that said when,
+  from what, or how much: "judge it from the input" split from its sentence still says
+  "from the input"
+- A reason only where a reader would assume the opposite
+- No hedges: "consider", "try to", "where possible", "as needed"
+- A sentence that is not a command becomes one. The rule stays; only the grammar changes
+- Each line holds its weight: name the wrong move a reader makes without it. A line you
+  cannot name one for stays, and goes in your report for the developer
+
+❌ `Write them for when things go wrong, too. For each input the feature reads, think: missing, empty, late.`
+
+✅ `Cover each input going wrong: missing, empty, late`
 
 **The shape**
 
