@@ -6,7 +6,7 @@ description: >-
   the work splits into user stories in build order, each one plan's worth of work, with its
   high-level requirements and the questions its plan must answer. Writes
   .agents/roadmaps/<feature>.md, a working document that carries the effort's goal and
-  working rules across context clears. Use when asked to "decompose this feature", "break
+  how to work it across context clears. Use when asked to "decompose this feature", "break
   this into stories", "roadmap this", or when a feature is too big to plan in one pass.
 argument-hint: "[feature, PRD section, or feature-idea doc]"
 ---
@@ -106,7 +106,7 @@ Fill in `references/roadmap-template.md` and write it to `.agents/roadmaps/<feat
 Create the directory if missing. Copy the template's "How to work this roadmap" word for
 word. Every box starts unchecked.
 
-Those working rules send the executing sessions to `/generate-plan-v2` and `/prime`. If the
+Those rules send the executing sessions to `/generate-plan-v2` and `/prime`. If the
 repo lacks either skill, keep the rules as written and say so in the report. Do not rewrite
 them around a substitute.
 

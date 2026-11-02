@@ -18,7 +18,7 @@ Read the whole file before you touch any code. The plan is the contract. Carry i
 
 ### 1. Read the plan
 
-Read all of it: the Definition, the Contract, the edge cases, the tasks and their
+Read all of it: the Definition, the Contract, the tasks with their acceptance criteria and
 dependencies, and every validation command. Then read the files the plan lists as mandatory
 reading. Do this before you write anything.
 

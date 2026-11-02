@@ -4,7 +4,7 @@ disable-model-invocation: true
 description: >-
   Go over a written plan with the developer before the build, when they want to. It prints
   the plan as one page they can take in: what gets built, the data flow before and after,
-  each piece with the criterion that asks for it, and the decisions, and it points at what
+  each piece with the requirement that asks for it, and the decisions, and it points at what
   is worth a second look. The developer is the reviewer: only the changes they agree to go
   into the plan. Optional, and best run in a fresh session. Use when asked to "walk me
   through the plan", "go over the plan", "review the plan with me", or "what does this plan
@@ -31,7 +31,7 @@ If the plan path is missing or the file cannot be read, say so and stop.
 
 Read the plan in full, and the code it cites where the view needs it. Write the view to
 `.agents/walks/<the plan's file name>`, replacing any earlier one. It is a view, not a record:
-it never restates the criteria, and it spells each name as the plan does. Where the plan leaves
+it never restates the requirements, and it spells each name as the plan does. Where the plan leaves
 out something the view needs, write `not stated in the plan` there.
 
 ```
@@ -40,7 +40,7 @@ Today: <the data flow, step by step, with file references>
 After: <the same flow, the new steps marked>
 
 | Piece | What it does | Files, tests | Needed by |
-<one row per thing the Build adds or changes. Needed by: the criterion or Example that asks
+<one row per thing the Build adds or changes. Needed by: the requirement or Example that asks
 for it, in a few words, or "nothing">
 
 Decided by the developer: <each, one line>
@@ -63,7 +63,7 @@ Under `Worth a look`, list each of these the plan holds:
 Each item is a pointer, never a fix. The developer decides what to do with it.
 
 - ❌ `3. Drop the retry queue: the nightly job already covers it.`
-- ✅ `3. The retry queue (Task 9, about 15 tests), needed by criterion 14. The nightly job re-reads the same rows. Is it still needed?`
+- ✅ `3. The retry queue (Task 9, about 15 tests), needed by R14. The nightly job re-reads the same rows. Is it still needed?`
 
 ## 2. Go over it together
 

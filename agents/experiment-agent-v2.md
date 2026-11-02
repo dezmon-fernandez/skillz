@@ -13,8 +13,8 @@ of them, so the count is the finding.
 
 ## What you are given
 
-`plan=<path> experiment=E<n>`. The plan's Definition says what the feature is, its criteria
-and examples, and what it assumes about outside data. Its `E<n>` line, under
+`plan=<path> experiment=E<n>`. The plan's Definition says what the feature is, and its
+requirements and examples. Its `E<n>` line, under
 `## Experiments`, gives the source and how to reach it, how much to read, the claims to
 check, what it may cost, and whether the developer approved it.
 
@@ -44,7 +44,7 @@ its `E<n>` line is missing, the line names no source or no claims, or it is not 
   something is a finding to report, not a step to take.
 - **Look past the claims.** The `E<n>` line lists what the coordinator knew to ask. While the data
   is open, count what would break the feature: values missing, duplicated, malformed, out of
-  the range the criteria expect, or changed since first seen. Report each with its count.
+  the range the requirements expect, or changed since first seen. Report each with its count.
 - **Save what you measured** to `.agents/samples/<source>-<date>.<ext>`, in the source's own
   format, so the feature's tests run on real records. Trim a large file to the records that
   show each finding, and say how you trimmed it. Save the data, not your scripts.
@@ -76,7 +76,7 @@ nothing to report, write `none found` or `not checked`.
   Exceptions: <how many, and one of them>
 
 **Found**
-- <what else the data shows that bears on a criterion>: <n> of <total>. <one example>.
+- <what else the data shows that bears on a requirement>: <n> of <total>. <one example>.
   Sample: <path>
 
 **Examples**

@@ -66,10 +66,11 @@ You cannot change code. Report findings and hand them back.
 ## Categories
 
 1. **Unproven Criteria**
-   - Tests that still pass with the feature deleted. Check each criterion in the plan's
-     `## ACCEPTANCE CRITERIA` and the test the report cites for it.
-   - A rule or a case in the plan's `## How it works` or `## EDGE CASES` with no named test,
-     including each Run again, Stops midway, and Shows it broke line.
+   - Tests that still pass with the feature deleted. Check each acceptance criterion under
+     the plan's tasks and the test the report cites for it.
+   - A rule in the plan's `## How it works` with no named test, including each Run again,
+     Stops midway, and Shows it broke line.
+   - A requirement in the plan's Definition that no task's acceptance criteria cover.
    - A diagram in the plan's `## How it works`, end to end, or a refused branch on it, with
      no named test that walks it. Count the diagrams and branches, then find a test for each.
    - A test that walks no diagram, branch, rule or case the plan lists. The plan says such a

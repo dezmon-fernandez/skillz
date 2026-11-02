@@ -3,12 +3,10 @@ name: generate-plan-v2
 disable-model-invocation: true
 description: >-
   Turn a feature request, a tracker ticket, or the current conversation into an
-  implementation plan. The developer corrects the feature's definition and approves the
-  experiments before any code is read, agents research the code and measure every
-  assumption about outside data, the
-  developer confirms the design and its models, and then the build is planned. Use before
-  writing any code for a feature, or when asked to "plan this", "write a plan", or "plan
-  the feature".
+  implementation plan an executor can finish in one pass. Defines the feature at a high
+  level, researches the code, then settles the requirements and the design with the developer
+  before the build is planned. Use before writing any code for a feature, or when asked to
+  "plan this", "write a plan", or "plan the feature".
 argument-hint: "[a ticket key or URL, a feature description, or empty to plan from the conversation]"
 ---
 
@@ -16,425 +14,228 @@ argument-hint: "[a ticket key or URL, a feature description, or empty to plan fr
 
 ## Feature: $ARGUMENTS
 
-**Write no code here.**
+We do not write code here. The output is a plan in the parts of `references/plan-template.md`.
+An executor with no memory of this conversation builds the feature from it on the first try.
 
-- The output is a plan in the parts of `references/plan-template.md`: the Definition, the
-  Contract, the Build, and the Research its agents are briefed from
-- The developer confirms the Definition and the Contract before the Build is written
-- An executor with no memory of this conversation must be able to finish the Build on the
-  first try
+**Inherit, don't re-decide**
 
-## Step 1: Define
+- Quote each decision the input and its linked documents already made, with its `path:line`
+- Ask the developer before breaking one. Never diverge quietly
 
-**Read the input**
+## Step 1: Understand the feature
 
-- For a ticket (a key like `ABC-123`, or an issue URL), **fetch it first** with the
-  project's tracker tool
-- Read its summary, acceptance criteria, and context
-- Follow its links up to the parent epic and any architecture document, and inherit their
-  decisions
-- When `$ARGUMENTS` is empty or points at the conversation, take the feature from this
-  session
+**Resolve the input**
 
-**Write the feature back to the developer, before you open any code**
+- A ticket (a key like `ABC-123`, or an issue URL): fetch it with the project's tracker tool
+- Read its summary, acceptance criteria and context
+- Follow its links up to the epic and any architecture document
+- A description, or nothing: take the feature from it, or from this conversation
+
+**Write it back, before you open any code**
 
 ```
 Feature: <what it is, its purpose, and its value to users, in two sentences>
 As a <type of user>, I want to <action/goal>, so that <benefit/value>.
-Problem: <what is wrong or missing today, for whom, and what shows it>
+Problem: <what is missing or wrong today, and for whom>
+Will not do: <what the input rules out; or none>
+Settled: <each decision already made, quoted, with its path:line; or none>
+```
 
-Criteria:
-1. Given <the starting state>, when <the trigger>, then <what is observably true>.
-2. (assumed) Given <...>, when <...>, then <...>.
+- Use the input's words
+- Say what the user can do, not what the screen looks like
+- Done or out of scope not stated? Ask. At most three questions, all at once
+
+**Stop and wait for the developer's corrections.**
+
+## Step 2: Research
+
+**Set up**
+
+- Create the plan at `.agents/plans/<kebab-case-name>.md`
+- Write the agreed block into the template's Feature Description, User Story, Problem
+  Statement and Solution Statement
+
+**Fan out.** Send the agents in one message, each briefed with the plan's path and one item,
+nothing else:
+
+- one `codebase-scout-agent-v2`: `plan=<path>`. Always, however small the request looks. A
+  missed read costs the plan's correctness; an extra scout costs minutes
+- one `external-research-agent-v2` per outside topic: `plan=<path> topic=T<n>`. A topic is a
+  library, API or standard the feature uses in a way the code does not already call. Write it
+  into the plan first as a T line
+- No outside topic? Send the scout alone
+
+**Use the reports**
+
+Take each part of a report to where the plan uses it. Never redo what a report answers.
+
+- `Similar Features` → step 3's table. It must hold every similar feature, not only the one
+  traced
+- `Route` and `What Each Hop Lacks` → the design in step 4
+- `Files` → the Size check below
+- `Integration Points`, `Patterns to Copy`, `Callers`, `Traps`, `Beyond the Route` → the Build
+  part's tasks and tests
+- `Open Choices` → step 4's questions for the developer
+- `Not Covered` and `Unverified` → read it yourself, or send a second scout. An `experiment:`
+  line goes to step 3
+- Each topic's report → its T line, and the tasks that use that library or API
+- A topic skipped because the code already calls that exact API → name the `file:line`
+
+**Then read the code yourself**
+
+- Read what will change, and the parts of the similar features the plan copies
+- Check every `file:line` a report cites before you use it
+- Read the project's rules file: language, framework and versions, naming, error handling,
+  logging, and where tests live. No report covers it
+
+**Size**
+
+- About five files or fewer: no plan. Name the files and stop
+- More than about twenty: too big. Say where to cut it, and stop. `decompose-feature-v2` cuts it
+
+## Step 3: Requirements, examples and experiments
+
+Write back, from what research found:
+
+```
+Similar features:
+| The user can | <feature> | <feature> | This plan |
+|---|---|---|---|
+| <one action> | ✓ path:line | ✗ | ✓, or ✗ and why |
+
+Requirements:
+R1. <what the user can do, or what must hold, in plain words>
+R2. (assumed) <...>
 Examples:
 1. <a real case the developer can look up> → <what the user sees>
 2. <a real case where something goes wrong> → <what the user sees>
-Will not do: <what the feature will not do>
-Settled: <each decision the input or a document it links to already made, quoted, with its path:line; or none>
-Assuming: <each fact about data from outside the codebase the criteria rest on, or none>
-Experiments:
-E1. <the source, and how much of it is read>. Checks: <the assumptions it settles>. Cost: <free, a price, or the key it needs>.
+Experiments: <one line each; or none>
 ```
 
-**How to fill it in**
+**Similar features**
 
-- Write outcomes, with no file, function, or type name. You have read no code, so a name
-  here is a guess
-- Where the input states the story or a criterion, keep its words
-- Where the input is silent and the feature needs an answer, write your reading and mark it
-  `(assumed)`. Do not ask: the developer corrects a line faster than they answer a question
+- Start from the scout's `Similar Features` table: one row per thing a user or caller can do
+  in any similar feature
+- A ✗ in this plan's column is a question for the developer, or a line under Will not do
 
-**Criteria: write them for when things go wrong, not only when they go right**
+**Requirements**
 
-- For each input the feature reads, walk the usual cases: missing, empty, late, duplicated,
-  changed after it was first seen, removed, half-failed, run twice, run at the same time,
-  and at a boundary such as midnight, zero, or the maximum
-- Each case the feature must handle is a criterion
-- When unsure whether a case can happen, write it and mark it `(assumed)`: the developer cuts
-  a line faster than a reviewer finds one missing
-
-❌ `1. An owner can archive a record.` and nothing else.
-
-✅ `1. Given an owner viewing the list, when they archive a record, then the row leaves once
-the server confirms.` and `2. Given the server refuses, when they archive a record, then
-the row stays and the reason shows.`
+- Write them as a product manager would: what the user can do, and what must hold. One line
+  each, with no code and no Given/When/Then. The tasks carry the detailed criteria
+- Keep the input's words where it has them
+- No file or function names
+- Cover each input going wrong: missing, empty, late, duplicated, changed, removed,
+  half-failed, run twice, run at the same time, at a boundary
+- Unsure a case can happen? Write it, marked `(assumed)`
+- Input silent on what the user sees? Take it from the closest similar feature, and name it
 
 **Examples**
 
-- Write two or three cases from the real world, each with what the user sees
-- Each is a record, a day, or a name the developer can look up, never one you made up
-- One shows something going wrong
-- Each becomes a test on the record the experiment saves, and the developer judges the build
-  by running them
-- When you know no real case, name its kind and mark it `(assumed)`; the experiment on that
-  source picks a real one
+- Use real cases the developer can look up. Never made up
+- Include one where something goes wrong
+- The build's tests run on their records
 
-❌ `Example: a customer with three orders sees three orders.`
+**Experiments are rare**
 
-✅ `Example: the customer whose order 10482 was refunded in part on 3 March sees it once, at
-its net total, marked refunded.`
+- Run one only when nothing written down answers a question the design needs
+- The code, a spec, its types or the docs answer it? Read it there
+- Can't name what in the plan changes with the answer? It is not an experiment
+- One line each: the question, what changes with the answer, why nothing written answers
+  it, what it reads, its time and cost
 
-**Assuming**
+❌ `E1. Read every order the service returns, to check each one has a currency.`
 
-- List what the criteria take for granted about outside data: what it holds, what it calls
-  things, how often it arrives, and whether it can change or vanish
-- Step 2 checks each one
-- When unsure whether something is an assumption, list it
+✅ `Every order has a currency: the spec marks it required. Not measured.`
 
-**Experiments**
+**Stop and wait for the developer's corrections.** Then:
 
-- Number one experiment per source, E1, E2: what is read, how much of it, the assumptions it
-  settles, and what that costs
-- Every assumption is in one
-- Plan to read the whole set when it is free
-- The developer's corrections decide which run: one they leave in is approved, and one they
-  cut is declined and becomes a Prerequisite
+- Write the agreed requirements and examples into the plan's Definition
+- Send one `experiment-agent-v2` per approved experiment: `plan=<path> experiment=E<n>`
+- Write each result on its E line. Open the saved sample behind any count the design uses
+- A declined experiment becomes a check under `## Prerequisite`. The build waits for it
 
-**Stop and wait for the developer's corrections**
+## Step 4: Design
 
-- Research starts from the block as they agreed it
-- A line they agreed changes only in step 3
+**Think it through**
 
-## Step 2: Research and check
+- How does it fit the existing architecture and the similar features?
+- What are the dependencies, and the order of work?
+- What could go wrong, and what does each failure look like to the user?
+- What does each data source record? Where would the design infer from data being absent?
+- How will it be tested?
+- What does it cost in performance and security?
+- How maintainable is it?
 
-Agents do the bulk reading, so your context stays clear for the plan. Do not search the
-codebase yourself first.
+**Ask the developer when the options differ in**
 
-**Create the plan file first**
+- what the user sees or does. Sketch each option
+- which system does the work
+- how much gets built, and what is left out
+- a `Settled` line, or how the similar features work
+- data thrown away for good
 
-- Put it at `.agents/plans/<kebab-case-descriptive-name>.md`, creating the directory if
-  missing
-- From the template, write the Definition and the Research part and nothing else yet
-- The step 1 block goes in as agreed, word for word:
-  - `Feature` under Feature Description
-  - the story under User Story
-  - `Problem` under Problem Statement
-  - the criteria under ACCEPTANCE CRITERIA
-  - `Examples` under Examples
-  - `Will not do`, `Settled` and `Assuming` under Solution Statement
-- Each experiment goes under Experiments with its E number, marked `approved` or `declined`
-- Each outside topic (item 4) goes under Outside topics as T1, T2
+**Decide the rest yourself**
 
-**Brief each agent with the plan's path and one item**
+- Names, where code lives, helpers, how it is tested
+- Use what the code already does, even when new code would be shorter
 
-- Every agent reads the plan
-- A brief is the plan's path and one item, nothing else
-- Never paste the definition into a brief: retyped, it costs minutes per agent and staggers
-  their start
+**Show it, then stop**
 
-❌ A brief holding the whole definition: 12,000 characters, retyped for every agent.
-
-✅ `plan=.agents/plans/archive-records.md experiment=E2`
-
-**1. Send the research out, in one message**
-
-- One `codebase-scout-agent-v2`: `plan=<path>`. It is the only agent that reads the code.
-  Its map gives the route, the files that would change or be added, the patterns to copy,
-  the integration points, what calls the code that changes, and what it did not cover
-- One `experiment-agent-v2` per approved experiment: `plan=<path> experiment=E<n>`
-- One `external-research-agent-v2` per outside topic: `plan=<path> topic=T<n>`
-
-**2. Size the work**
-
-- Count from the scout's file counts. A mechanical change, such as a rename, counts as one
-  file
-- **About five or fewer:** it needs no plan. Say so, name the files and any decision step 3
-  would put to the developer, and stop. The developer says whether to build it
-- **More than about twenty:** it is too big for one plan, because the developer will not read
-  a change that size. Say so, say where you would cut it, and stop. The
-  `decompose-feature-v2` skill cuts it
-- **In between:** plan it
-
-**3. Read the code yourself, from the map**
-
-You hold the whole design, so the reading that decides it is yours.
-
-- Read each file the map marks `change`: the whole file when it is a few hundred lines or
-  shorter, otherwise each function that changes and its callers
-- Read the cited range of each `mirror`, `reuse`, `match` or `follow as a test`, and widen it
-  when it does not show what the map claims
-- When the map lists no callers for code that changes, Grep for them
-- When the map names an area it did not cover, read it, or send a second
-  `codebase-scout-agent-v2` to that area alone
-- Do not read every file the map lists in full
-
-**4. Outside topics, sent in item 1**
-
-List what the feature needs from outside the codebase, one topic each:
-
-- a library, an external API or service, or a standard or protocol
-- a technique the codebase has no example of
-- a function or option of an installed library that the codebase does not call yet
-
-Then:
-
-- Two needs from the same library are one topic
-- Past five topics, send first the five that decide a design choice
-- Write each in the plan as a T line, with:
-  - what the feature needs from the topic
-  - the topic, and for a library the version in use when you know it
-  - where the code uses it now, as `file:line`, when you know it
-  - the local documents that cover it, as paths
-- Skip a topic only when you can name the `file:line` where the codebase already calls the
-  exact API the feature will use
-- A skipped topic keeps its T line, marked `skipped` with that `file:line`
-- An installed library is not a reason to skip. When unsure, dispatch
-
-**5. Run what research raised**
-
-Send to an `experiment-agent-v2` each `experiment:` line from the reports, and any other
-question the design rests on that only running code answers:
-
-- what real data or a live service returns, such as a payload's shape, the names it uses,
-  how many rows a query reads, or whether a value can change or vanish
-- how long a query takes
-- what a library call does
-- how much memory a load needs
-
-Then:
-
-- Write it into the plan first as the next E line, then brief its number
-- Do not run these in this session: what you read here fills the context the agents keep
-  clear
-- **Free and needs no key or credentials:** mark it `approved` and send it now
-- **Costs money, or needs a key or credentials:** ask the developer now, before anything is
-  designed. Say what it settles, what it costs, and what it needs from them. On a yes, mark
-  it `approved` and send it
-- **Declined, or it cannot be taken:** mark it `declined`. It becomes a check in the plan's
-  `## Prerequisite` section, and the build waits for it
-
-Record each result:
-
-- Write it on its E line as `measured <how>, <n> of <total>, <when>`, from the agent's report
-- The agent saves what it measured under `.agents/samples/`
-- The task that writes the tests copies it to where the project keeps its test data, and the
-  feature's tests run on that copy, never on values you make up
-- Made-up values are your guesses, the code gets written from the same guesses, and the test
-  passes even when both are wrong
-- Never choose a design because it works without the fact. That design is a guess
-
-❌ `The service's spelling of one name is unknown, so names match on their last word.`
-
-✅ `The service's names need its key. Asked; the developer approved the free call, and names match the measured list exactly.`
-
-**Check every report before you use it**
-
-- Read the lines it cites with the read tool, and copy each `file:line` number from that
-  output
-- For an experiment report, open the saved sample behind each count the design turns on, and
-  check that count. A count you did not check is cited as the agent's, not as fact
-- Open only the outside references that decide a design choice. Record each one the plan
-  uses with why the executor needs it
-- Do not redo what a report covers
-- Settle every gap and `Unverified` item the plan depends on now
-- Read the file if you know which one. Otherwise resume the agent that reported it, because
-  a new agent starts with nothing
-- Never carry a gap into the plan as a risk or a hedge, and never cite an unverified item as
-  fact
-
-**Collect open questions as you go. Do not ask yet**
-
-- Note every ambiguity, unstated preference, and open architecture choice, and add each
-  report's `Open Choices`
-- Step 3 resolves them all
-- The exceptions block the research itself: an ambiguity such as a scout's report that shows
-  the feature could land in two different places, and a sample that costs money or needs a
-  key (item 5)
-
-**Research is done when**
-
-- every section of the Definition and the Contract can be filled from a report line, a file
-  you read, or a sample you took
-- every E line holds its result or is declined
-- every T line has its report or is skipped
-
-A section you would have to guess is a gap. Settle it now.
-
-## Step 3: Design, and confirm it with the developer
-
-**Never write the Build part while a decision is open.** The executor holds only the plan.
-
-**1. Choose the approach**
-
-- Pick one approach
-- Note why you rejected the others
-
-**2. Collect every open decision**
-
-- Each choice the approach leaves open
-- Each item under `Open Choices` in the agents' reports
-- Each choice research raised about scope, defaults, cost, where the feature appears, or how
-  often it runs
-- Each line you wrote in step 1 that research showed cannot hold, or costs far more than it
-  looked
-
-**3. Settle what is already answered**
-
-- Take the answer when the codebase, a standard, the request, or an earlier developer
-  decision gives one
-- Record where each answer came from
-- Never ask what you can check yourself
-- When your design differs from a `Settled` line (a decision the input already made, quoted
-  in step 1), put it under `Decide`, quoting the line, never under `Shown`
-
-**4. Sort the rest: ask, or decide yourself**
-
-Test each one: if the developer objected after the plan was written, what would it cost?
-
-It costs a replan, so ask the developer:
-
-- Which system, or which query, does the work
-- How much gets built, what it costs to run, and what is left out
-- What a user sees or does, where the options differ in more than wording
-- Data the feature throws away and cannot get back
-
-It costs an edit, or nothing, so decide it yourself:
-
-- A name, a field's meaning, a default, where code lives, a helper, how something is tested
-- When the service or the code already does the job, use it, even if new code that does the
-  same would be shorter
-- Otherwise take the option that adds least
-- Check that it works in the code
-- List each name and meaning a caller will see under `Shown:` in your reply, so the developer
-  can correct it there
-
-**5. Finish the Definition and write the Contract**
-
-- Write both into the plan, from the template
-- Keep the step 1 lines word for word; research only adds to them
-- Mark each decision the developer made as theirs
-- Write each decision still open as your recommendation, and list it under `Decide` in your
-  reply
-
-**6. Check that the Contract covers every criterion**
-
-Before you show it:
-
-- Each criterion has a place in the Contract: a line under What changes for the user, a
-  field, or a step on a diagram
-- Each criterion about something going wrong has a refused or failed branch on a diagram
-- Each outside value that can be missing, change, or vanish has a criterion
-- A criterion with no place is a gap: design it, or take it to the developer under `Changed`
-
-**7. Show it, then stop and wait**
-
-- Open the plan with the `annotate` skill, so its diagrams draw
-- Without `annotate`, print the Definition and the Contract
-- Then reply in one message:
+- Write the Definition and the Contract into the plan
+- Open it with the `annotate` skill if installed; otherwise print them
+- Reply:
 
 ```
-Holds: <each criterion that can be built as agreed, by number and opening words>
-Changed: <a criterion that cannot, or costs far more than it looked, and why; or none>
+Changed: <a requirement that cannot hold, or costs far more than it looked, and why; or none>
 Size: <N> files to change, <N> to add
-Shown: <each name or meaning a caller will see, and the one you rejected; or none>
 
 Decide, worst first (or "Decide: none"):
-
 1. <the question, in plain words>
    Recommend: <option>. <why, in one sentence>
-   Today: <what the user or a caller gets now, in the screen's words or the
-          response's names>
-   Options: <option>: <what it costs and what it rules out>
-            <option>: <what it costs and what it rules out>
-   Lost if wrong: <what a wrong answer costs once built>
+   Today: <what the user gets now>
+   Options: <each option, sketched where they differ on screen, with what it costs>
 ```
 
-- Rank the questions by "Lost if wrong"
-- Where options differ in a screen, a route, a signature or a model, sketch each one under
-  Options
-- Write the questions in this reply even when a multiple-choice prompt follows; the prompt
-  shows nothing but its own words
+- A question is settled only when the developer confirms it. An answer to another, or "go
+  on", does not settle it
+- Edit the plan to match each answer
+- End each reply with every question written as `Settled:` or `Open:`
 
-**8. Settle each question with the developer**
+## Step 5: Write the Build part
 
-- A question is settled only when the developer confirms it: they approve it, pick another
-  option, or settle it by talking it through
-- Never count one as settled because they answered another or said to go on
-- Read each answer, and each comment from the page, as new input too: it may raise a question,
-  contradict an assumption, or ask you something back
-- Check it against the code and answer it
-- Edit the plan to match, and show it again
-- Ask again only when it opens a new decision that would cost a replan
-- End each reply with every question, written out:
+- Fill the template's Build part, below the confirmed Definition and Contract
+- Under each task, write the acceptance criteria it makes true, each naming its requirement,
+  including each way an input the task reads can go wrong
+- Spec, not code: signatures, types, rules and edge cases, in pseudocode
+- Data models are the exception: real code, every field as it will be written
+- Point at code. Never copy it
+- State every decision
+- Run or match every command and quoted string in the plan
+- A change above the Build part is a new decision. Take it back through step 4
 
-```
-Settled: <the decision, as a fact>
-Open: <the question, in plain words>
-```
+**Check before you report**
 
-❌ `Settled: 1, 2. Open: 3.`
-
-✅ `Settled: archived records stay searchable, behind a filter.`
-
-**Done when** the developer has confirmed every question and the Contract, and said to write
-the plan. Every decision is then a fact in the plan, never an option list.
-
-## Step 4: Write the Build part
-
-Fill in the template's Build part, below the confirmed Definition and Contract. The Build
-part is the executor's.
-
-- Change nothing above it. A change you find you need there is a new decision, and it goes
-  back through step 3. Settled decisions stay settled
-- A fact the Build part rests on that the Definition or the Contract does not state, such as
-  an outside value, a timing, or anything a caller sees, goes back through step 3 as an
-  addition to them, with how it was checked. Never write it only into the Build part
-- **Spec, not code.** Give the contract (signatures, types, rules, edge cases) and a
-  pseudocode sketch
-- If the executor could paste it and be done, it is code, so write pseudocode instead
-- The exception is data models. A schema or type is its own spec, so write it as real code,
-  with each field exactly as it will be written
-- Use the codebase's own words in tasks
-- Every command, pattern and quoted string in the plan was run or matched while planning.
-  What you did not run, describe and leave to the executor
-
-**Done when** an executor with the repository open and no memory of this conversation could
-build the feature from the plan alone:
-
-- It can read the code, so point at code and never copy it
-- It does not know what you decided, so state every decision
-- If it would have to ask, the plan is not done
+- [ ] Every requirement is covered by some task's acceptance criteria, and every task names
+  the requirement it serves
+- [ ] Every `file:line` was checked
+- [ ] Every task lists its tests first, and the command that runs them
+- [ ] A test that proves something does not happen fails when it does
+- [ ] No task builds what a similar feature already has
+- [ ] An executor with the repository and no memory of this conversation could build it
 
 ## Report
 
-- the full path to the plan
-- each outside topic you did not research, and the `file:line` that made the skip safe
-- how many source files the plan expects to change, the key implementation risks, and a
-  confidence score out of 10 that execution succeeds on the first try
-- the next step: `/execute-plan-v2 <the plan's path>`. Or first, when the developer wants
-  to go over the plan, `/walk-plan-v2 <the plan's path>`, best in a new session
+- The full path to the plan
+- Each outside topic skipped, and the `file:line` that made the skip safe
+- How many source files change, the key risks, and a confidence score out of 10
+- The next step: `/execute-plan-v2 <path>`, or first `/walk-plan-v2 <path>` in a new session
 
 The build starts on the developer's word, never on yours.
 
-## Note
+## Depends on
 
-- Step 2 uses the `codebase-scout-agent-v2`, `external-research-agent-v2` and
-  `experiment-agent-v2` agents, all installed alongside this skill
-- If you dispatch and an agent is missing, say so and stop. Do not research in this session
-  instead: it fills the context the agents keep clear, and the plan looks finished when it
-  is not
-- The `deny-credential-reads` hook, when the project installs it, blocks every agent and this
-  session from reading a file that holds keys or passwords. The experiment agent's own rules
-  forbid it without the hook
-- Step 3 shows the plan with the `annotate` skill when it is installed. Without it, print the
-  plan's Definition and Contract instead. Its diagrams then show as their source
+- The `codebase-scout-agent-v2`, `external-research-agent-v2` and `experiment-agent-v2`
+  agents. One missing when you send it? Say so and stop. Doing its research here makes the
+  plan look finished when it is not
+- The `deny-credential-reads` hook, when installed, blocks reading files that hold keys
+- Without the `annotate` skill, the plan's diagrams show as their source

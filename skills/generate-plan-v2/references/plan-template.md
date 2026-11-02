@@ -12,8 +12,8 @@ from all of it.
   back. A brief is the plan's path and one number, so the plan is written before any agent
   starts.
 - Each section answers the question in its placeholder, and only that. A task never
-  restates another section. It points at it: a function or a model by name, a criterion by
-  number, a rule or a case by its opening words. A fact written twice gets changed in one
+  restates another section. It points at it: a function or a model by name, a requirement
+  by number, a rule or a case by its opening words. A fact written twice gets changed in one
   place.
 - Fill every section. One with nothing to report says `none`, because "no migration" is
   information. Never leave placeholder text under a heading. The executor will implement
@@ -44,13 +44,13 @@ As a <type of user>, I want to <action/goal>, so that <benefit/value>.
 
 <What is wrong or missing today, for whom, and what shows it?>
 
-## ACCEPTANCE CRITERIA
+## Requirements
 
-<What must observably be true when it is done, including when its inputs go wrong?
-Numbered, one each. Each is provable by a test or a named manual check. Tasks cite them by
-number (AC #3), so the numbering is fixed once written.>
+<What must the user be able to do, and what must hold, including when its inputs go wrong?
+In the words a product manager would write: one line each, with no code and no
+Given/When/Then. Tasks cite them by number (R3), so the numbering is fixed once written.>
 
-1. Given <the starting state>, when <the trigger>, then <what is observably true>.
+R1. <what the user can do, or what must hold>
 
 ## Examples
 
@@ -93,12 +93,12 @@ Also changes:
 
 Assuming:
 
-- <A fact about outside data the criteria rest on>. <`E<n>, measured <how>, <when>`, or the
-  Prerequisite that checks it.>
+- <A fact about outside data the requirements rest on>. <Where it is written down, `E<n>,
+  measured <how>, <when>`, or the Prerequisite that checks it.>
 
 # CONTRACT
 
-Size: <N> entry points, <N> tables, <N> functions, <N> models
+Size: <N> files to change, <N> to add
 
 ## What changes for the user
 
@@ -178,7 +178,7 @@ served   <the model's name, or `stored` and the table's>
 
 Also:
 
-1. <A rule the trace does not show and no criterion states, in one plain sentence with its
+1. <A rule the trace does not show and no requirement states, in one plain sentence with its
    case.>
 
 System footprint:
@@ -242,25 +242,6 @@ class <Name>:
     <new field>: <type>
 ```
 
-## EDGE CASES
-
-<Every condition the Contract's rules and refused branches have no room for,
-grouped under the unit that owns it. For each unit, take every input it reads and every
-state that input can be in: absent, loading, in-flight, empty, denied, failed with nothing
-held, and failed while an earlier value is still held. Write the line for each state, and
-for each two that can happen together. Add logic that throws or returns a wrong answer
-(boundary values, malformed input), and every case where two rules apply at once, with the
-rule that wins. For each value from outside the codebase, add how it changes over time: not
-set yet, late, corrected, renamed, removed.>
-
-`<unit>`:
-- <condition, and the input that reaches it>: <what must happen>
-
-**Every line here becomes a named test. So does every acceptance criterion, every Example,
-every rule in the Contract, each diagram in How it works end to end, each refused branch on it, and each
-Run again, Stops midway, and Shows it broke line. A test that walks none of these adds its
-case here first.**
-
 ## CONTEXT REFERENCES
 
 ### Relevant codebase files: READ THESE BEFORE IMPLEMENTING
@@ -317,14 +298,21 @@ changes:
 - **VERIFY**: run a check that changes no file. It builds nothing and writes no tests, so
   it has only a VALIDATE
 
-A CREATE, UPDATE, REMOVE, REFACTOR or MIRROR task has these three fields:
+A CREATE, UPDATE, REMOVE, REFACTOR or MIRROR task has these four fields:
 
+- **ACCEPTANCE CRITERIA**: what is observably true once this task is done, numbered by task
+  (AC 3.1). Each is `Given <the starting state>, when <the trigger>, then <what is
+  observably true>`, and names the requirement it serves (R2). Cover every state each input
+  this task's code reads can be in: absent, loading, in flight, empty, denied, failed with
+  nothing held, failed while an earlier value is held, and each two that can happen
+  together. Add boundary values, malformed input, two rules that apply at once with the one
+  that wins, and, for a value from outside the codebase, not set yet, late, corrected,
+  renamed, removed. A REFACTOR's is `none`: behaviour does not change.
 - **BUILDS**: the functions and models this task delivers, by name. Never restate them.
 - **TESTS**: the named tests this task writes before its code, each with what it proves:
-  a criterion (AC #3), an Example (Example 2), an EDGE CASES line, or a Contract rule, by
-  its opening words. A
-  task writes the tests for the code it adds, never a later task. `none` says why, as a
-  REFACTOR's does.
+  one of this task's criteria (AC 3.1), an Example (Example 2), or a Contract rule, by its
+  opening words. A task writes the tests for the code it adds, never a later task. `none`
+  says why, as a REFACTOR's does.
 - **VALIDATE**: `<executable command>` that runs this task's tests. For a task with nothing
   to test, such as a migration, it shows the result. A type check or a lint alone shows
   the code compiles, not that it works.
@@ -376,11 +364,12 @@ sections above have no home for.>
 
 ## Experiments
 
-<What did each experiment check, did the developer approve it, and what came back? One per
-source. Numbers are never reused or renumbered: a brief names one.>
+<What did each experiment check, did the developer approve it, and what came back? None is
+usual. Numbers are never reused or renumbered: a brief names one.>
 
-E1. <the source, how it is reached, and how much of it is read>. Checks: <the assumptions
-    it settles>. Cost: <free, a price, or the key it needs>. <approved | declined>
+E1. <the question>. Changes: <what in the plan changes with the answer>. Not written down
+    because: <why>. Reads: <what, and how much>. Cost: <time, and a price or a key, or
+    free>. <approved | declined>
     Result: <`measured <how>, <n> of <total>, <when>`. Sample: <path>. Or, when declined,
     the Prerequisite that checks it.>
 
@@ -397,9 +386,14 @@ T1. <the topic, and its version in use when known>. Needs: <what the feature nee
 
 ## Rules the skeleton cannot show
 
-- **ACCEPTANCE CRITERIA.** Each criterion about something going wrong names the input and
-  the state it is in: missing, empty, late, duplicated, changed, removed, half-failed, run
-  twice, run at the same time, or at a boundary.
+- **Requirements.** Each one about something going wrong names the input and the state it
+  is in, in plain words: missing, empty, late, duplicated, changed, removed, half-failed,
+  run twice, run at the same time, or at a boundary.
+- **A task's ACCEPTANCE CRITERIA.** Each names the input that reaches it. Where no real
+  input can, the criterion says so, and its test reaches it through a stand-in. Every
+  criterion, every Example, every rule in the Contract, each diagram in How it works end to
+  end, each refused branch on it, and each Run again, Stops midway and Shows it broke line
+  becomes a named test in some task.
 - **Solution Statement.** At most five decisions: the ones that set the shape, such as
   where the feature lives, which side does which work, or what the data is keyed by,
   whoever made them. A choice with no rejected alternative is not a decision. The rest go
@@ -417,9 +411,9 @@ T1. <the topic, and its version in use when known>. Needs: <what the feature nee
   returns it, marked `Existing, unchanged`. One that a new model nests appears only as a
   field's type. Say in a model's comment what it reuses from an existing model.
 - **A value from outside the codebase** answers, in its field's comment: where it comes
-  from; how it was checked, as `E<n>, measured <how>, <when>`, or the Prerequisite that checks
-  it; whether it can be missing; whether it can change after it is first seen; and whether
-  it can disappear. Each yes has a criterion.
+  from; how it was checked, as where it is written down, `E<n>, measured <how>, <when>`, or the
+  Prerequisite that checks it; whether it can be missing; whether it can change after it is first seen; and whether
+  it can disappear. Each yes has a requirement.
 - **How it works.** One diagram for each change in What changes for the user, such as a
   job that writes and a route that reads. Every function the plan adds or changes is a
   node on some diagram. An existing function called unchanged is a dashed `reused` node.
@@ -432,16 +426,15 @@ T1. <the topic, and its version in use when known>. Needs: <what the feature nee
 - **Traced on one value.** Pick a value whose numbers include a tie or a boundary when the
   feature has one. For a feature that writes, follow one record to its stored row. Two
   behaviours that share no step get a trace each. Number at most six rules under `Also`,
-  and never restate a criterion there. The rest go under `## EDGE CASES`.
+  and never restate a requirement there. The rest go into the acceptance criteria of the
+  task that builds them.
 - **System footprint.** A shared limit with no measured use says `not measured`, and
   becomes a Prerequisite when the feature adds a steady user of it.
-- **EDGE CASES.** Each line names the input that reaches it. Where no real input can, the
-  line says so, and its test reaches it through a stand-in.
 - **Functions.** A function appears once. Leave out test code: fixtures, doubles, and
   seeding helpers. List a style rule or a stored query the same way: its name and what it
   does.
-- **TESTS.** Before the plan is done, check that every test the EDGE CASES section calls
-  for is in some task's TESTS. One that is in none is built by nobody. A test of data from
+- **TESTS.** Before the plan is done, check that every acceptance criterion has a test in
+  its task's TESTS. A criterion with none is proven by nobody. A test of data from
   outside the codebase runs on the saved sample, which the task that writes the test copies
   from `.agents/samples/` to where the project keeps its test data. If nothing has been
   measured yet, the test waits for the Prerequisite that measures it.
