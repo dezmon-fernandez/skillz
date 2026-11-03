@@ -68,7 +68,7 @@ Report once, in one message, and leave the changes uncommitted. The developer ha
 
 - Open with what the product's user or a caller gets. The code name comes after.
 - Show it as it was and as it is now: a screenshot, or the name, signature or model.
-- Never cite a finding, task or criterion by number, or use a term the review coined.
+- Never cite a finding, task or test by number, or use a term the review coined.
 
 In this order:
 

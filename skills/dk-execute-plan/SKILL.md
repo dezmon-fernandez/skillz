@@ -18,8 +18,8 @@ Read the whole file before you touch any code. The plan is the contract. Carry i
 
 ### 1. Read the plan
 
-Read all of it: the Definition, the Contract, the tasks with their acceptance criteria and
-dependencies, and every validation command. Then read the files the plan lists as mandatory
+Read all of it: the Definition, the Contract, the tasks with their tests and dependencies,
+and every validation command. Then read the files the plan lists as mandatory
 reading. Do this before you write anything.
 
 Then confirm each condition under `## Prerequisite`, with the command or the state the plan
@@ -55,8 +55,8 @@ make it pass.
 ### 4. Final check
 
 - [ ] Every task completed, in order
-- [ ] Every clause of every acceptance criterion has a test you saw fail. A criterion that
-      names two states has two clauses
+- [ ] Every test the plan names exists, and you saw it fail. A test whose Output names two
+      states checks both
 - [ ] Every validation command passes
 - [ ] The code follows the conventions the plan cited
 - [ ] Docs updated where the plan called for it
@@ -71,14 +71,14 @@ accident.
 ```markdown
 # Implementation Report: <feature>
 
-**Plan**: <path>   **Branch**: <branch>   **Status**: COMPLETE (every AC proven) | PARTIAL
+**Plan**: <path>   **Branch**: <branch>   **Status**: COMPLETE (every test proven) | PARTIAL
 
 ## Summary
 <What was built, 2-4 sentences.>
 
-## Acceptance criteria
-1. ✅ <criterion>: <test file and test name, and the line you broke to see it fail; or the manual check performed>
-2. ⚠️ <criterion>: <the clause not proven, and why>
+## Tests
+1. ✅ "<the test's name>": <test file, and the line you broke to see it fail; or the manual check performed>
+2. ⚠️ "<the test's name>": <the part of its Output not proven, and why>
 
 ## Tasks completed
 - <task>: `path/to/file` (CREATE/UPDATE)

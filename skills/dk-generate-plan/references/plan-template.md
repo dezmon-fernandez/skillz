@@ -303,21 +303,41 @@ changes:
 - **VERIFY**: run a check that changes no file. It builds nothing and writes no tests, so
   it has only a VALIDATE
 
-A CREATE, UPDATE, REMOVE, REFACTOR or MIRROR task has these four fields:
+A CREATE, UPDATE, REMOVE, REFACTOR or MIRROR task has these three fields:
 
-- **ACCEPTANCE CRITERIA**: what is observably true once this task is done, numbered by task
-  (AC 3.1). Each is `Given <the starting state>, when <the trigger>, then <what is
-  observably true>`, and names the requirement it serves (R2). Cover every state each input
-  this task's code reads can be in: absent, loading, in flight, empty, denied, failed with
-  nothing held, failed while an earlier value is held, and each two that can happen
-  together. Add boundary values, malformed input, two rules that apply at once with the one
-  that wins, and, for a value from outside the codebase, not set yet, late, corrected,
-  renamed, removed. A REFACTOR's is `none`: behaviour does not change.
 - **BUILDS**: the functions and models this task delivers, by name. Never restate them.
-- **TESTS**: the named tests this task writes before its code, each with what it proves:
-  one of this task's criteria (AC 3.1), an Example (Example 2), or a Contract rule, by its
-  opening words. A task writes the tests for the code it adds, never a later task. `none`
-  says why, as a REFACTOR's does.
+- **TESTS**: what is observably true once this task is done, one test per behaviour, written
+  before its code. Each opens with the test's name in plain words and what it proves (R2,
+  Example 2, or a Contract rule by its opening words), then:
+
+  ```
+  - "<what it proves, as the test is named>" (R2)
+    - Input: <the data or state it starts from>
+    - Does: <the user action or call that drives it, such as a click or a key; only when one does>
+    - Output: <what comes back; for a screen, what the user sees>
+  ```
+
+  A screen's test is named for what the user does and sees, and its Output is what is on
+  screen, never a value inside the code such as a stored key or a state.
+
+  ❌ `"writes a price sort on a click"`, Output: `the sort is price-desc`.
+
+  ✅ `"clicking PRICE sorts the rows by price, highest first"`, Does: `click the PRICE
+  header`, Output: `the rows read 90, 40, 10, top to bottom`.
+
+  Cover every state each input this task's code reads can be in: absent, loading, in
+  flight, empty, denied, failed with nothing held, failed while an earlier value is held,
+  and each two that can happen together. Add boundary values, malformed input, two rules
+  that apply at once with the one that wins, and, for a value from outside the codebase,
+  not set yet, late, corrected, renamed, removed. A task writes the tests for the code it
+  adds, never a later task. A REFACTOR's is `none`: behaviour does not change, and the
+  existing tests, passing before and after, are its proof.
+
+  ❌ `AC 2.2 Given a cart with an expired coupon, then the total ignores it`, and the same
+  behaviour again as a test name.
+
+  ✅ `"ignores an expired coupon" (R4)`, Input: `a 40.00 cart, a coupon that expired
+  yesterday`, Output: `total 40.00, the coupon marked expired`.
 - **VALIDATE**: `<executable command>` that runs this task's tests. For a task with nothing
   to test, such as a migration, it shows the result. A type check or a lint alone shows
   the code compiles, not that it works.
@@ -394,11 +414,11 @@ T1. <the topic, and its version in use when known>. Needs: <what the feature nee
 - **Requirements.** Each one about something going wrong names the input and the state it
   is in, in plain words: missing, empty, late, duplicated, changed, removed, half-failed,
   run twice, run at the same time, or at a boundary.
-- **A task's ACCEPTANCE CRITERIA.** Each names the input that reaches it. Where no real
-  input can, the criterion says so, and its test reaches it through a stand-in. Every
-  criterion, every Example, every rule in the Contract, each diagram in How it works end to
-  end, each refused branch on it, and each Run again, Stops midway and Shows it broke line
-  becomes a named test in some task.
+- **A task's TESTS.** Each Input is one a real caller or user can send. Where none can,
+  the test says so and reaches it through a stand-in. Every requirement, every Example,
+  every rule in the Contract, each diagram in How it works end to end, each refused branch
+  on it, and each Run again, Stops midway and Shows it broke line becomes a named test in
+  some task.
 - **Solution Statement.** At most five decisions: the ones that set the shape, such as
   where the feature lives, which side does which work, or what the data is keyed by,
   whoever made them. A choice with no rejected alternative is not a decision. The rest go
@@ -431,15 +451,15 @@ T1. <the topic, and its version in use when known>. Needs: <what the feature nee
 - **Traced on one value.** Pick a value whose numbers include a tie or a boundary when the
   feature has one. For a feature that writes, follow one record to its stored row. Two
   behaviours that share no step get a trace each. Number at most six rules under `Also`,
-  and never restate a requirement there. The rest go into the acceptance criteria of the
-  task that builds them.
+  and never restate a requirement there. The rest go into the TESTS of the task that builds
+  them.
 - **System footprint.** A shared limit with no measured use says `not measured`, and
   becomes a Prerequisite when the feature adds a steady user of it.
 - **Functions.** A function appears once. Leave out test code: fixtures, doubles, and
   seeding helpers. List a style rule or a stored query the same way: its name and what it
   does.
-- **TESTS.** Before the plan is done, check that every acceptance criterion has a test in
-  its task's TESTS. A criterion with none is proven by nobody. A test of data from
+- **TESTS.** Before the plan is done, check that every requirement has a test in some
+  task's TESTS. A requirement with none is proven by nobody. A test of data from
   outside the codebase runs on the saved sample, which the task that writes the test copies
   from `.agents/samples/` to where the project keeps its test data. If nothing has been
   measured yet, the test waits for the Prerequisite that measures it.

@@ -121,7 +121,7 @@ Experiments: <one line each; or none>
 **Requirements**
 
 - Write them as a product manager would: what the user can do, and what must hold. One line
-  each, with no code and no Given/When/Then. The tasks carry the detailed criteria
+  each, with no code and no Given/When/Then. The tasks' tests carry the detail
 - Keep the input's words where it has them
 - No file or function names
 - Cover each input going wrong: missing, empty, late, duplicated, changed, removed,
@@ -204,8 +204,9 @@ Decide, worst first (or "Decide: none"):
 ## Step 5: Write the Build part
 
 - Fill the template's Build part, below the confirmed Definition and Contract
-- Under each task, write the acceptance criteria it makes true, each naming its requirement,
-  including each way an input the task reads can go wrong
+- Under each task, write the tests it makes pass, each with its Input, Does and Output and
+  the requirement it proves, including each way an input the task reads can go wrong. A
+  screen's test is what the user does and sees
 - Spec, not code: signatures, types, rules and edge cases, in pseudocode
 - Data models are the exception: real code, every field as it will be written
 - Point at code. Never copy it
@@ -215,8 +216,8 @@ Decide, worst first (or "Decide: none"):
 
 **Check before you report**
 
-- [ ] Every requirement is covered by some task's acceptance criteria, and every task names
-  the requirement it serves
+- [ ] Every requirement is proven by some task's tests, and every test names the
+  requirement it proves
 - [ ] Every `file:line` was checked
 - [ ] Every task lists its tests first, and the command that runs them
 - [ ] A test that proves something does not happen fails when it does
