@@ -274,14 +274,19 @@ take from it: naming, error handling, logging.>
 
 ## STEP-BY-STEP TASKS
 
-Execute in order, top to bottom. Number the tasks. Each one is atomic, names the files it
-changes, and leaves every test passing. The executor should never have to go discover a
-file.
+Execute in order, top to bottom. Each task is atomic, names the files it changes, and
+leaves every test passing. The executor should never have to go discover a file.
 
 Group tasks under `### Phase N: <the work it delivers>` headers when the work spans
 stages. A phase assumes the one above it is done. Where that is not the true dependency,
 add a `**Depends on:**` or an `**Independent of:**` line under its header. Independent
 phases can run in parallel.
+
+Each task is a numbered heading one level below its phase: `#### Task N: <ACTION> <what
+changes>`, or `### Task N:` when there are no phases. A task ends at the next heading.
+
+- ❌ `**Task 3. UPDATE the route.**`
+- ✅ `#### Task 3: UPDATE the route to return the new field`
 
 Start each task title with an action keyword, then add short bullets saying exactly what
 changes:
