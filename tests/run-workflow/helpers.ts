@@ -11,7 +11,7 @@ import { afterEach, beforeEach } from 'node:test';
 import { readDecisions } from '../../skills/run-workflow/scripts/answers.ts';
 import { loadConfig } from '../../skills/run-workflow/scripts/config.ts';
 import { loadRun } from '../../skills/run-workflow/scripts/run-folder.ts';
-import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import { makeRun } from '../../skills/run-workflow/scripts/start.ts';
 import type { Decision, Run } from '../../skills/run-workflow/scripts/types.ts';
 
@@ -80,22 +80,22 @@ export const goodConfig = (): Record<string, unknown> => ({
 // The terminal's four steps, as Example 1 runs them.
 export function fourSteps(over: Record<string, unknown> = {}): Record<string, any> {
   return {
-    name: 'cleared', workdir: 'work', runs: 'runs',
+    name: 'first-run', workdir: 'work', runs: 'runs',
     steps: [
       { id: 'prime', label: 'Prime', prompt: '/prime', session: 'new' },
       { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'continue',
         done: { file: '.agents/plans/*.md', says: '/dk-execute-plan' },
-        answers: ['take all reccs', 'approve lets go', 'take all reccs'] },
+        answers: ['take the recommendations', 'approved, go ahead', 'take the recommendations'] },
       { id: 'build', label: 'Build', prompt: '/dk-execute-plan {file:plan}', session: 'new',
         done: { file: '.agents/execution-reports/*.md' } },
       { id: 'review', label: 'Review', prompt: '/dk-review-code {file:build}', session: 'new',
-        done: { file: '.agents/code-reviews/*.md' }, answerIfAsks: true, answers: ['take all reccs'] }
+        done: { file: '.agents/code-reviews/*.md' }, answerIfAsks: true, answers: ['take the recommendations'] }
     ],
     ...over
   };
 }
 
-export function newRun(config: Record<string, unknown>, request = 'Drop the bar.', slotIn = false): string {
+export function newRun(config: Record<string, unknown>, request = 'Drop the progress bar.', slotIn = false): string {
   const { config: loaded, problems } = loadConfig(writeConfig(config));
   assert.deepEqual(problems, []);
   return makeRun(loaded, join(box.root, 'config.json'), request, slotIn);

@@ -4,10 +4,9 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { problemsOf } from './config.ts';
-import { driverAlive, loadRun, register, saveRun } from './run-folder.ts';
-import { seams } from './seams.ts';
-import { stdout } from './shell.ts';
+import { missingTools, problemsOf } from './config.ts';
+import { seams } from './launch.ts';
+import { driverAlive, loadRun, register, saveRun, stdout } from './run-folder.ts';
 import type { Config, Run, StepConfig } from './types.ts';
 
 // A checkout with no commit yet is measured against git's empty tree, so every file reads as added.
@@ -41,6 +40,11 @@ export async function resume(runDir: string): Promise<number> {
   const dir = resolve(runDir);
   if (!loadRun(dir)) {
     seams.print(`no run in ${dir}: run.json is missing or unreadable`);
+    return 1;
+  }
+  const missing = missingTools();
+  if (missing.length) {
+    missing.forEach((t) => seams.print(`missing: ${t}`));
     return 1;
   }
   register(dir);

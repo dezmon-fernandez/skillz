@@ -36,7 +36,7 @@ export function usePage(): void {
 }
 
 // A registered run of a prime and a plan step, its plan step at the state given.
-export function aRun(name = 'cleared', plan: Partial<Run['steps'][number]> = {}, started?: string): string {
+export function aRun(name = 'first-run', plan: Partial<Run['steps'][number]> = {}, started?: string): string {
   const workdir = join(root, `work-${name}`);
   mkdirSync(workdir, { recursive: true });
   spawnSync('git', ['-C', workdir, 'init', '-q']);
@@ -45,19 +45,19 @@ export function aRun(name = 'cleared', plan: Partial<Run['steps'][number]> = {},
     name, workdir, runs: join(root, 'runs'),
     steps: [
       { id: 'prime', label: 'Prime', prompt: '/prime', session: 'new' },
-      { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'continue', answers: ['take all reccs'] },
+      { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'continue', answers: ['take the recommendations'] },
       { id: 'build', label: 'Build', prompt: '/dk-execute-plan {file:plan}', session: 'new' }
     ]
   }));
   const { config, problems } = loadConfig(configPath);
   assert.deepEqual(problems, []);
-  const dir = makeRun(config, configPath, 'Drop the bar.', false);
+  const dir = makeRun(config, configPath, 'Drop the progress bar.', false);
   register(dir);
   const run = loadRun(dir)!;
   if (started) run.started = started;
   run.steps[0] = { ...run.steps[0], state: 'done', session: 's', turns: [turn(0, '01-prime-0', '/prime')] };
   run.steps[1] = { ...run.steps[1], state: 'waiting', reason: 'slotted in: its reply asks', session: 's',
-    turns: [turn(0, '02-plan-0', '/dk-generate-plan Drop the bar.')], ...plan };
+    turns: [turn(0, '02-plan-0', '/dk-generate-plan Drop the progress bar.')], ...plan };
   run.state = 'waiting';
   saveRun(dir, run);
   writeFileSync(join(dir, 'steps', '02-plan-0.jsonl'), readFileSync(join(samples, 'plan-asks.jsonl')));

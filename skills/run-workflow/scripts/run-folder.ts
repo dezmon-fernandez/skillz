@@ -2,13 +2,21 @@
 //
 // A run folder is <config's runs>/<YYYYMMDD-HHMMSS>-<name>/. The driver is the only writer of run.json; the page
 // writes only answers/ and mode (answers.ts). The registry is one absolute folder per line in home()/runs, appended
-// by `run.ts start`.
+// by `run.ts start`. Also the one helper every script shares, stdout(), for a short command's output.
 
+import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { stdout } from './shell.ts';
 import type { Run } from './types.ts';
+
+// A short command's stdout, or "" when it cannot run. Its exit status is not an error here: git diff exits 1 on a
+// diff.
+export function stdout(cmd: string[], cwd?: string): string {
+  const out = spawnSync(cmd[0], cmd.slice(1), { cwd, encoding: 'utf8', timeout: 5000, maxBuffer: 64 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'ignore'] });
+  return out.error ? '' : out.stdout || '';
+}
 
 export function home(): string {
   return process.env.RUN_WORKFLOW_HOME || join(homedir(), '.local', 'state', 'run-workflow');

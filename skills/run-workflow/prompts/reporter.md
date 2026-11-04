@@ -1,8 +1,3 @@
----
-name: run-workflow-reporter
-description: Writes the one closing report of a workflow run from its logs, decisions and notes, evidence on every claim. Started only by run-workflow's driver when the run ends, with a brief naming the run.
----
-
 # Report on one run
 
 The run has ended: every step finished, or the developer ended it early, or a step failed and the run was ended
@@ -33,6 +28,7 @@ The report in this shape, filled in, and nothing else. Every claim is followed b
 ## The run in numbers
 
 | Step | Turns | Time | Cost | Answered for you | Asked you | Decided alone |
+|---|---|---|---|---|---|---|
 
 ## Questions and answers
 

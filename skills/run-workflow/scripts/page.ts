@@ -88,7 +88,7 @@ export function handleAnswer(form: URLSearchParams): [number, string] {
   const kind = form.get('kind') as Answer['kind'];
   const allowed = step.state === 'failed' ? ['retry', 'end'] : ['reply', 'go-on', 'end'];
   if (!allowed.includes(kind)) return [400, `a ${step.state} step takes ${allowed.join(', ')}`];
-  // A textarea submits CRLF line breaks; nothing else in the text is changed (R6).
+  // A textarea submits CRLF line breaks; nothing else in the text is changed.
   const text = kind === 'reply' ? (form.get('text') ?? '').replace(/\r\n/g, '\n') : '';
   if (kind === 'reply' && !text.trim()) return [400, 'empty answer'];
   if (!saveAnswer(dir, step.id, turn, { kind, text, at: new Date().toISOString() })) return [409, 'already sent'];

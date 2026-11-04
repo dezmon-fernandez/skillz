@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings \"${CLAUDE_PROJECT_DIR}/.claude/hooks/deny-git-writes.ts\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

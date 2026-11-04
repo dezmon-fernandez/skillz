@@ -1,6 +1,5 @@
 // A build step's agents and the plan tasks they work on, for the page: each agent's calls and model, and which of
-// the plan's tasks are done, under way and still to do. Rewritten from the eval rounds' status page, behaviour
-// unchanged unless a comment says otherwise.
+// the plan's tasks are done, under way and still to do.
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';

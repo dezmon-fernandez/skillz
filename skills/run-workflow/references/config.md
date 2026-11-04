@@ -49,8 +49,8 @@ Relative paths are relative to the config file's folder.
 | `env` | | `{}` | Plain variables for every step, such as its dev server's port. Not for keys: put those in `envFile`. |
 | `ports` | | `[]` | Ports a step's dev server may hold. Once a turn is over and quiet for `watchdogWait`, what listens on them is stopped, so the step can end. |
 | `watchdogWait` | | `120` | Seconds a turn must be over, with nothing written, before its ports are freed. |
-| `deny` | | `[]` | Permission rules for `--disallowedTools`, such as reads of other checkouts. Git writes are blocked by the runner's own hook whatever this holds. |
-| `settings` | | `{}` | Merged into every step's `--settings`, such as the project's own hooks. The runner puts its git hook first and adds each step's `modelSettings`. |
+| `deny` | | `[]` | Permission rules for `--disallowedTools`, such as reads of other checkouts. Every git command but a read is blocked by the `deny-git-writes` hook whatever this holds. |
+| `settings` | | `{}` | Merged into every step's `--settings`, such as the project's own hooks. The runner puts the `deny-git-writes` hook first and adds each step's `modelSettings`. |
 | `note` | | none | Appended to a new session's system prompt. A continued session ignores it. |
 | `model` | | `claude-opus-5-5` | The model every step runs. |
 | `permissionMode` | | `bypassPermissions` | Every turn's `--permission-mode`. |
@@ -73,7 +73,9 @@ Relative paths are relative to the config file's folder.
 | `answerIfAsks` | | `false` | Also answer when the step has finished but its reply asks something, such as a review that asks after it writes. Slotted in, a reply that asks always waits. |
 
 A skill stops for an answer by ending its turn, and nothing in the stream tells that stop from a finish. So a step
-that stops to ask needs a `done` the runner can check, and an `answers` list as long as its stops.
+that stops to ask needs a `done` the runner can check, and an `answers` list as long as its stops. When unsure how
+many times it stops, give one answer too many: an answer left over is never sent, and one too few leaves the step
+waiting on the page.
 
 - ❌ `"done": {}` on a plan step that stops three times: its first stop reads as finished, and the next step runs on no plan.
 - ✅ `"done": {"file": "<where the plan is written>", "says": "<the words its last reply names>"}` with an `answers` list as long as its stops.

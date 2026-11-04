@@ -21,7 +21,7 @@ describe('the driver in speed mode', () => {
     await drive(dir);
     const run = loadRun(dir)!;
     const plan = run.steps[1];
-    assert.deepEqual(plan.turns.map((t) => t.prompt), ['/dk-generate-plan Drop the bar.', 'take all reccs', 'approve lets go', 'take all reccs']);
+    assert.deepEqual(plan.turns.map((t) => t.prompt), ['/dk-generate-plan Drop the progress bar.', 'take the recommendations', 'approved, go ahead', 'take the recommendations']);
     assert.deepEqual(plan.turns.map((t) => t.by), ['config', 'config', 'config', 'config']);
     assert.equal(plan.state, 'done');
     assert.equal(plan.file, '.agents/plans/p.md');
@@ -41,7 +41,7 @@ describe('the driver in speed mode', () => {
     const run = loadRun(dir)!;
     assert.equal(run.steps[0].turns.length, 1);
     assert.equal(run.steps[0].state, 'done');
-    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the bar.');
+    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the progress bar.');
     const found = decisions(dir).filter((d) => d.step === 'prime');
     assert.equal(found.filter((d) => d.kind === 'decided-alone').length, 3);
     assert.equal(answered(found).length, 0);
@@ -91,7 +91,7 @@ describe('the driver in speed mode', () => {
       seconds: ended ? 1 : null, exit: ended ? 0 : null, sessionCost: ended ? 0.5 : null, cost: ended ? 0.5 : null, watched: 'noted' as const
     });
     run.steps[0] = { ...run.steps[0], state: 'running', session: 'd927ec62-fc1a-4016-9073-c3b01d3098bc',
-      turns: [turn(0, '/dk-generate-plan Drop the bar.', true), turn(1, 'take all reccs', false)] };
+      turns: [turn(0, '/dk-generate-plan Drop the progress bar.', true), turn(1, 'take the recommendations', false)] };
     saveRun(dir, run);
     writeFileSync(join(dir, 'steps/01-plan-0.jsonl'), sampleLines('plan-asks.jsonl').join('\n') + '\n');
     writeFileSync(join(dir, 'steps/01-plan-1.jsonl'), logLines.join('\n') + '\n');
@@ -103,8 +103,8 @@ describe('the driver in speed mode', () => {
     const ended = stoppedAt(sampleLines('plan-asks.jsonl'));
     await drive(ended);
     let run = loadRun(ended)!;
-    assert.deepEqual(stepCalls().map((c) => promptOf(c.args)), ['approve lets go']);
-    assert.deepEqual(run.steps[0].turns.map((t) => t.prompt), ['/dk-generate-plan Drop the bar.', 'take all reccs', 'approve lets go']);
+    assert.deepEqual(stepCalls().map((c) => promptOf(c.args)), ['approved, go ahead']);
+    assert.deepEqual(run.steps[0].turns.map((t) => t.prompt), ['/dk-generate-plan Drop the progress bar.', 'take the recommendations', 'approved, go ahead']);
     assert.equal(run.steps[0].turns[1].exit, 0);
     assert.equal(run.steps[0].turns[1].sessionCost, 0.9228997999999999);
     assert.equal(run.steps[0].state, 'done');
@@ -124,7 +124,7 @@ describe('the driver in speed mode', () => {
     const dir = stoppedAt([]);
     // The turn's claude, still working after its driver was killed, writing to the turn's log.
     const fd = openSync(join(dir, 'steps/01-plan-1.jsonl'), 'w');
-    const orphan = spawn(join(bin, 'claude'), ['-p', '--', 'take all reccs'], { cwd: box.workdir, stdio: ['ignore', fd, fd] });
+    const orphan = spawn(join(bin, 'claude'), ['-p', '--', 'take the recommendations'], { cwd: box.workdir, stdio: ['ignore', fd, fd] });
     const gone = exitOf(orphan);
     closeSync(fd);
     const run = loadRun(dir)!;
@@ -138,7 +138,7 @@ describe('the driver in speed mode', () => {
     }
     const after = loadRun(dir)!;
     assert.equal(after.steps[0].turns[1].exit, 0);
-    assert.deepEqual(stepCalls().map((c) => promptOf(c.args)), ['take all reccs', 'approve lets go']);
+    assert.deepEqual(stepCalls().map((c) => promptOf(c.args)), ['take the recommendations', 'approved, go ahead']);
     assert.equal(after.steps[0].state, 'done');
   });
 

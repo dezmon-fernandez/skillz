@@ -6,7 +6,7 @@ import { after, beforeEach, describe, it } from 'node:test';
 import { readAnswer, readMode, saveAnswer, writeMode } from '../../skills/run-workflow/scripts/answers.ts';
 import { drive } from '../../skills/run-workflow/scripts/driver.ts';
 import { loadRun } from '../../skills/run-workflow/scripts/run-folder.ts';
-import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import {
   PRIMED, answered, decisions, exampleOne, flag, fourSteps, init, newRun, promptOf, removeTemps, reply, result, stepCalls,
   temp, until, useBox
@@ -41,7 +41,7 @@ describe('the driver in speed mode', () => {
     const found = decisions(dir);
     const sent = answered(found);
     assert.deepEqual(sent.map((d) => [d.step, d.turn, d.answer, d.by]),
-      [['plan', 0, 'take all reccs', 'config'], ['plan', 1, 'approve lets go', 'config'], ['plan', 2, 'take all reccs', 'config']]);
+      [['plan', 0, 'take the recommendations', 'config'], ['plan', 1, 'approved, go ahead', 'config'], ['plan', 2, 'take the recommendations', 'config']]);
     assert.equal(sent[0].questions.length, 3);
     assert.equal(sent[0].questions[0][0], 'Where does the percent reach full colour?');
     assert.equal(sent[0].evidence, 'steps/02-plan-0.jsonl:30');
@@ -55,7 +55,7 @@ describe('the driver in speed mode', () => {
     reply(2, 'plan-asks.jsonl');
     reply(3, PRIMED);
     const step = { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'new',
-      done: { file: '.agents/plans/*.md' }, answers: ['take all reccs'] };
+      done: { file: '.agents/plans/*.md' }, answers: ['take the recommendations'] };
     const dir = newRun(fourSteps({ steps: [step] }));
     await drive(dir);
     const run = loadRun(dir)!;
@@ -79,7 +79,7 @@ describe('the developer slots in', () => {
     reply(1, 'plan-asks.jsonl');
     reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     reply(3, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });
-    const dir = newRun(planOnly(), 'Drop the bar.', true);
+    const dir = newRun(planOnly(), 'Drop the progress bar.', true);
     const running = drive(dir);
     const waiting = await until(dir, (r) => r.steps[0].state === 'waiting');
     assert.match(waiting.steps[0].reason, /^slotted in/);
@@ -100,7 +100,7 @@ describe('the developer slots in', () => {
     reply(1, 'requirements-stop.jsonl');
     const config = fourSteps();
     config.steps = config.steps.slice(0, 2);
-    const dir = newRun(config, 'Drop the bar.', true);
+    const dir = newRun(config, 'Drop the progress bar.', true);
     seams.patience = 400;
     await drive(dir);
     const run = loadRun(dir)!;
@@ -114,7 +114,7 @@ describe('the developer slots in', () => {
     reply(1, 'plan-asks.jsonl');
     reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     reply(3, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });
-    const dir = newRun(planOnly(), 'Drop the bar.', true);
+    const dir = newRun(planOnly(), 'Drop the progress bar.', true);
     const running = drive(dir);
     await until(dir, (r) => r.steps[0].state === 'waiting');
     await new Promise((done) => setTimeout(done, 300));
@@ -125,9 +125,9 @@ describe('the developer slots in', () => {
     assert.ok(Date.now() - t0 < 4000);
     await running;
     const run = loadRun(dir)!;
-    assert.equal(run.steps[0].turns[1].prompt, 'take all reccs');
+    assert.equal(run.steps[0].turns[1].prompt, 'take the recommendations');
     assert.equal(run.steps[0].turns[1].by, 'config');
-    assert.deepEqual(answered(decisions(dir)).map((d) => [d.answer, d.by]), [['take all reccs', 'config']]);
+    assert.deepEqual(answered(decisions(dir)).map((d) => [d.answer, d.by]), [['take the recommendations', 'config']]);
   });
 
   it('switching to speed moves on a finished step that slot-in held', async () => {
@@ -135,7 +135,7 @@ describe('the developer slots in', () => {
     reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     const config = fourSteps();
     config.steps = config.steps.slice(0, 2);
-    const dir = newRun(config, 'Drop the bar.', true);
+    const dir = newRun(config, 'Drop the progress bar.', true);
     const running = drive(dir);
     await until(dir, (r) => r.steps[0].state === 'waiting');
     writeMode(dir, 'speed');
@@ -144,7 +144,7 @@ describe('the developer slots in', () => {
     assert.equal(run.steps[0].state, 'done');
     assert.equal(run.steps[0].reason, '');
     assert.equal(run.steps[0].turns.length, 1);
-    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the bar.');
+    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the progress bar.');
     assert.equal(answered(decisions(dir)).length, 0);
   });
 
@@ -153,7 +153,7 @@ describe('the developer slots in', () => {
     reply(2, 'plan-asks.jsonl');
     reply(3, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     reply(4, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });
-    const dir = newRun(planOnly(), 'Drop the bar.', true);
+    const dir = newRun(planOnly(), 'Drop the progress bar.', true);
     const running = drive(dir);
     await until(dir, (r) => r.steps[0].state === 'waiting');
     saveAnswer(dir, 'plan', 0, { kind: 'reply', text: 'mine', at: new Date().toISOString() });
@@ -162,13 +162,13 @@ describe('the developer slots in', () => {
     await running;
     // Its second stop takes the config's second answer, not its first.
     assert.deepEqual(loadRun(dir)!.steps[0].turns.map((t) => [t.prompt, t.by]),
-      [['/dk-generate-plan Drop the bar.', 'config'], ['mine', 'developer'], ['approve lets go', 'config']]);
+      [['/dk-generate-plan Drop the progress bar.', 'config'], ['mine', 'developer'], ['approved, go ahead', 'config']]);
   });
 
   it('go on moves to the next step', async () => {
     reply(1, 'plan-asks.jsonl', { touch: ['.agents/plans/p.md'] });
     reply(2, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });
-    const dir = newRun(planOnly(), 'Drop the bar.', true);
+    const dir = newRun(planOnly(), 'Drop the progress bar.', true);
     const running = drive(dir);
     await until(dir, (r) => r.steps[0].state === 'waiting');
     saveAnswer(dir, 'plan', 0, { kind: 'go-on', text: '', at: new Date().toISOString() });
@@ -214,6 +214,6 @@ describe('the developer slots in', () => {
     saveAnswer(dir, 'plan', 1, { kind: 'retry', text: '', at: new Date().toISOString() });
     await running;
     assert.deepEqual(loadRun(dir)!.steps[0].turns.map((t) => t.prompt),
-      ['/dk-generate-plan Drop the bar.', 'take all reccs', 'take all reccs', 'approve lets go']);
+      ['/dk-generate-plan Drop the progress bar.', 'take the recommendations', 'take the recommendations', 'approved, go ahead']);
   });
 });

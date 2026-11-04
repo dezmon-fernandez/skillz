@@ -30,7 +30,7 @@ describe("the run's view", () => {
   it('a step waiting on you shows its reply and an answer box', async () => {
     const html = under(await live(aRun()), 'plan');
     assert.match(visible(html), /waiting on you/);
-    for (const q of ['Where does the percent reach full colour?', 'What happens to 50–59%?', 'Does the under side ramp the same?']) {
+    for (const q of ['Where does the percent reach full colour?', 'What happens to 50–59%?', 'Does the overdue column ramp the same?']) {
       assert.ok(visible(html).includes(q), q);
     }
     assert.match(html, /<textarea[^>]*name="text"/);
@@ -45,20 +45,20 @@ describe("the run's view", () => {
   });
 
   it('a speed answer shows as answered for you, with its questions', async () => {
-    const dir = aRun('cleared', { state: 'done', reason: '', turns: [turn(0, '02-plan-0', 'p'), turn(1, '02-plan-1', 'take all reccs')] });
+    const dir = aRun('first-run', { state: 'done', reason: '', turns: [turn(0, '02-plan-0', 'p'), turn(1, '02-plan-1', 'take the recommendations')] });
     appendDecision(dir, {
-      at: '2026-11-04T10:02:00Z', step: 'plan', turn: 0, kind: 'answered', answer: 'take all reccs', by: 'config',
+      at: '2026-11-04T10:02:00Z', step: 'plan', turn: 0, kind: 'answered', answer: 'take the recommendations', by: 'config',
       questions: [['Where does the percent reach full colour?', ''], ['What happens to 50–59%?', '']], evidence: 'steps/02-plan-0.jsonl:30'
     });
     const html = visible(under(await live(dir), 'plan'));
-    assert.ok(html.includes('answered for you: take all reccs'), html);
+    assert.ok(html.includes('answered for you: take the recommendations'), html);
     assert.ok(html.includes('Where does the percent reach full colour?'));
     assert.doesNotMatch(under(await live(dir), 'plan'), /<textarea/);
     assert.ok(!visible(under(await live(dir), 'prime')).includes('answered for you'));
   });
 
   it('a failed step shows its last words and Retry and End run', async () => {
-    const dir = aRun('cleared', { state: 'failed', reason: 'turn 0 exited with 1: Error: the model is overloaded' });
+    const dir = aRun('first-run', { state: 'failed', reason: 'turn 0 exited with 1: Error: the model is overloaded' });
     const html = under(await live(dir), 'plan');
     assert.match(visible(html), /failed/);
     assert.ok(visible(html).includes('turn 0 exited with 1: Error: the model is overloaded'));
@@ -68,21 +68,21 @@ describe("the run's view", () => {
   });
 
   it('the run list holds every registered run, newest first', async () => {
-    const older = aRun('story-e', {}, '2026-11-03T10:13:00Z');
-    aRun('cleared', {}, '2026-11-04T22:04:00Z');
+    const older = aRun('second-run', {}, '2026-11-03T10:13:00Z');
+    aRun('first-run', {}, '2026-11-04T22:04:00Z');
     const [, html] = await get('/');
     const list = html.slice(html.indexOf('class="runs"'), html.indexOf('</nav>'));
-    assert.ok(list.indexOf('cleared') >= 0 && list.indexOf('story-e') > list.indexOf('cleared'), list);
+    assert.ok(list.indexOf('first-run') >= 0 && list.indexOf('second-run') > list.indexOf('first-run'), list);
     // The newest is the one open, unless another is asked for.
-    assert.match(visible(html), /cleared · started/);
-    assert.match(visible((await get(`/?run=${idOf(older)}`))[1]), /story-e · started/);
+    assert.match(visible(html), /first-run · started/);
+    assert.match(visible((await get(`/?run=${idOf(older)}`))[1]), /second-run · started/);
   });
 
   it('notes and the report show once written', async () => {
     const dir = aRun();
     assert.match(visible(await live(dir)), /Report: not yet/);
     writeFileSync(join(dir, 'notes.md'), "## 02 Plan, turn 0\n\n- Quote the request's numbers. Evidence: steps/02-plan-0.jsonl:30\n\n");
-    writeFileSync(join(dir, 'report.md'), '# cleared: done\n\n## What went well\n\n- **Fast**: 3 turns\n');
+    writeFileSync(join(dir, 'report.md'), '# first-run: done\n\n## What went well\n\n- **Fast**: 3 turns\n');
     const html = await live(dir);
     assert.ok(visible(under(html, 'plan')).includes("Quote the request's numbers. Evidence: steps/02-plan-0.jsonl:30"));
     assert.ok(html.includes(`href="/report?run=${idOf(dir)}"`));
@@ -136,7 +136,7 @@ describe("the run's view", () => {
   });
 
   it('a freed port shows under its step', async () => {
-    const dir = aRun('cleared', { state: 'done' });
+    const dir = aRun('first-run', { state: 'done' });
     const run = loadRun(dir)!;
     run.steps[2] = { ...run.steps[2], state: 'running', turns: [turn(0, '03-build-0', '/dk-execute-plan p.md')] };
     saveRun(dir, run);
@@ -147,14 +147,14 @@ describe("the run's view", () => {
   });
 
   it('a denied call shows as an alert', async () => {
-    const dir = aRun('cleared', { state: 'done' });
+    const dir = aRun('first-run', { state: 'done' });
     const run = loadRun(dir)!;
     run.steps[2] = { ...run.steps[2], state: 'done', turns: [turn(0, '03-build-0', '/dk-execute-plan p.md')] };
     saveRun(dir, run);
     writeFileSync(join(dir, 'steps', '03-build-0.jsonl'), readFileSync(join(samples, 'denied.jsonl')));
     const html = visible(under(await live(dir), 'build'));
     assert.ok(html.includes('Denied'), html);
-    assert.ok(html.includes('Bash Unstage, format, show remaining biome issues'));
+    assert.ok(html.includes('Bash Unstage, format, show remaining lint issues'));
   });
 
   it('an answer saved but not yet sent leaves the step showing waiting', async () => {

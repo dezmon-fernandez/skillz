@@ -4,7 +4,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { initOf, lines, resultOf, transcriptPath, turnOver } from '../../skills/run-workflow/scripts/log.ts';
-import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import { raw, removeTemps, sample, temp, variant } from './helpers.ts';
 
 after(removeTemps);

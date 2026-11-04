@@ -9,8 +9,8 @@ import { join } from 'node:path';
 import { finished } from './finished.ts';
 import { lines, replyOf } from './log.ts';
 import { decided, questions } from './questions.ts';
+import { seams } from './launch.ts';
 import { saveRun, writeAtomic } from './run-folder.ts';
-import { seams } from './seams.ts';
 import type { Action, Answer, By, Config, Decision, Mode, Run, Step, StepConfig, Turn } from './types.ts';
 
 // ── The mode ──

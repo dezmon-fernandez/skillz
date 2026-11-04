@@ -17,7 +17,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { problemsOf } from './config.ts';
 import { drive } from './driver.ts';
-import { seams } from './seams.ts';
+import { seams } from './launch.ts';
 import { resume, start } from './start.ts';
 
 const USAGE = 'usage: run.ts check <config> | start <config> --request-file <file> [--slot-in] | resume <run> | drive <run>';

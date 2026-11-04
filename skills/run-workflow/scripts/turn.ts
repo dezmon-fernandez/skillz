@@ -6,13 +6,14 @@ import { closeSync, openSync, readFileSync, readdirSync, writeFileSync } from 'n
 import { constants as osConstants } from 'node:os';
 import { join } from 'node:path';
 import { initOf, lines, resultOf, subagentsOf, transcriptPath } from './log.ts';
+import { gitHook } from './config.ts';
+import { seams } from './launch.ts';
 import { saveRun } from './run-folder.ts';
-import { seams } from './seams.ts';
 import { Ticker, watchdog } from './watchdog.ts';
 import type { By, Config, Event, Run, StepConfig, Turn } from './types.ts';
 
 // The env file is sourced here, by bash, with its own output thrown away, then the command replaces bash, so the
-// CLI's exit status is the turn's. Node never reads the file (R20).
+// CLI's exit status is the turn's. Node never reads the file, so no key in it reaches the run's folder.
 const ENV_LINE = 'if [ -n "$RUN_WORKFLOW_ENV_FILE" ]; then set -a; . "$RUN_WORKFLOW_ENV_FILE" >/dev/null 2>&1; set +a; fi; exec "$@"';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -90,7 +91,7 @@ export function recordEnd(run: Run, i: number, turn: Turn, events: Event[], exit
   turn.seconds = seconds ?? (typeof result?.duration_ms === 'number' ? result.duration_ms / 1000 : null);
   turn.exit = exit;
   turn.sessionCost = typeof result?.total_cost_usd === 'number' ? result.total_cost_usd : null;
-  // A resumed session's total_cost_usd is the whole conversation's; the turn's own is the difference (R18).
+  // A resumed session's total_cost_usd is the whole conversation's; the turn's own is the difference.
   turn.cost = turn.sessionCost === null ? null : turn.sessionCost - totalBefore(run, i, turn);
 }
 
@@ -134,11 +135,15 @@ export function buildCommand(config: Config, step: StepConfig, prompt: string, s
 export function settingsFor(config: Config, step: StepConfig): Record<string, unknown> {
   const own = (config.settings ?? {}) as Record<string, any>;
   const hooks = (own.hooks ?? {}) as Record<string, any>;
-  const gitHook = {
+  // start and resume stop when the hook is missing; one removed while a run is going fails the driver here, so no
+  // step ever runs without it.
+  const script = gitHook();
+  if (!script) throw new Error('the deny-git-writes hook is missing; see run.ts check');
+  const guard = {
     matcher: 'Bash',
-    hooks: [{ type: 'command', command: `"${process.execPath}" --no-warnings "${join(import.meta.dirname, 'deny-git-writes.ts')}"`, timeout: 10 }]
+    hooks: [{ type: 'command', command: `"${process.execPath}" --no-warnings "${script}"`, timeout: 10 }]
   };
-  const out: Record<string, unknown> = { ...own, hooks: { ...hooks, PreToolUse: [gitHook, ...(hooks.PreToolUse ?? [])] } };
+  const out: Record<string, unknown> = { ...own, hooks: { ...hooks, PreToolUse: [guard, ...(hooks.PreToolUse ?? [])] } };
   if (step.effort) {
     out.modelSettings = Object.fromEntries(Object.entries(step.effort).map(([model, level]) => [model, { effortLevel: level }]));
   }
@@ -148,7 +153,7 @@ export function settingsFor(config: Config, step: StepConfig): Record<string, un
 export function stepEnv(config: Config, runDir: string): Record<string, string> {
   const env: Record<string, string> = { ...(process.env as Record<string, string>), ...(config.env ?? {}) };
   env.PATH = [...(config.path ?? []), process.env.PATH ?? ''].join(':');
-  // Each run gets its own temp folder: in an eval round two sessions shared /tmp and one found another's script.
+  // Each run gets its own temp folder: two runs sharing /tmp can find and run each other's scripts.
   env.TMPDIR = join(runDir, 'tmp');
   // `claude -p` stops a background agent still running 10 minutes after the last turn; 0 waits for it.
   env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS = '0';

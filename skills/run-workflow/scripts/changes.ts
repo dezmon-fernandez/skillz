@@ -1,10 +1,9 @@
 // What the run changed in its workdir since the commit it started from: the files it touched and the tests it
-// added, for the page. Rewritten from the eval rounds' status page, behaviour unchanged unless a comment says
-// otherwise.
+// added, for the page.
 
 import { readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { stdout } from './shell.ts';
+import { stdout } from './run-folder.ts';
 import type { FileRow, TestFile } from './types.ts';
 
 const PY_TEST = /^\s*(?:async\s+)?def\s+(test_\w+)\s*\(/;

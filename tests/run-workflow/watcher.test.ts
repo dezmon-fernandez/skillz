@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 import { saveAnswer } from '../../skills/run-workflow/scripts/answers.ts';
 import { drive } from '../../skills/run-workflow/scripts/driver.ts';
 import { loadRun } from '../../skills/run-workflow/scripts/run-folder.ts';
-import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import { PRIMED, box, calls, flag, fourSteps, init, newRun, promptOf, reply, result, until, useBox } from './helpers.ts';
 
 useBox();
@@ -58,11 +58,11 @@ describe('the watcher and the reporter', () => {
   it('the report is written after every watcher, from a read-only session', async () => {
     writeFileSync(join(box.fake, 'watch.jsonl'), said(NOTE));
     writeFileSync(join(box.fake, 'watch.sleep'), '0.5');
-    writeFileSync(join(box.fake, 'report.jsonl'), said('# cleared: done\n\n## The run in numbers\n'));
+    writeFileSync(join(box.fake, 'report.jsonl'), said('# first-run: done\n\n## The run in numbers\n'));
     const dir = primeAndPlan();
     await drive(dir);
     const run = loadRun(dir)!;
-    assert.equal(readFileSync(join(dir, 'report.md'), 'utf8'), '# cleared: done\n\n## The run in numbers\n');
+    assert.equal(readFileSync(join(dir, 'report.md'), 'utf8'), '# first-run: done\n\n## The run in numbers\n');
     assert.equal(run.report, 'written');
     assert.equal(reportCalls().length, 1);
     const args = reportCalls()[0].args;
@@ -79,14 +79,14 @@ describe('the watcher and the reporter', () => {
 
   it('a run ended early gets its report', async () => {
     seams.patience = 8000;
-    writeFileSync(join(box.fake, 'report.jsonl'), said('# cleared: ended early\n'));
+    writeFileSync(join(box.fake, 'report.jsonl'), said('# first-run: ended early\n'));
     reply(1, 'plan-asks.jsonl');
-    const dir = newRun(fourSteps({ steps: [{ ...fourSteps().steps[1], session: 'new' }] }), 'Drop the bar.', true);
+    const dir = newRun(fourSteps({ steps: [{ ...fourSteps().steps[1], session: 'new' }] }), 'Drop the progress bar.', true);
     const running = drive(dir);
     await until(dir, (r) => r.steps[0].state === 'waiting');
     saveAnswer(dir, 'plan', 0, { kind: 'end', text: '', at: new Date().toISOString() });
     await running;
-    assert.equal(readFileSync(join(dir, 'report.md'), 'utf8'), '# cleared: ended early\n');
+    assert.equal(readFileSync(join(dir, 'report.md'), 'utf8'), '# first-run: ended early\n');
     assert.equal(loadRun(dir)!.state, 'ended');
     assert.equal(reportCalls().length, 1);
   });

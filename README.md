@@ -22,7 +22,7 @@ into a project and adapted there.
 | `clear-writing` | Rebuild one skill, agent, or document so it scans: each part in the form its job takes (a procedure as one command per line, a comparison as a table, a decision as question, recommendation and cost, a briefing as one short paragraph), a bold label per part, a blank line between groups. Every rule is kept; a procedure's sentences become commands. Shown side by side with the original before it is kept. Invoked by hand. |
 | `annotate` | Open a local page where the developer comments line by line on markdown you are writing together, or on the outputs of a skill-creator eval iteration, then act on the comments when they press Send. Highlights code blocks and draws `mermaid` blocks from a bundled copy of Mermaid (MIT). Needs Node 22.18 or later. |
 | `eval-skill` | Test a change to a skill, with the developer as the judge: set up worktrees to try the new version on real work, or run the old and new versions on the same pinned request, each sandboxed so it cannot read other folders, and put the results side by side on one page. The developer comments on what needs to change, and every comment comes back as one list of edits to approve or reject. Uses `skill-creator` when installed. Invoked by hand, because every run spends the account's usage. |
-| `run-workflow` | Run a project's workflow end to end from its own config: each step (prime, plan, build, review, or whatever the config names) in its own `claude -p` session, the config's answers sent at each stop in speed mode, or the developer answering on the page in slot-in mode. Every decision is logged, a read-only watcher notes what to improve after every turn, and a read-only reporter writes one report at the end. One status page per Mac at `127.0.0.1:8790` lists every run. A hook blocks every git write the steps try. Needs Node 22.18 or later, `claude`, `git`, `caffeinate` and `lsof`. Invoked by hand, because every step spends the account's usage. |
+| `run-workflow` | Run a project's workflow end to end from its own config: each step (prime, plan, build, review, or whatever the config names) in its own `claude -p` session, the config's answers sent at each stop in speed mode, or the developer answering on the page in slot-in mode. Every decision is logged, a read-only watcher notes what to improve after every turn, and a read-only reporter writes one report at the end. One status page per Mac at `127.0.0.1:8790` lists every run. Every step runs with the `deny-git-writes` hook, which lets only read-only git through. Needs that hook installed as `.claude/hooks/deny-git-writes.ts`, Node 22.18 or later, `claude`, `git`, `caffeinate` and `lsof`. Its tests live in `tests/run-workflow/`, so their stand-in `claude` never ships. Invoked by hand, because every step spends the account's usage. |
 
 `handover` and `prime` are a pair: `handover` writes the file, `prime` consumes and deletes it.
 
@@ -73,6 +73,7 @@ siblings, so the two sets never mix. Once one set wins, the other is deleted.
 |------|----------|
 | `require-read-before-edit` | Denies shell commands that modify files (redirects, in-place `sed`/`perl`, `tee`), so every change goes through Edit/Write and their required prior Read. Writes to `/dev/null` and `/tmp` pass. |
 | `deny-credential-reads` | Denies reading a file that holds keys or passwords (`.env` and `.env.<name>`, `.envrc`, `.netrc`, package-registry and cloud credentials, private keys) through Read, Grep, or a shell command. `.env.example` and public keys pass. Fails open when `jq` is missing. Needs `jq`. |
+| `deny-git-writes` | Lets only git commands it knows to be read-only run (diff, log, show, status, ls-files, rev-parse, merge-base, and the reading forms of branch, tag, remote, config and stash) and blocks every other git command, however it is written: a write, a remote call, an alias, an external command such as `git lfs push`, or one it does not recognize. `run-workflow` passes it to every step; a project can also install it on its own. Needs Node 22.18 or later. |
 
 ## Install into a project
 
@@ -104,13 +105,20 @@ skills/
   <name>/
     SKILL.md          # frontmatter (name, description) + instructions
     references/       # optional long-form reference material
+    scripts/          # optional scripts the skill runs
+    prompts/          # optional system prompts its scripts pass to `claude -p`; not agents
 agents/
   <name>.md           # frontmatter (name, description, tools) + the agent's prompt
 hooks/
   <name>/
-    <name>.js         # the hook script
+    <name>.js         # the hook script (.js, .sh or .ts)
     hooks.json        # the fragment to merge into .claude/settings.json
+tests/
+  <name>/             # tests for a skill's scripts, with any stand-ins; never copied into a project
 ```
+
+A subagent is a file in `agents/`, which Claude Code loads by name. A skill that starts its own `claude -p`
+sessions keeps their instructions in its `prompts/`, so they are never mistaken for, or loaded as, agents.
 
 `AGENTS.md` says how these must be built. Add a new one by creating its directory and
 adding a row to the table above.

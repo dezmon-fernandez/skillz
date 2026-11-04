@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { drive } from '../../skills/run-workflow/scripts/driver.ts';
 import { loadRun } from '../../skills/run-workflow/scripts/run-folder.ts';
-import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import { Ticker } from '../../skills/run-workflow/scripts/watchdog.ts';
 import { PRIMED, box, flag, fourSteps, init, newRun, promptOf, reply, result, stepCalls, useBox } from './helpers.ts';
 
@@ -20,7 +20,7 @@ describe('a turn', () => {
     reply(4, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     const request = 'a “quoted” line\nand a second line $& $1 \\n \'single\'';
     // An answer that starts with "-" is a bulleted list to the developer and an option to the CLI.
-    const answers = ['take "all" reccs\n  — and “this”', '- Top out at 90%\n- Keep 50–59% strong', '--help'];
+    const answers = ['take "the" recommendations\n  — and “this”', '- Top out at 90%\n- Keep 50–59% strong', '--help'];
     const step = { ...fourSteps().steps[1], session: 'new', answers };
     const dir = newRun(fourSteps({ steps: [step] }), request);
     await drive(dir);

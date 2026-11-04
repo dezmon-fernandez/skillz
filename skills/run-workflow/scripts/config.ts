@@ -5,7 +5,8 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
-import { stdout } from './shell.ts';
+import { seams } from './launch.ts';
+import { stdout } from './run-folder.ts';
 import type { Config } from './types.ts';
 
 const MIN_NODE = [22, 18];
@@ -29,8 +30,16 @@ export function problemsOf(configPath: string): { config: Config; problems: stri
   return { config, problems: [...missingTools().map((t) => `missing: ${t}`), ...problems] };
 }
 
+// The deny-git-writes hook script every step runs with, or null when it is not installed. Its places are in
+// seams.gitHookPlaces: beside this skill's own folder, as a project installs it (<.claude>/hooks/) or as the repo
+// that ships it keeps it (hooks/deny-git-writes/).
+export function gitHook(): string | null {
+  return seams.gitHookPlaces.find((p) => existsSync(p)) ?? null;
+}
+
 export function missingTools(): string[] {
   const out: string[] = [];
+  if (!gitHook()) out.push(`the deny-git-writes hook: copy it to ${seams.gitHookPlaces[0]}`);
   for (const tool of ['claude', 'git', 'caffeinate', 'lsof']) {
     const found = spawnSync('/bin/sh', ['-c', 'command -v "$1"', 'sh', tool], { encoding: 'utf8', env: process.env });
     if (found.status !== 0 || !found.stdout.trim()) out.push(tool);

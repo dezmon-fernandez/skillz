@@ -1,6 +1,5 @@
 // What a step's reply asks the developer, and what it says it decided alone. The driver logs both in
-// decisions.jsonl; the page shows them under the turn. Rewritten from the eval rounds' status page, behaviour
-// unchanged unless a comment says otherwise.
+// decisions.jsonl; the page shows them under the turn.
 
 const NUMBERED = /^\s{0,3}(\d+)[.)]\s+(.*)/;
 const ITEM = /^(\s*)([-*•]|\d+[.)])\s+(.*)/;

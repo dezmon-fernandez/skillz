@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { readMode } from '../../skills/run-workflow/scripts/answers.ts';
 import { loadRun, registered } from '../../skills/run-workflow/scripts/run-folder.ts';
-import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import { resume, start } from '../../skills/run-workflow/scripts/start.ts';
 import { box, git, goodConfig, saved, useBox, writeConfig } from './helpers.ts';
 
@@ -56,6 +56,19 @@ describe('start', () => {
     assert.equal(existsSync(box.runs), false);
     assert.deepEqual(box.spawned, []);
     assert.deepEqual(registered(), []);
+  });
+
+  it('a missing git hook stops start and resume, and names where it goes', async () => {
+    await start(writeConfig(goodConfig()), requestFile(), false);
+    const dir = runFolder();
+    box.spawned = [];
+    box.printed = [];
+    seams.gitHookPlaces = [join(box.root, 'no-hooks', 'deny-git-writes.ts')];
+    assert.equal(await start(writeConfig(goodConfig()), requestFile(), false), 1);
+    assert.ok(box.printed.includes(`missing: the deny-git-writes hook: copy it to ${seams.gitHookPlaces[0]}`), JSON.stringify(box.printed));
+    assert.equal(readdirSync(box.runs).length, 1);
+    assert.equal(await resume(dir), 1);
+    assert.deepEqual(box.spawned, []);
   });
 
   it('a held port is named, and the run still starts', async () => {

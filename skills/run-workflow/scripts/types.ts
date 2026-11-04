@@ -105,7 +105,7 @@ export interface Decision {
   evidence: string;
 }
 
-// What the driver does next. `ended`: the step's last turn ended while no driver watched it (R17), so it is judged
+// What the driver does next. `ended`: the step's last turn ended while no driver watched it, so it is judged
 // as if it had just ended. `running`: that turn's process, left by a stopped driver, is still working; the driver
 // waits for it.
 export interface Action {

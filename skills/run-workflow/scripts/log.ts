@@ -5,7 +5,7 @@
 import { readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
-import { seams } from './seams.ts';
+import { seams } from './launch.ts';
 import type { Event } from './types.ts';
 
 type Parsed = { key: string; size: number; out: Event[] };
@@ -122,7 +122,7 @@ export function transcriptPath(workdir: string, session: string): string {
 }
 
 // The last message line, not the last line: the CLI writes bookkeeping lines (last-prompt, cost-state) after the
-// turn's stop_hook_summary. Reading the last line made the eval rounds' watchdog miss a hung review for 11 min.
+// turn's stop_hook_summary. Reading the last line misses a turn that is over, and a hung step is never freed.
 export function turnOver(transcript: Event[]): boolean {
   for (let i = transcript.length - 1; i >= 0; i--) {
     const e = transcript[i];

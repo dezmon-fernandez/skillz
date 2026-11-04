@@ -55,10 +55,10 @@ describe('the page server', () => {
   });
 
   it('an answer to a step that is not waiting is refused with its state', async () => {
-    const running = aRun('cleared', { state: 'running' });
+    const running = aRun('first-run', { state: 'running' });
     assert.deepEqual((await post('/answer', { run: idOf(running), step: 'plan', turn: '0', kind: 'reply', text: 'x' })).slice(0, 2),
       [409, 'plan is not waiting at turn 0; it is running']);
-    const later = aRun('later', { turns: [turn(0, '02-plan-0', 'p'), turn(1, '02-plan-1', 'take all reccs')] });
+    const later = aRun('later', { turns: [turn(0, '02-plan-0', 'p'), turn(1, '02-plan-1', 'take the recommendations')] });
     const [status, text] = await post('/answer', { run: idOf(later), step: 'plan', turn: '0', kind: 'reply', text: 'x' });
     assert.equal(status, 409);
     assert.equal(text, 'plan is not waiting at turn 0; it is waiting at turn 1');
@@ -67,7 +67,7 @@ describe('the page server', () => {
   });
 
   it('a failed step takes only Retry or End', async () => {
-    const dir = aRun('cleared', { state: 'failed', reason: 'turn 0 exited with 1' });
+    const dir = aRun('first-run', { state: 'failed', reason: 'turn 0 exited with 1' });
     assert.equal((await post('/answer', { run: idOf(dir), step: 'plan', turn: '0', kind: 'reply', text: 'x' }))[0], 400);
     assert.equal((await post('/answer', { run: idOf(dir), step: 'plan', turn: '0', kind: 'retry', text: '' }))[0], 303);
     assert.equal(readAnswer(dir, 'plan', 0)!.kind, 'retry');
@@ -108,14 +108,14 @@ describe('the page server', () => {
     for (const path of ['/', `/live?run=${idOf(dir)}`, `/report?run=${idOf(dir)}`, '/whoami']) {
       const [status, body] = await as(`rebound.example:${port}`, path);
       assert.equal(status, 403, path);
-      assert.doesNotMatch(body, /Drop the bar|Plan/, path);
+      assert.doesNotMatch(body, /Drop the progress bar|Plan/, path);
     }
     assert.equal((await as(`localhost:${port}`, `/live?run=${idOf(dir)}`))[0], 200);
   });
 
   it('reading the page changes nothing', async () => {
     const dir = aRun();
-    writeFileSync(join(dir, 'report.md'), '# cleared: done\n');
+    writeFileSync(join(dir, 'report.md'), '# first-run: done\n');
     const snapshot = () => {
       const out: Record<string, number> = {};
       const walk = (d: string) => {

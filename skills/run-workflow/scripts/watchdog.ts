@@ -1,19 +1,19 @@
 // The dev-server watchdog. `claude -p` waits for every background shell before it exits, and a dev server a step
 // left running never exits, so the step hangs. Once the turn is over in its transcript and nothing there, agents
-// included, has been written for the config's wait, what listens on the config's ports is stopped (R15).
+// included, has been written for the config's wait, what listens on the config's ports is stopped.
 //
 // The Ticker that calls it each interval also measures time the Mac spent asleep, which a step's time leaves out.
 
 import { appendFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { initOf, lines, subagentsOf, transcriptPath, turnOver } from './log.ts';
-import { stdout } from './shell.ts';
+import { stdout } from './run-folder.ts';
 import type { Config, Run, Turn } from './types.ts';
 
 const waitWords = (seconds: number) => (seconds < 60 ? `${seconds} s` : `${+(seconds / 60).toFixed(1)} min`);
 
 // One per turn, stopped when the turn ends. A gap between ticks longer than the interval plus 2 s is time the
-// process was suspended, which on a Mac means asleep (R16).
+// process was suspended, which on a Mac means asleep.
 export class Ticker {
   asleep: number;
   #timer: ReturnType<typeof setInterval>;

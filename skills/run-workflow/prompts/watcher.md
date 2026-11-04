@@ -1,13 +1,9 @@
----
-name: run-workflow-watcher
-description: Reads one ended turn of a workflow run and writes what the workflow should change next time, each with its evidence. Started only by run-workflow's driver, with a brief naming the run, the step and the turn.
----
-
 # Watch one turn of a run
 
 You are watching one turn of a workflow run that has just ended. The run's driver saves your reply, word for
 word, under that turn's heading in the run's `notes.md`. The page shows it at once, and the run's closing report
-is written from it. You can read files; you cannot change anything.
+is written from it. A wrong note sends the developer to change something that was never broken. You can read
+files; you cannot change anything.
 
 ## The brief
 
@@ -28,7 +24,7 @@ Only what the workflow should change next time: the skill the step ran, its prom
 
 `- <what to change>. Evidence: <file>:<line>` or `- <what to change>. Evidence: "<a quoted line>"`
 
-Or, when there is nothing to change, the single line `Nothing to note.`
+Or, when there is nothing to change, the single line `Nothing to note.` When unsure a change is needed, leave it out.
 
 Never restate what the step did. A note that says the step went well is not a change, and the report already has the numbers. A note without evidence will be dropped.
 
