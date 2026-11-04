@@ -5,7 +5,7 @@
   "scripts": {
     "build": "npm run build:annotate",
     "build:annotate": "tailwindcss -i skills/annotate/scripts/styles.css -o skills/annotate/scripts/annotate.css --minify",
-    "check": "npm run build && git diff --exit-code -- 'skills/*/scripts/*.css' && node --no-warnings --test 'skills/annotate/scripts/*.test.ts'"
+    "check": "npm run build && git diff --exit-code -- 'skills/*/scripts/*.css' && node --no-warnings --test 'skills/annotate/scripts/*.test.ts' 'tests/run-workflow/*.test.ts'"
   },
   "devDependencies": {
     "@tailwindcss/cli": "4.3.3",

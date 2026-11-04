@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>run-workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+{{{css}}}</style></head><body><main>
+<div id="live" data-run="{{run}}">{{{live}}}</div>
+</main><script>
+const live = document.getElementById('live');
+const run = live.dataset.run;
+const chosen = new Map();
+live.addEventListener('toggle', e => { if (e.target.dataset && e.target.dataset.key) chosen.set(e.target.dataset.key, e.target.open); }, true);
+async function tick() {
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed && live.contains(sel.anchorNode)) return;
+  const active = document.activeElement;
+  if (active && live.contains(active) && active.matches('textarea, input, button')) return;
+  const typed = new Map([...live.querySelectorAll('textarea[data-key]')].filter(t => t.value).map(t => [t.dataset.key, t.value]));
+  try {
+    const r = await fetch('/live?run=' + encodeURIComponent(run), {cache: 'no-store'});
+    if (!r.ok) return;
+    live.innerHTML = await r.text();
+    live.querySelectorAll('details[data-key]').forEach(d => { if (chosen.has(d.dataset.key)) d.open = chosen.get(d.dataset.key); });
+    live.querySelectorAll('textarea[data-key]').forEach(t => { if (typed.has(t.dataset.key)) t.value = typed.get(t.dataset.key); });
+  } catch (e) {}
+}
+if (run) setInterval(tick, 5000);
+</script></body></html>

@@ -1,0 +1,150 @@
+<!-- The pieces the status page is drawn from. render.ts and markdown.ts fill them with template.ts, which says what
+     {{key}}, {{{key}}}, {{#key}} and {{^key}} mean. Each line of a part is trimmed and the lines are joined with
+     nothing: break a line only between tags or placeholders. -->
+
+<!-- part: updated -->
+<div class="updated">Updated {{time}}</div>
+
+<!-- part: problem -->
+<p class="problem">{{text}}</p>
+
+<!-- part: runs: the list of every run on this Mac -->
+<nav aria-label="Runs on this Mac"><ul class="runs">{{{items}}}{{^items}}<li class="empty">No run has been started on this Mac yet.</li>{{/items}}</ul></nav>
+
+<!-- part: run-item -->
+<li class="run-item{{#current}} current{{/current}}"><a href="/?run={{param}}"{{#current}} aria-current="page"{{/current}}>{{name}}</a> <span>{{started}} {{state}}</span></li>
+
+<!-- part: run-item-unreadable -->
+<li class="run-item bad"><a href="/?run={{param}}">{{id}}</a> <span>could not read {{file}}</span></li>
+
+<!-- part: run: the open run, under the run list -->
+<header class="run-head"><h1>{{name}} · started {{started}} · {{time}} · {{cost}}</h1>
+<span class="run-state state-{{state}}">{{state}}</span>{{{mode}}}</header>
+{{#driverDown}}<div class="needs on"><strong>driver not running</strong> Restart it with <code>run.ts resume {{dir}}</code>.</div>{{/driverDown}}
+{{#needsYou}}<div class="needs on"><strong>{{needsWord}}</strong> {{reason}}</div>{{/needsYou}}
+{{{problems}}}
+<section class="arm"><ol class="rail">{{{steps}}}</ol></section>
+<section class="report-line"><h2>Report: {{#hasReport}}<a href="/report?run={{param}}" target="_blank" rel="noopener">Read the report ↗</a>{{/hasReport}}{{^hasReport}}{{reportWord}}{{/hasReport}}</h2></section>
+<section class="row"><h2 class="row-title">Tests it added</h2>{{{tests}}}</section>
+<section class="row"><h2 class="row-title">Files touched</h2><p class="row-note">Against the commit the run started from.</p>{{{files}}}</section>
+
+<!-- part: mode: the Speed / Slot in switch -->
+<form class="mode" method="post" action="/mode"><input type="hidden" name="run" value="{{run}}">
+<fieldset><legend>Answers</legend>
+<label><input type="radio" name="mode" value="speed"{{#speed}} checked{{/speed}} onchange="this.form.submit()">Speed</label>
+<label><input type="radio" name="mode" value="slot-in"{{^speed}} checked{{/speed}} onchange="this.form.submit()">Slot in</label>
+</fieldset><noscript><button type="submit">Switch</button></noscript></form>
+
+<!-- part: step: one step on the rail -->
+<li class="step {{state}}" id="step-{{id}}"><span class="node" aria-hidden="true">{{icon}}</span>
+<div class="step-head"><span class="step-title">{{label}}</span><span class="step-meta">{{#started}}<span>{{time}}</span><span>{{cost}}</span>{{/started}}</span></div>
+<div class="step-sub"><span class="state-word">{{stateWords}}{{#waitingSince}} since {{since}}{{/waitingSince}}</span>
+{{#manyTurns}}<span>{{turnCount}} turns</span>{{/manyTurns}}
+{{#hasDecisions}}<span>{{answered}} answered, {{alone}} decided alone</span>{{/hasDecisions}}
+{{#hasTasks}}<span>{{tasksDone}} of {{tasksListed}} tasks</span>{{/hasTasks}}
+{{#file}}<span>left <code>{{file}}</code></span>{{/file}}</div>
+{{#reason}}<p class="reason">{{reason}}</p>{{/reason}}
+{{{turns}}}{{{tasks}}}
+{{#hasEvents}}<ul class="events">{{{events}}}</ul>{{/hasEvents}}
+{{{problems}}}{{{answer}}}</li>
+
+<!-- part: event -->
+<li>{{text}}</li>
+
+<!-- part: turn: one turn of a step -->
+<div class="turn"><div class="turn-head"><span>turn {{n}}{{#isRetry}}, retry of turn {{retryOf}}{{/isRetry}} · {{by}}</span><span class="turn-meta">{{meta}}</span></div>
+<div class="prompt"><code>{{prompt}}</code></div>
+{{#showNow}}<div class="now">{{#now}}<div class="now-line"><span class="k">Now</span><code>{{now}}</code></div>{{/now}}{{{running}}}</div>{{/showNow}}
+{{#hasDone}}<div class="agents-done">{{doneCount}}: {{doneNames}}</div>{{/hasDone}}
+{{#openReply}}<div class="reply open-reply">{{{reply}}}</div>{{/openReply}}
+{{#foldedReply}}<details data-key="{{replyKey}}" class="step-reply"><summary>Read its reply</summary><div class="reply">{{{reply}}}</div></details>{{/foldedReply}}
+{{#hasAlerts}}<ul class="alerts">{{{alerts}}}</ul>{{/hasAlerts}}
+{{{decisions}}}
+{{#hasNotes}}<div class="notes"><div class="notes-head">Notes</div>{{{notes}}}</div>{{/hasNotes}}
+{{#notesComing}}<div class="notes empty">Notes: being written</div>{{/notesComing}}
+{{#watcherFailed}}<div class="notes empty">Notes: the watcher failed</div>{{/watcherFailed}}
+</div>
+
+<!-- part: agent: an agent still running -->
+<div class="agent"><strong>{{name}}</strong> <span class="agent-meta">{{model}}, {{time}}, {{calls}} calls</span>
+{{#last}}<div class="agent-last"><code>{{last}}</code></div>{{/last}}</div>
+
+<!-- part: alert -->
+<li class="a-{{kind}}"><span class="tag">{{name}}</span><div><code>{{text}}</code><div class="a-where">by {{who}}</div></div></li>
+
+<!-- part: answered: a stop and the answer sent to it -->
+<div class="stop"><div class="stop-head"><span>asked {{count}}</span><span class="sent">{{who}}: {{answer}}</span></div>
+{{#hasQuestions}}<ol class="qs">{{{questions}}}</ol>{{/hasQuestions}}
+{{^hasQuestions}}<p class="empty">No question found in its reply.</p>{{/hasQuestions}}</div>
+
+<!-- part: decided-alone: what the turn decided without asking -->
+<div class="stop own"><div class="stop-head"><span>decided alone {{count}}</span></div><ul class="qs">{{{items}}}</ul></div>
+
+<!-- part: question: a question and its recommendation, or a decision and its reason -->
+<li><div class="q">{{text}}</div>{{#hasRec}}<div class="rec">{{rec}}</div>{{/hasRec}}</li>
+
+<!-- part: tasks: the plan's tasks under a build step -->
+<div class="tasks"><div class="tasks-head">{{done}} of {{listed}} tasks done in <code>{{plan}}</code></div><ol>{{{items}}}</ol></div>
+
+<!-- part: task -->
+<li class="t-{{mark}}"><span class="t-id">{{id}}</span><span class="t-title">{{title}}</span>
+{{#hasRow}}<span class="t-time">{{time}}</span>{{/hasRow}}
+{{#hasFailed}}<span class="t-bad" title="{{failedTitle}}">{{failedCount}} errored</span>{{/hasFailed}}</li>
+
+<!-- part: answer-hidden: which turn a form answers -->
+<input type="hidden" name="run" value="{{run}}"><input type="hidden" name="step" value="{{step}}"><input type="hidden" name="turn" value="{{turn}}">
+
+<!-- part: answer-failed: a failed step takes Retry or End run -->
+<form class="answer" method="post" action="/answer">{{{hidden}}}<div class="buttons">
+<button type="submit" name="kind" value="retry">Retry</button>
+<button type="submit" name="kind" value="end" class="quiet-btn">End run</button></div></form>
+
+<!-- part: answer-reply: a waiting step takes an answer, Go on or End run -->
+<form class="answer" method="post" action="/answer">{{{hidden}}}
+<label for="{{id}}">Your answer to {{label}}, sent exactly as typed</label>
+<textarea id="{{id}}" name="text" rows="6" required data-key="{{key}}"></textarea>
+<div class="buttons"><button type="submit" name="kind" value="reply">Send</button>
+<button type="submit" name="kind" value="go-on" formnovalidate class="quiet-btn">Go on</button>
+<button type="submit" name="kind" value="end" formnovalidate class="quiet-btn">End run</button></div></form>
+
+<!-- part: tests-none -->
+<p class="empty">No tests added yet.</p>
+
+<!-- part: test-file -->
+<details open class="tfile" data-key="{{key}}"><summary><code class="path">{{path}}</code><span class="count">{{count}}</span></summary>
+<ul class="tlist">{{{items}}}</ul></details>
+
+<!-- part: test -->
+<li>{{says}}{{#doc}}<span class="t-doc">{{doc}}</span>{{/doc}}</li>
+
+<!-- part: files-none -->
+<p class="empty">No files touched yet.</p>
+
+<!-- part: files -->
+<ul class="files">{{{items}}}</ul>
+
+<!-- part: file -->
+<li class="f-{{kind}}"><span class="f-sign">{{sign}}</span><code class="path">{{path}}</code>
+<span class="f-n"><span class="plus">+{{added}}</span>{{#removed}}<span class="minus">−{{removed}}</span>{{/removed}}</span></li>
+
+<!-- part: report-page: /report, the report on its own page -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"></head><body><main class="reply">{{{report}}}</main></body></html>
+
+<!-- part: md-paragraph -->
+<p>{{{html}}}</p>
+
+<!-- part: md-heading -->
+<h5>{{{html}}}</h5>
+
+<!-- part: md-item: a list item, indented by its depth -->
+<div class="li" style="--d:{{depth}}"><span class="mk">{{mark}}</span><span>{{{html}}}</span></div>
+
+<!-- part: md-code-block -->
+<pre>{{code}}</pre>
+
+<!-- part: md-code -->
+<code>{{{html}}}</code>
+
+<!-- part: md-bold -->
+<strong>{{{html}}}</strong>

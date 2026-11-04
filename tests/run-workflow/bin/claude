@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# A stand-in for the claude CLI, for the runner's tests. Everything it does is set by files in $FAKE_CLAUDE_DIR.
+#
+# Every call records its arguments, NUL-separated, to call-<k>.args and its environment to call-<k>.env, k counting
+# from 1. A prompt (the argument after -p) starting "watch " or "report " is the watcher or the reporter: it prints
+# watch.jsonl or report.jsonl and exits with watch.exit or report.exit, or 0 (watch.sleep or report.sleep first
+# makes it slow, and the reporter copies the notes.md in its folder to report-saw-notes.md). Any other call is step reply n,
+# counting from 1 in the file `count`:
+#   reply-<n>.touch            paths, one per line, created under the working folder
+#   reply-<n>.hold             a port: listen on it until something stops the listener, as a dev server left
+#                              running would; reply-<n>.transcript is first written to the path in
+#                              reply-<n>.transcript-path, so the turn looks over
+#   reply-<n>.jsonl            printed: its first line at once (the real CLI's init line comes first), the rest
+#                              when the turn ends
+#   reply-<n>.sleep            seconds to wait before the turn ends, so it lasts several of the driver's ticks
+#   reply-<n>.exit             the exit status, or 0
+set -u
+dir=${FAKE_CLAUDE_DIR:?FAKE_CLAUDE_DIR is not set}
+mkdir -p "$dir"
+
+# The watcher runs beside the next step, so two calls can arrive at once: the counters are taken under a lock.
+until mkdir "$dir/.lock" 2>/dev/null; do sleep 0.01; done
+k=$(( $(cat "$dir/calls" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$dir/calls"
+prompt=""; prev=""
+for a in "$@"; do [[ $prev == -p ]] && prompt=$a; prev=$a; done
+kind=step
+case $prompt in watch\ *) kind=watch ;; report\ *) kind=report ;; esac
+if [[ $kind == step ]]; then n=$(( $(cat "$dir/count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$dir/count"; fi
+rmdir "$dir/.lock"
+
+printf '%s\0' "$@" > "$dir/call-$k.args"
+env > "$dir/call-$k.env"
+
+if [[ $kind != step ]]; then
+  # <kind>.sleep makes the watcher or the reporter slow; the reporter keeps the notes.md it found in its folder.
+  [[ -f $dir/$kind.sleep ]] && sleep "$(cat "$dir/$kind.sleep")"
+  [[ $kind == report && -f notes.md ]] && cp notes.md "$dir/report-saw-notes.md"
+  [[ -f $dir/$kind.jsonl ]] && cat "$dir/$kind.jsonl"
+  exit "$(cat "$dir/$kind.exit" 2>/dev/null || echo 0)"
+fi
+
+if [[ -f $dir/reply-$n.touch ]]; then
+  while IFS= read -r path; do [[ -n $path ]] && mkdir -p "$(dirname "$path")" && : > "$path"; done < "$dir/reply-$n.touch"
+fi
+[[ -f $dir/reply-$n.jsonl ]] && head -n 1 "$dir/reply-$n.jsonl"
+if [[ -f $dir/reply-$n.hold ]]; then
+  nc -l 127.0.0.1 "$(cat "$dir/reply-$n.hold")" < /dev/null > /dev/null 2>&1 &
+  listener=$!
+  echo "$listener" > "$dir/reply-$n.listener"
+  if [[ -f $dir/reply-$n.transcript-path ]]; then
+    target=$(cat "$dir/reply-$n.transcript-path")
+    mkdir -p "$(dirname "$target")"
+    cp "$dir/reply-$n.transcript" "$target"
+  fi
+  wait "$listener"
+fi
+[[ -f $dir/reply-$n.sleep ]] && sleep "$(cat "$dir/reply-$n.sleep")"
+[[ -f $dir/reply-$n.jsonl ]] && tail -n +2 "$dir/reply-$n.jsonl"
+exit "$(cat "$dir/reply-$n.exit" 2>/dev/null || echo 0)"

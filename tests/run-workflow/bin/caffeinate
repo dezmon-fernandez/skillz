@@ -1,0 +1,8 @@
+#!/bin/sh
+# A stand-in for macOS caffeinate, for the runner's tests: records how it was called, then runs the command it
+# was given, so the step's exit status is the command's.
+echo "caffeinate $*" >> "${FAKE_CLAUDE_DIR:?FAKE_CLAUDE_DIR is not set}/caffeinate.log"
+while [ $# -gt 0 ]; do
+  case $1 in -*) shift ;; *) break ;; esac
+done
+exec "$@"
