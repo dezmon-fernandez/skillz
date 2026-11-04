@@ -28,7 +28,7 @@ size allows. Built in order, each story is planned against what the earlier ones
 A story says **who wants what and why, what must be true when it is done, and what its plan
 must find out**, and stops there. No research findings: no measured facts, costs, or code
 details. No signatures, data shapes, file layout, or tests. No decisions either: deciding
-how to build a story is `/dk-generate-plan`'s job, after its own research, and it puts the
+how to build a story is `/dk-plan`'s job, after its own research, and it puts the
 decisions to the developer there.
 
 **Write in plain words.** Name the thing itself. No metaphors and no jargon. A term the repo
@@ -106,7 +106,7 @@ Fill in `references/roadmap-template.md` and write it to `.agents/roadmaps/<feat
 Create the directory if missing. Copy the template's "How to work this roadmap" word for
 word. Every box starts unchecked.
 
-Those rules send the executing sessions to `/dk-generate-plan` and `/prime`. If the
+Those rules send the executing sessions to `/prime`, `/grill-me` and `/dk-plan`. If the
 repo lacks either skill, keep the rules as written and say so in the report. Do not rewrite
 them around a substitute.
 

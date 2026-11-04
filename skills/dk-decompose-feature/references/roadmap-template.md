@@ -26,8 +26,8 @@ and which story proves it first.>
 
 - A box is checked only on the developer's explicit say-so, never because the work is
   merely finished. That keeps the checklist trustworthy across context clears.
-- Each story gets a /dk-generate-plan, which sizes it first and says so when it is small
-  enough to build without a plan. A fresh session needs only this document plus /prime to
+- Each story gets /grill-me, then /dk-plan in the same session. /dk-plan sizes it first and says so
+  when it is small enough to build without a plan. A fresh session needs only this document plus /prime to
   continue correctly.
 
 ---

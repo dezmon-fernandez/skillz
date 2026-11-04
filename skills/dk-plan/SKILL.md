@@ -1,26 +1,33 @@
 ---
-name: dk-generate-plan
+name: dk-plan
 disable-model-invocation: true
 description: >-
   Turn a feature request, a tracker ticket, or the current conversation into an
-  implementation plan an executor can finish in one pass. Defines the feature at a high
-  level, researches the code, then settles the requirements and the design with the developer
-  before the build is planned. Use before writing any code for a feature, or when asked to
-  "plan this", "write a plan", or "plan the feature".
+  implementation plan an executor can finish in one pass, taking what the session already
+  settled and stopping only for what research found that the session had not settled. Use
+  before writing any code for a feature, or when asked to "plan this", "write a plan", or
+  "plan the feature".
 argument-hint: "[a ticket key or URL, a feature description, or empty to plan from the conversation]"
 ---
 
-# dk-generate-plan: the plan an executor can finish in one pass
+# dk-plan: the plan an executor can finish in one pass
 
 ## Feature: $ARGUMENTS
 
 We do not write code here. The output is a plan in the parts of `references/plan-template.md`.
 An executor with no memory of this conversation builds the feature from it on the first try.
 
+**Where the developer comes in**
+
+- Before this skill: whatever the session already settled. Nothing it settled is asked again
+- In step 4: what research turned up that only the developer can decide
+- After the report: the build starts on the developer's word
+
 **Inherit, don't re-decide**
 
-- Quote each decision the input and its linked documents already made, with its `path:line`
-- Ask the developer before breaking one. Never diverge quietly
+- Quote each decision the input, its linked documents and the session already made, with its
+  `path:line` or the developer's words
+- Breaking one is a question for step 4. Never diverge quietly
 
 ## Step 1: Understand the feature
 
@@ -31,29 +38,28 @@ An executor with no memory of this conversation builds the feature from it on th
 - Follow its links up to the epic and any architecture document
 - A description, or nothing: take the feature from it, or from this conversation
 
-**Write it back, before you open any code**
+**Write the feature down, before you open any code**
+
+Create the plan at `.agents/plans/<kebab-case-name>.md`. Write this into its Feature Description,
+User Story, Problem Statement and Solution Statement:
 
 ```
 Feature: <what it is, its purpose, and its value to users, in two sentences>
+
 As a <type of user>, I want to <action/goal>, so that <benefit/value>.
+
 Problem: <what is missing or wrong today, and for whom>
-Will not do: <what the input rules out; or none>
+
 Settled: <each decision already made, quoted, with its path:line; or none>
 ```
 
 - Use the input's words
 - Say what the user can do, not what the screen looks like
-- Done or out of scope not stated? Ask. At most three questions, all at once
-
-**Stop and wait for the developer's corrections.**
+- Every answer the developer gave earlier in this session is a decision already made: quote it
+  under `Settled`. It goes in now because research reads the plan; a decision research finds in a
+  linked document is added there later
 
 ## Step 2: Research
-
-**Set up**
-
-- Create the plan at `.agents/plans/<kebab-case-name>.md`
-- Write the agreed block into the template's Feature Description, User Story, Problem
-  Statement and Solution Statement
 
 **Fan out.** Send the agents in one message, each briefed with the plan's path and one item,
 nothing else:
@@ -95,7 +101,7 @@ Take each part of a report to where the plan uses it. Never redo what a report a
 
 ## Step 3: Requirements, examples and experiments
 
-Write back, from what research found:
+Write into the plan's Definition, from what research found:
 
 ```
 Similar features:
@@ -109,6 +115,7 @@ R2. (assumed) <...>
 Examples:
 1. <a real case the developer can look up> → <what the user sees>
 2. <a real case where something goes wrong> → <what the user sees>
+Will not do: <what the input rules out, and each ✗ this plan leaves out, and why; or none>
 Experiments: <one line each; or none>
 ```
 
@@ -116,7 +123,7 @@ Experiments: <one line each; or none>
 
 - Start from the scout's `Similar Features` table: one row per thing a user or caller can do
   in any similar feature
-- A ✗ in this plan's column is a question for the developer, or a line under Will not do
+- A ✗ in this plan's column is a question for step 4, or a line under Will not do
 
 **Requirements**
 
@@ -131,9 +138,11 @@ Experiments: <one line each; or none>
 
 **Examples**
 
-- Use real cases the developer can look up. Never made up
-- Include one where something goes wrong
-- The build's tests run on their records
+Two or three real cases the build's tests will load: a record, a day or a name that exists in
+the project's data, one of them going wrong.
+
+- ❌ `1. A user saves the form twice → it saves once.`
+- ✅ `1. Order 4471, saved twice within a second on 2026-10-12 → one order; the second click shows "Saving…".`
 
 **Experiments are rare**
 
@@ -147,12 +156,7 @@ Experiments: <one line each; or none>
 
 ✅ `Every order has a currency: the spec marks it required. Not measured.`
 
-**Stop and wait for the developer's corrections.** Then:
-
-- Write the agreed requirements and examples into the plan's Definition
-- Send one `dk-experiment-agent` per approved experiment: `plan=<path> experiment=E<n>`
-- Write each result on its E line. Open the saved sample behind any count the design uses
-- A declined experiment becomes a check under `## Prerequisite`. The build waits for it
+**Do not stop here.** An experiment waits for step 4, where the developer approves it.
 
 ## Step 4: Design
 
@@ -166,39 +170,49 @@ Experiments: <one line each; or none>
 - What does it cost in performance and security?
 - How maintainable is it?
 
-**Ask the developer when the options differ in**
+**Ask the developer, only where the session left it open, when the options differ in**
 
-- what the user sees or does. Sketch each option
-- which system does the work
+- what the user sees or does. Show each option as a mockup of the screen
+- which system does the work. Draw each option's flow as a mermaid diagram
 - how much gets built, and what is left out
 - a `Settled` line, or how the similar features work
-- data thrown away for good
+- data that would be deleted with no way to get it back
 
 **Decide the rest yourself**
 
 - Names, where code lives, helpers, how it is tested
 - Use what the code already does, even when new code would be shorter
 
-**Show it, then stop**
+**Show it, and stop only if there is something to ask**
 
 - Write the Definition and the Contract into the plan
-- Open it with the `annotate` skill if installed; otherwise print them
-- Reply:
+- Nothing to decide, no experiment, and nothing under `Changed`? Do not stop. Go on to step 5
+- Otherwise open it with the `annotate` skill if installed, or print them, and reply:
 
 ```
 Changed: <a requirement that cannot hold, or costs far more than it looked, and why; or none>
+
 Size: <N> files to change, <N> to add
 
 Decide, worst first (or "Decide: none"):
+
 1. <the question, in plain words>
+
    Recommend: <option>. <why, in one sentence>
+
    Today: <what the user gets now>
+
    Options: <each option, sketched where they differ on screen, with what it costs>
+
+Approve: <each experiment, E<n>, one line each with its time and cost; or none>
 ```
 
 - A question is settled only when the developer confirms it. An answer to another, or "go
   on", does not settle it
 - Edit the plan to match each answer
+- Send one `dk-experiment-agent` per approved experiment: `plan=<path> experiment=E<n>`
+- Write each result on its E line. Open the saved sample behind any count the design uses
+- A declined experiment becomes a check under `## Prerequisite`. The build waits for it
 - End each reply with every question written as `Settled:` or `Open:`
 
 ## Step 5: Write the Build part
@@ -212,7 +226,8 @@ Decide, worst first (or "Decide: none"):
 - Point at code. Never copy it
 - State every decision
 - Run or match every command and quoted string in the plan
-- A change above the Build part is a new decision. Take it back through step 4
+- A change above the Build part is a new decision. Yours to make? Make it and state it. The
+  developer's? Write it under `Changed` in the report
 
 **Check before you report**
 
@@ -227,6 +242,7 @@ Decide, worst first (or "Decide: none"):
 ## Report
 
 - The full path to the plan
+- `Changed`: each decision of the developer's that writing the Build part turned up, or none
 - Each outside topic skipped, and the `file:line` that made the skip safe
 - How many source files change, the key risks, and a confidence score out of 10
 - The next step: `/dk-execute-plan <path>`, or first `/dk-walk-plan <path>` in a new session
