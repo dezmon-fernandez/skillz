@@ -16,6 +16,7 @@ into a project and adapted there.
 | `piv-implement` | Implement a plan task by task, validating at every step. |
 | `piv-review-changes` | Review recently changed files for bugs, security issues, and standards compliance, and write a report. |
 | `piv-fix-review-findings` | Triage a review's findings, fix the chosen ones one at a time with tests, defer and log the rest, then validate. |
+| `grill-me`, `grilling` | Interview the developer in rounds, each question with a recommended answer, until every decision is settled. `/grill-me` starts `grilling`. Byte-identical copies of Matt Pocock's, from [mattpocock/skills](https://github.com/mattpocock/skills) at `c55ee46`, each with its MIT `LICENSE`. |
 | `commit` | Stage the current work and write one atomic commit in the repo's own convention. |
 | `hooks-create` | Author a working hook from a plain-English description, wire it in, and prove it fires. |
 | `review-prose` | Rewrite one skill, agent, or document in place so it is short and plain, keeping every rule and every name other files depend on. Invoked by hand. |
