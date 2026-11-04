@@ -8,6 +8,10 @@ already going.
 
 Relative paths are relative to the config file's folder.
 
+Two runs going at once never share a `workdir` or a port in `ports`: `start` refuses a config whose workdir or one of
+whose ports a run with a live driver holds, waiting runs included, and names that run. Give each run of a side-by-side
+comparison its own worktree and ports.
+
 ## The shape
 
 ```json
@@ -23,6 +27,7 @@ Relative paths are relative to the config file's folder.
   "deny": ["<a permission rule>"],
   "settings": { "hooks": { "PreToolUse": [] } },
   "note": "<added to a new session's system prompt>",
+  "mode": "autonomous",
   "steps": [
     { "id": "<id>", "label": "<what the page calls it>", "prompt": "<the prompt>", "session": "new" },
     {
@@ -56,6 +61,7 @@ Relative paths are relative to the config file's folder.
 | `permissionMode` | | `bypassPermissions` | Every turn's `--permission-mode`. |
 | `watcher` | | `{"model": "claude-sonnet-5-5", "effort": "medium"}` | The read-only session that notes what to improve after every turn. |
 | `reporter` | | `{"model": "claude-opus-5-5", "effort": "high"}` | The read-only session that writes the report at the end. |
+| `mode` | | `autonomous` | How the run starts answering its stops: `autonomous` sends the config's answers and the developer reviews after; `human-approval` brings each decision to the developer on the page. The page switches a run at any time. A run folder from before the rename, whose mode file says `speed` or `slot-in`, reads as `autonomous` or `human-approval`. |
 
 ## A step
 
@@ -63,14 +69,14 @@ Relative paths are relative to the config file's folder.
 |---|---|---|---|
 | `id` | yes | | `[a-z0-9-]+`, unique. A later prompt names the file this step left as `{file:<id>}`. |
 | `label` | yes | | What the page calls the step. |
-| `prompt` | yes | | Sent verbatim once `{request}` (the request, verbatim) and `{file:<id>}` (an earlier step's file) are filled. Starts with `/<skill>` to run a skill. |
+| `prompt` | yes | | Sent verbatim once `{request}` (the request, verbatim) and `{file:<id>}` (an earlier step's file) are filled. Starts with `/<skill>` to run a skill, which must be installed for the workdir: as a skill in `.claude/skills/` or a command in `.claude/commands/`, of the workdir or a parent up to its repo's root, or of the personal folder. `start` refuses one that is not, since the CLI would run the prompt as a plain message. A `<plugin>:<skill>` is not checked. |
 | `session` | yes | | `new` starts a session; `continue` resumes the previous step's. The first step is always `new`. |
 | `effort` | | none | Model id to effort level, sent as `modelSettings`, for the step's model and its agents' models. |
 | `done` | | none | What the step leaves when it has finished. Absent: it has finished when its first turn ends. |
 | `done.file` | | | A glob under `workdir` (`**` any depth, `*` within a folder, `?` one character). A matching file written since the run started; the newest is the step's file. |
 | `done.says` | | | Text the step's last reply contains. With `file`, both must hold. |
-| `answers` | | `[]` | In speed mode, one at each stop before the step has finished: the second stop gets the second answer, even when you answered the first on the page. Used up, or slotted in, the step waits on the page. |
-| `answerIfAsks` | | `false` | Also answer when the step has finished but its reply asks something, such as a review that asks after it writes. Slotted in, a reply that asks always waits. |
+| `answers` | | `[]` | In autonomous mode, one at each stop before the step has finished: the second stop gets the second answer, even when you answered the first on the page. Used up, or in human approval, the step waits on the page. |
+| `answerIfAsks` | | `false` | Also answer when the step has finished but its reply asks something, such as a review that asks after it writes. In human approval, a reply that asks always waits. |
 
 A skill stops for an answer by ending its turn, and nothing in the stream tells that stop from a finish. So a step
 that stops to ask needs a `done` the runner can check, and an `answers` list as long as its stops. When unsure how

@@ -3,8 +3,9 @@
 // One parsed line of a step's log or a session transcript. Its shape is the CLI's, so the readers check each field.
 export type Event = Record<string, any>;
 
-// How a run's stops are answered: from the config's list, or by the developer on the page.
-export type Mode = 'speed' | 'slot-in';
+// How a run's stops are answered. Autonomous: the run goes end to end on the config's answers and the developer
+// reviews after. Human approval: each decision waits for the developer on the page.
+export type Mode = 'autonomous' | 'human-approval';
 
 // Who sent a turn or an answer.
 export type By = 'config' | 'developer';
@@ -28,6 +29,7 @@ export interface Config {
   permissionMode?: string;
   watcher?: AgentConfig;
   reporter?: AgentConfig;
+  mode?: Mode;                  // how a run starts; "autonomous" when absent. The page's switch changes it for one run
 }
 
 export interface StepConfig {
@@ -86,6 +88,24 @@ export interface Turn {
   watched: 'no' | 'watching' | 'noted' | 'failed';
   retryOf?: number;             // set on a Retry: the turn it resends. A retry uses none of the config's answers
   pid?: number;                 // the turn's process while it runs, so a resumed driver can wait for it
+  stop?: Stop;                  // the part of planning it stopped in and why, once its watcher has noted it
+  answered?: Answered;          // on a turn whose prompt answered a stop: how the answer compared, from its watcher
+}
+
+// The parts of planning a stop can be in. Read from the watcher; a name off the list shows as "unknown part".
+export type Part = 'Grill' | 'Feature' | 'Requirements' | 'Design' | 'Build' | 'Review' | 'Finished';
+
+// What the watcher says about one turn, from the first line of its reply.
+export interface Stop {
+  part: Part | 'unknown part';
+  why: string;                  // one line: why the turn stopped, or "finished"
+}
+
+// How an answer compared with the recommendations of the stop it answered, from the watcher's second line.
+export interface Answered {
+  took: number;                 // recommendations the answer took
+  of: number;                   // recommendations the stop gave
+  differed: string[];           // the questions it differed on, as "Q2 <title>"
 }
 
 export interface Answer {
@@ -162,7 +182,7 @@ export interface RunView {
 
 export interface StepView {
   step: Step;
-  turns: { turn: Turn; reply: string; questions: [string, string][]; alerts: Alert[]; agents: AgentRow[]; now: string }[];
+  turns: TurnView[];
   tasks: TaskState | null;
   plan: string;
   decisions: Decision[];
@@ -170,4 +190,13 @@ export interface StepView {
   events: string[];
   problems: string[];
   seconds: number;              // its turns' time, a turn still running counted up to now
+}
+
+export interface TurnView {
+  turn: Turn;
+  replies: string[];            // every reply, in order
+  questions: [string, string][]; // the open questions: those of its last reply that asks any
+  alerts: Alert[];
+  agents: AgentRow[];
+  now: string;
 }

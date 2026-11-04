@@ -17,9 +17,25 @@ const plain = (text: string) => text.replace(/\*\*|__|`/g, '').trim();
 const expand = (text: string) => text.replace(/\t/g, '  ');
 const lstripBullets = (text: string) => text.replace(/^[-*• ]+/, '');
 
+// A question in grilling's round: `❓ **Q2** - **<title>**: <text>`, the colon sometimes inside the bold or gone.
+// Its recommendation is the first `➡️ <text>` line before the next question.
+const GRILL = /^\s*❓\s*\*\*Q\d+\*\*\s*[-–—]\s*\*\*(.+?)\*\*\s*:?\s*(.*)$/u;
+const GRILL_REC = /^\s*➡️?\s*(.*)$/u;
+
+// The questions a turn leaves for an answer: those of its last reply that asks any. A grill asks a round, looks
+// things up while its agents work, and asks the round again revised, so an earlier reply's are answered by it.
+export function openQuestions(replies: string[]): [string, string][] {
+  for (let i = replies.length - 1; i >= 0; i--) {
+    const found = questions(replies[i]);
+    if (found.length) return found;
+  }
+  return [];
+}
+
 // (question, its recommendation) per question the reply asks.
 export function questions(reply: string): [string, string][] {
   const rows = reply.split(/\r?\n/);
+  if (rows.some((row) => GRILL.test(row))) return grillQuestions(rows);
   const out: [string, string][] = [];
   rows.forEach((row, i) => {
     const m = NUMBERED.exec(row);
@@ -43,6 +59,29 @@ export function questions(reply: string): [string, string][] {
     .filter((r) => r.trim().endsWith('?') && !r.trimStart().startsWith('#'))
     .slice(0, 8)
     .map((r) => [plain(lstripBullets(r.trim())), '']);
+}
+
+// A grill question is asked as "<title>: <text>", or as its title when the line holds nothing more. A title that
+// ends in its own mark ("Which forms?") takes a space instead of a second one.
+function grillQuestions(rows: string[]): [string, string][] {
+  const out: [string, string][] = [];
+  rows.forEach((row, i) => {
+    const m = GRILL.exec(row);
+    if (!m) return;
+    const title = plain(m[1]);
+    const text = plain(m[2]);
+    let rec = '';
+    for (const next of rows.slice(i + 1)) {
+      if (GRILL.test(next)) break;
+      const r = GRILL_REC.exec(next);
+      if (r) {
+        rec = plain(r[1]);
+        break;
+      }
+    }
+    out.push([text ? `${title}${/[.?!:]$/.test(title) ? ' ' : ': '}${text}` : title, rec]);
+  });
+  return out;
 }
 
 // (what it decided, why) per item under a heading or lead the DECIDED pattern finds.

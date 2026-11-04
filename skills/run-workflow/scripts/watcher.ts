@@ -9,7 +9,7 @@ import { basename, dirname, join } from 'node:path';
 import { lines, replyOf, resultOf, transcriptPath } from './log.ts';
 import { loadRun, saveRun } from './run-folder.ts';
 import { exitOf } from './turn.ts';
-import type { AgentConfig, Config, Run, Turn } from './types.ts';
+import type { AgentConfig, Answered, Config, Part, Run, Stop, Turn } from './types.ts';
 
 const WATCHER: AgentConfig = { model: 'claude-sonnet-5-5', effort: 'medium' };
 const REPORTER: AgentConfig = { model: 'claude-opus-5-5', effort: 'high' };
@@ -29,7 +29,10 @@ export function startWatcher(runDir: string, run: Run, config: Config, stepIndex
       const [reply, exit] = await runReader(runDir, 'watcher', `watch run=${runDir} step=${step.id} turn=${turn.n}`,
         config.watcher ?? WATCHER, `watch/${stem}.jsonl`);
       if (exit !== 0 || !reply.trim()) throw new Error(`exit ${exit}`);
-      appendFileSync(join(runDir, 'notes.md'), `## ${noteHeading(stepIndex, step.label, turn.n)}\n\n${reply.trim()}\n\n`);
+      const { stop, answered, notes } = readWatch(reply);
+      if (stop) turn.stop = stop;
+      if (answered) turn.answered = answered;
+      if (notes) appendFileSync(join(runDir, 'notes.md'), `## ${noteHeading(stepIndex, step.label, turn.n)}\n\n${notes}\n\n`);
       turn.watched = 'noted';
     } catch {
       // A watcher that fails never holds the run; the report names it.
@@ -37,6 +40,33 @@ export function startWatcher(runDir: string, run: Run, config: Config, stepIndex
     }
     saveRun(runDir, run);
   })();
+}
+
+const PARTS: Part[] = ['Grill', 'Feature', 'Requirements', 'Design', 'Build', 'Review', 'Finished'];
+const STOP_LINE = /^Stop:\s*(.+?)\s*·\s*(.+?)\s*$/;
+const ANSWER_LINE = /^Answer:\s*took (\d+) of (\d+) recommendations?\s*·\s*differed:\s*(.+?)\s*$/;
+
+// The watcher's reply: its opening "Stop: <part> · <why>" and "Answer: took <k> of <m> recommendations · differed:
+// <Q2 title>, ... | none" lines, each null when absent or malformed, and the rest, its notes. A malformed line is
+// left in the notes, so nothing the watcher wrote is lost.
+export function readWatch(reply: string): { stop: Stop | null; answered: Answered | null; notes: string } {
+  const rows = reply.trim().split(/\r?\n/);
+  let stop: Stop | null = null;
+  let answered: Answered | null = null;
+  while (rows.length) {
+    const s = !stop ? STOP_LINE.exec(rows[0].trim()) : null;
+    const a = !answered ? ANSWER_LINE.exec(rows[0].trim()) : null;
+    if (s) {
+      stop = { part: PARTS.find((p) => p.toLowerCase() === s[1].toLowerCase()) ?? 'unknown part', why: s[2] };
+    } else if (a) {
+      const list = a[3].toLowerCase() === 'none' ? [] : a[3].split(/,\s*(?=Q\d+\b)/).map((q) => q.trim()).filter(Boolean);
+      answered = { took: Number(a[1]), of: Number(a[2]), differed: list };
+    } else {
+      break;
+    }
+    rows.shift();
+  }
+  return { stop, answered, notes: rows.join('\n').trim() };
 }
 
 export async function writeReport(runDir: string, run: Run, config: Config, watchers: Promise<void>[]): Promise<void> {

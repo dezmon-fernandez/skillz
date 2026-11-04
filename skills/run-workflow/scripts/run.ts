@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Runs a project's workflow end to end: each step the project's config names, in its own `claude -p` session,
-// answered from the config in speed mode or by the developer on the page in slot-in mode, with a read-only
-// watcher session after every turn and a read-only reporter session at the end.
+// answered from the config in autonomous mode or by the developer on the page in human approval, with a read-only
+// watcher session after every turn and a read-only reporter session at the end. The config's "mode" sets how a run
+// starts; the page switches it.
 //
 //   node --no-warnings <skill>/scripts/run.ts check <config>
-//   node --no-warnings <skill>/scripts/run.ts start <config> --request-file <file> [--slot-in]
+//   node --no-warnings <skill>/scripts/run.ts start <config> --request-file <file>
 //   node --no-warnings <skill>/scripts/run.ts resume <run folder>
 //   node --no-warnings <skill>/scripts/run.ts drive <run folder>      (the detached driver; start and resume spawn it)
 //
@@ -20,18 +21,23 @@ import { drive } from './driver.ts';
 import { seams } from './launch.ts';
 import { resume, start } from './start.ts';
 
-const USAGE = 'usage: run.ts check <config> | start <config> --request-file <file> [--slot-in] | resume <run> | drive <run>';
+const USAGE = 'usage: run.ts check <config> | start <config> --request-file <file> | resume <run> | drive <run>';
 
 export async function main(argv: string[]): Promise<number> {
   const [command, target, ...rest] = argv;
   if (command === 'check' && target) return check(target);
   if (command === 'start' && target) {
-    const at = rest.indexOf('--request-file');
-    if (at < 0 || !rest[at + 1]) {
+    // The mode lives in the config, so the run's record says how it started. Any flag but --request-file is refused:
+    // one ignored would start the run in a mode the developer did not type.
+    if (rest.some((a) => ['--slot-in', '--speed', '--human-approval', '--autonomous'].includes(a))) {
+      seams.print('start takes no mode flag: set "mode" in the config, or switch on the page');
+      return 1;
+    }
+    if (rest.length !== 2 || rest[0] !== '--request-file') {
       seams.print(USAGE);
       return 1;
     }
-    return start(target, rest[at + 1], rest.includes('--slot-in'));
+    return start(target, rest[1]);
   }
   if (command === 'resume' && target) return resume(target);
   if (command === 'drive' && target) return drive(resolve(target));

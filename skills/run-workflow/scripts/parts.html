@@ -8,14 +8,23 @@
 <!-- part: problem -->
 <p class="problem">{{text}}</p>
 
-<!-- part: runs: the list of every run on this Mac -->
-<nav aria-label="Runs on this Mac"><ul class="runs">{{{items}}}{{^items}}<li class="empty">No run has been started on this Mac yet.</li>{{/items}}</ul></nav>
+<!-- part: runs: the list of every run on this Mac; the ticked ones open side by side -->
+<nav aria-label="Runs on this Mac"><form class="pick" method="get" action="/"><ul class="runs">{{{items}}}{{^items}}<li class="empty">No run has been started on this Mac yet.</li>{{/items}}</ul>
+{{#items}}<button type="submit">Side by side</button>{{/items}}</form></nav>
 
 <!-- part: run-item -->
-<li class="run-item{{#current}} current{{/current}}"><a href="/?run={{param}}"{{#current}} aria-current="page"{{/current}}>{{name}}</a> <span>{{started}} {{state}}</span></li>
+<li class="run-item{{#current}} current{{/current}}"><input type="checkbox" name="runs" value="{{id}}"{{#current}} checked{{/current}} aria-label="Show {{name}} {{started}} side by side">
+<a href="/?run={{param}}"{{#current}} aria-current="page"{{/current}}>{{name}}</a> <span>{{started}} {{state}}</span></li>
 
 <!-- part: run-item-unreadable -->
-<li class="run-item bad"><a href="/?run={{param}}">{{id}}</a> <span>could not read {{file}}</span></li>
+<li class="run-item bad"><input type="checkbox" name="runs" value="{{id}}"{{#current}} checked{{/current}} aria-label="Show {{id}} side by side">
+<a href="/?run={{param}}">{{id}}</a> <span>could not read {{file}}</span></li>
+
+<!-- part: columns: several runs side by side -->
+<div class="columns">{{{columns}}}</div>
+
+<!-- part: column: one run, drawn as it is alone -->
+<section class="column" aria-label="{{label}}">{{{body}}}</section>
 
 <!-- part: run: the open run, under the run list -->
 <header class="run-head"><h1>{{name}} · started {{started}} · {{time}} · {{cost}}</h1>
@@ -28,15 +37,15 @@
 <section class="row"><h2 class="row-title">Tests it added</h2>{{{tests}}}</section>
 <section class="row"><h2 class="row-title">Files touched</h2><p class="row-note">Against the commit the run started from.</p>{{{files}}}</section>
 
-<!-- part: mode: the Speed / Slot in switch -->
-<form class="mode" method="post" action="/mode"><input type="hidden" name="run" value="{{run}}">
+<!-- part: mode: the Autonomous / Human approval switch -->
+<form class="mode" method="post" action="/mode"><input type="hidden" name="run" value="{{run}}"><input type="hidden" name="view" value="{{view}}">
 <fieldset><legend>Answers</legend>
-<label><input type="radio" name="mode" value="speed"{{#speed}} checked{{/speed}} onchange="this.form.submit()">Speed</label>
-<label><input type="radio" name="mode" value="slot-in"{{^speed}} checked{{/speed}} onchange="this.form.submit()">Slot in</label>
+<label><input type="radio" name="mode" value="autonomous"{{#autonomous}} checked{{/autonomous}} onchange="this.form.submit()">Autonomous</label>
+<label><input type="radio" name="mode" value="human-approval"{{^autonomous}} checked{{/autonomous}} onchange="this.form.submit()">Human approval</label>
 </fieldset><noscript><button type="submit">Switch</button></noscript></form>
 
 <!-- part: step: one step on the rail -->
-<li class="step {{state}}" id="step-{{id}}"><span class="node" aria-hidden="true">{{icon}}</span>
+<li class="step {{state}}" id="step-{{run}}-{{id}}"><span class="node" aria-hidden="true">{{icon}}</span>
 <div class="step-head"><span class="step-title">{{label}}</span><span class="step-meta">{{#started}}<span>{{time}}</span><span>{{cost}}</span>{{/started}}</span></div>
 <div class="step-sub"><span class="state-word">{{stateWords}}{{#waitingSince}} since {{since}}{{/waitingSince}}</span>
 {{#manyTurns}}<span>{{turnCount}} turns</span>{{/manyTurns}}
@@ -52,12 +61,16 @@
 <li>{{text}}</li>
 
 <!-- part: turn: one turn of a step -->
-<div class="turn"><div class="turn-head"><span>turn {{n}}{{#isRetry}}, retry of turn {{retryOf}}{{/isRetry}} · {{by}}</span><span class="turn-meta">{{meta}}</span></div>
+<div class="turn"><div class="turn-head"><span>turn {{n}}{{#isRetry}}, retry of turn {{retryOf}}{{/isRetry}} · {{by}}</span>
+{{#stopped}}<span class="turn-stop">{{part}} · stopped: {{why}}</span>{{/stopped}}<span class="turn-meta">{{meta}}</span></div>
 <div class="prompt"><code>{{prompt}}</code></div>
+{{#hasAnswered}}<div class="answered-vs">{{answered}}</div>{{/hasAnswered}}
 {{#showNow}}<div class="now">{{#now}}<div class="now-line"><span class="k">Now</span><code>{{now}}</code></div>{{/now}}{{{running}}}</div>{{/showNow}}
 {{#hasDone}}<div class="agents-done">{{doneCount}}: {{doneNames}}</div>{{/hasDone}}
-{{#openReply}}<div class="reply open-reply">{{{reply}}}</div>{{/openReply}}
-{{#foldedReply}}<details data-key="{{replyKey}}" class="step-reply"><summary>Read its reply</summary><div class="reply">{{{reply}}}</div></details>{{/foldedReply}}
+{{#ended}}<ul class="agents-ended">{{{ended}}}</ul>{{/ended}}
+{{#openReply}}{{#earlier}}<details data-key="{{replyKey}}" class="step-reply"><summary>{{earlierWord}}</summary>{{{earlier}}}</details>{{/earlier}}
+<div class="reply open-reply">{{{last}}}</div>{{/openReply}}
+{{#foldedReply}}<details data-key="{{replyKey}}" class="step-reply"><summary>{{replyWord}}</summary>{{{replies}}}</details>{{/foldedReply}}
 {{#hasAlerts}}<ul class="alerts">{{{alerts}}}</ul>{{/hasAlerts}}
 {{{decisions}}}
 {{#hasNotes}}<div class="notes"><div class="notes-head">Notes</div>{{{notes}}}</div>{{/hasNotes}}
@@ -65,9 +78,18 @@
 {{#watcherFailed}}<div class="notes empty">Notes: the watcher failed</div>{{/watcherFailed}}
 </div>
 
+<!-- part: reply: one of a turn's replies; reply-rule goes between two -->
+<div class="reply">{{{html}}}</div>
+
+<!-- part: reply-rule -->
+<hr class="reply-rule">
+
 <!-- part: agent: an agent still running -->
 <div class="agent"><strong>{{name}}</strong> <span class="agent-meta">{{model}}, {{time}}, {{calls}} calls</span>
 {{#last}}<div class="agent-last"><code>{{last}}</code></div>{{/last}}</div>
+
+<!-- part: agent-line: an agent of a turn that has ended -->
+<li>{{name}} · {{model}} · {{time}} · {{calls}} calls · <span class="agent-how">{{how}}</span></li>
 
 <!-- part: alert -->
 <li class="a-{{kind}}"><span class="tag">{{name}}</span><div><code>{{text}}</code><div class="a-where">by {{who}}</div></div></li>
@@ -93,6 +115,7 @@
 
 <!-- part: answer-hidden: which turn a form answers -->
 <input type="hidden" name="run" value="{{run}}"><input type="hidden" name="step" value="{{step}}"><input type="hidden" name="turn" value="{{turn}}">
+<input type="hidden" name="view" value="{{view}}">
 
 <!-- part: answer-failed: a failed step takes Retry or End run -->
 <form class="answer" method="post" action="/answer">{{{hidden}}}<div class="buttons">

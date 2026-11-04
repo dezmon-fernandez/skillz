@@ -1,25 +1,27 @@
 // Answers, decisions and mode: whether a turn that ended needs an answer, where that answer comes from (the
-// config's list in speed mode, the developer on the page in slot-in mode), and the log of every answer sent and
-// every call a step made alone.
+// config's list in autonomous mode, the developer on the page in human approval), and the log of every answer sent
+// and every call a step made alone.
 //
 // The page writes answers/ and mode; the driver reads them and is the only writer of decisions.jsonl.
 
 import { appendFileSync, linkSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { finished } from './finished.ts';
-import { lines, replyOf } from './log.ts';
-import { decided, questions } from './questions.ts';
+import { lines, repliesOf, replyOf } from './log.ts';
+import { decided, openQuestions } from './questions.ts';
 import { seams } from './launch.ts';
 import { saveRun, writeAtomic } from './run-folder.ts';
 import type { Action, Answer, By, Config, Decision, Mode, Run, Step, StepConfig, Turn } from './types.ts';
 
 // ── The mode ──
 
+// A run started before the modes were renamed wrote "speed" or "slot-in"; slot-in was human approval.
 export function readMode(runDir: string): Mode {
   try {
-    return readFileSync(join(runDir, 'mode'), 'utf8').trim() === 'slot-in' ? 'slot-in' : 'speed';
+    const mode = readFileSync(join(runDir, 'mode'), 'utf8').trim();
+    return mode === 'human-approval' || mode === 'slot-in' ? 'human-approval' : 'autonomous';
   } catch {
-    return 'speed';
+    return 'autonomous';
   }
 }
 
@@ -85,17 +87,17 @@ export function readDecisions(runDir: string): Decision[] {
   return out;
 }
 
-// With no answer, what the reply decided alone; with one, the answer and the questions it accepted.
-export function logDecisions(runDir: string, step: Step, turn: Turn, reply: string, answer: string | null, by: By): void {
+// With no answer, what the last reply decided alone; with one, the answer and the open questions it accepted.
+export function logDecisions(runDir: string, step: Step, turn: Turn, replies: string[], answer: string | null, by: By): void {
   const at = new Date().toISOString();
   const evidence = `${turn.log}:${resultLine(runDir, turn.log)}`;
   if (answer === null) {
-    for (const item of decided(reply)) {
+    for (const item of decided(replies[replies.length - 1] ?? '')) {
       appendDecision(runDir, { at, step: step.id, turn: turn.n, kind: 'decided-alone', questions: [item], answer: '', by, evidence });
     }
     return;
   }
-  appendDecision(runDir, { at, step: step.id, turn: turn.n, kind: 'answered', questions: questions(reply), answer, by, evidence });
+  appendDecision(runDir, { at, step: step.id, turn: turn.n, kind: 'answered', questions: openQuestions(replies), answer, by, evidence });
 }
 
 // The line number of the turn's result line in its log, for a decision's evidence.
@@ -118,10 +120,11 @@ function resultLine(runDir: string, log: string): number {
 
 // ── Whether a turn needs an answer, and which ──
 
-export function needsAnswer(step: StepConfig, done: boolean, reply: string, mode: Mode): boolean {
+// `asks`: whether the turn left open questions (openQuestions).
+export function needsAnswer(step: StepConfig, done: boolean, asks: boolean, mode: Mode): boolean {
   if (!done) return true;
-  if (mode === 'slot-in') return questions(reply).length > 0;
-  return !!step.answerIfAsks && questions(reply).length > 0;
+  if (mode === 'human-approval') return asks;
+  return !!step.answerIfAsks && asks;
 }
 
 // The config's answer for the step's next stop, or null when they are used up. The k-th stop takes answers[k],
@@ -132,18 +135,19 @@ export function nextConfigAnswer(step: Step, sc: StepConfig): string | null {
   return sc.answers?.[stops] ?? null;
 }
 
-// Whether the waiting step's last turn needs an answer in speed mode. Slot-in holds a finished step whose reply
-// asks; speed moves it on, unless the step answers when its reply asks.
-function asksInSpeed(runDir: string, run: Run, sc: StepConfig, step: Step): boolean {
+// Whether the waiting step's last turn needs an answer in autonomous mode. Human approval holds a finished step
+// whose reply asks; autonomous moves it on, unless the step answers when its reply asks.
+function asksWhenAutonomous(runDir: string, run: Run, sc: StepConfig, step: Step): boolean {
   const turn = step.turns[step.turns.length - 1];
   if (!turn) return true;
-  const reply = replyOf(lines(join(runDir, turn.log)));
-  return needsAnswer(sc, finished(sc, reply, run.workdir, Date.parse(run.started))[0], reply, 'speed');
+  const events = lines(join(runDir, turn.log));
+  const done = finished(sc, replyOf(events), run.workdir, Date.parse(run.started))[0];
+  return needsAnswer(sc, done, openQuestions(repliesOf(events)).length > 0, 'autonomous');
 }
 
-// Polls every pollMs: the page's answer file for the waiting turn; and, for a waiting step in speed mode, what
-// speed would have done when its turn ended: move on, or send the config's answer if one is left (a switch to
-// speed answers a stop already waiting). A failed step takes only Retry or End. Null when the driver's patience
+// Polls every pollMs: the page's answer file for the waiting turn; and, for a waiting step in autonomous mode, what
+// autonomous would have done when its turn ended: move on, or send the config's answer if one is left (a switch to
+// autonomous answers a stop already waiting). A failed step takes only Retry or End. Null when the driver's patience
 // runs out first.
 export async function waitForAnswer(runDir: string, run: Run, config: Config, stepIndex: number):
   Promise<{ answer: Answer; by: By } | null> {
@@ -156,9 +160,9 @@ export async function waitForAnswer(runDir: string, run: Run, config: Config, st
     if (answer && (step.state !== 'failed' || answer.kind === 'retry' || answer.kind === 'end')) {
       if (answer.kind !== 'reply' || answer.text) return { answer, by: 'developer' };
     }
-    if (step.state === 'waiting' && readMode(runDir) === 'speed') {
+    if (step.state === 'waiting' && readMode(runDir) === 'autonomous') {
       const at = new Date().toISOString();
-      if (!asksInSpeed(runDir, run, sc, step)) return { answer: { kind: 'go-on', text: '', at }, by: 'config' };
+      if (!asksWhenAutonomous(runDir, run, sc, step)) return { answer: { kind: 'go-on', text: '', at }, by: 'config' };
       const text = nextConfigAnswer(step, sc);
       if (text !== null) return { answer: { kind: 'reply', text, at }, by: 'config' };
     }
@@ -167,7 +171,7 @@ export async function waitForAnswer(runDir: string, run: Run, config: Config, st
   }
 }
 
-// A developer's answer, or the config's after a switch to speed, applied to the waiting step. Returns the turn to
+// A developer's answer, or the config's after a switch to autonomous, applied to the waiting step. Returns the turn to
 // send now, or null.
 export function applyAnswer(runDir: string, run: Run, i: number, answer: Answer, by: By): Action | null {
   const step = run.steps[i];
@@ -200,6 +204,6 @@ export function applyAnswer(runDir: string, run: Run, i: number, answer: Answer,
     }
     return { kind: 'send', stepIndex: i, prompt: turn.prompt, by: turn.by, retryOf: turn.n };
   }
-  logDecisions(runDir, step, turn, replyOf(lines(join(runDir, turn.log))), answer.text, by);
+  logDecisions(runDir, step, turn, repliesOf(lines(join(runDir, turn.log))), answer.text, by);
   return { kind: 'send', stepIndex: i, prompt: answer.text, by };
 }

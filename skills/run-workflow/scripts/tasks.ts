@@ -99,13 +99,22 @@ function taskRanges(text: string): [string, string][] {
 
 // ── The step's agents ──
 
-// One row per agent in the session's subagents folder that this step's log started.
-export function agents(folder: string, stepText: string): AgentRow[] {
+// One row per agent in the session's subagents folder that this turn started: its meta file's toolUseId is an Agent
+// or Task call in the turn's own events. A later turn's log names the agent too, in its task notification, so a
+// match on the id anywhere listed it under both.
+export function agents(folder: string, turnEvents: Event[]): AgentRow[] {
   let names: string[];
   try {
     names = readdirSync(folder).filter((n) => n.endsWith('.meta.json')).sort();
   } catch {
     return [];
+  }
+  const started = new Set<string>();
+  for (const e of turnEvents) {
+    if (e.type !== 'assistant') continue;
+    for (const block of contentOf(e)) {
+      if (block?.type === 'tool_use' && (block.name === 'Agent' || block.name === 'Task') && block.id) started.add(block.id);
+    }
   }
   const out: AgentRow[] = [];
   for (const name of names) {
@@ -115,7 +124,7 @@ export function agents(folder: string, stepText: string): AgentRow[] {
     } catch {
       continue;
     }
-    if (!stepText.includes(meta.toolUseId ?? '-')) continue;
+    if (!started.has(meta.toolUseId)) continue;
     const events = lines(join(folder, name.replace('.meta.json', '.jsonl')));
     const times = events.map(stamp).filter((t): t is number => !!t);
     const calls: Record<string, number> = {};
@@ -135,7 +144,7 @@ export function agents(folder: string, stepText: string): AgentRow[] {
     const top = Object.entries(models).sort((a, b) => b[1] - a[1])[0];
     out.push({
       name: `${meta.agentType ?? '?'} "${meta.description ?? ''}"`,
-      done: meta.finished === true,
+      done: meta.finished === true || endedItsTurn(events),
       start: times.length ? Math.min(...times) : 0,
       end: times.length ? Math.max(...times) : 0,
       calls, last, task: currentTask(events),
@@ -146,6 +155,12 @@ export function agents(folder: string, stepText: string): AgentRow[] {
     });
   }
   return out;
+}
+
+// The CLI no longer writes `finished` in the meta file; a finished agent's last message ends its turn.
+function endedItsTurn(events: Event[]): boolean {
+  for (let i = events.length - 1; i >= 0; i--) if (events[i].type === 'assistant') return events[i].message?.stop_reason === 'end_turn';
+  return false;
 }
 
 // ── Where the tasks stand ──

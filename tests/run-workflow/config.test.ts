@@ -4,10 +4,11 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
-import { loadConfig, missingTools } from '../../skills/run-workflow/scripts/config.ts';
+import { loadConfig, missingSkills, missingTools } from '../../skills/run-workflow/scripts/config.ts';
 import { check } from '../../skills/run-workflow/scripts/run.ts';
 import type { Config } from '../../skills/run-workflow/scripts/types.ts';
-import { bin, box, goodConfig, useBox, writeConfig } from './helpers.ts';
+import { start } from '../../skills/run-workflow/scripts/start.ts';
+import { bin, box, goodConfig, installSkill, useBox, writeConfig } from './helpers.ts';
 
 useBox();
 
@@ -66,5 +67,61 @@ describe('check', () => {
     assert.deepEqual(problems, []);
     assert.equal((config as Config).workdir, resolve(box.workdir));
     assert.deepEqual((config as Config).path, [resolve(box.root)]);
+  });
+});
+
+describe('the skills a config names', () => {
+  const planAs = (prompt: string, workdir = 'work') =>
+    ({ ...goodConfig(), workdir, steps: [goodConfig().steps[0], { ...goodConfig().steps[1], prompt }] });
+  const missingFor = (prompt = '/grill-me {request}', workdir = 'work') => missingSkills(loadConfig(writeConfig(planAs(prompt, workdir))).config);
+  const line = () => `the skill grill-me in ${resolve(box.workdir)}/.claude/skills`;
+
+  it("a step's skill missing from the worktree is named", async () => {
+    assert.deepEqual(missingFor(), [line()]);
+    const request = join(box.root, 'request.txt');
+    writeFileSync(request, 'Lock the forms.');
+    assert.equal(await start(writeConfig(planAs('/grill-me {request}')), request), 1);
+    assert.deepEqual(box.printed, [`missing: ${line()}`]);
+    assert.equal(existsSync(box.runs), false);
+  });
+
+  it('a skill in the worktree passes', () => {
+    installSkill(join(box.workdir, '.claude', 'skills'), 'grill-me');
+    assert.deepEqual(missingFor(), []);
+  });
+
+  it('a skill in a parent folder up to the repo root passes', () => {
+    mkdirSync(join(box.workdir, 'app'));
+    installSkill(join(box.workdir, '.claude', 'skills'), 'grill-me');
+    assert.deepEqual(missingFor('/grill-me {request}', 'work/app'), []);
+  });
+
+  it('a skill above the repo root does not count', () => {
+    installSkill(join(box.root, '.claude', 'skills'), 'grill-me');
+    assert.deepEqual(missingFor(), [line()]);
+  });
+
+  it('a personal skill passes', () => {
+    installSkill(join(process.env.CLAUDE_CONFIG_DIR!, 'skills'), 'grill-me');
+    assert.deepEqual(missingFor(), []);
+  });
+
+  it('a command file passes', () => {
+    mkdirSync(join(box.workdir, '.claude', 'commands'), { recursive: true });
+    writeFileSync(join(box.workdir, '.claude', 'commands', 'grill-me.md'), 'Grill me.\n');
+    assert.deepEqual(missingFor(), []);
+  });
+
+  it("a plugin's skill is not checked", () => {
+    assert.deepEqual(missingFor('/kit:review {request}'), []);
+  });
+
+  it('a prompt that does not open with a slash is not checked', () => {
+    assert.deepEqual(missingFor('take recommendation'), []);
+  });
+
+  it('check names it too', () => {
+    assert.equal(check(writeConfig(planAs('/grill-me {request}'))), 1);
+    assert.deepEqual(box.printed, [`missing: ${line()}`]);
   });
 });

@@ -11,6 +11,13 @@ a { color:var(--c); }
 .updated { color:var(--muted); font-size:13px; text-align:right; margin:0 0 8px; }
 .runs { list-style:none; margin:0 0 18px; padding:0; display:flex; flex-wrap:wrap; gap:6px 18px; font-size:14px; }
 .run-item span { color:var(--muted); }
+.pick { display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px; margin:0 0 18px; } .pick .runs { margin:0; }
+.pick button { font:inherit; font-size:14px; font-weight:600; padding:3px 12px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--c); background:transparent; color:var(--c); }
+main:has(.columns) { max-width:none; }
+.columns { display:flex; gap:18px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; }
+/* relative, so the switch's hidden legend stays inside the scrolling box rather than widening the page */
+.column { position:relative; flex:1 0 420px; min-width:420px; }
 .run-item.current a { font-weight:700; color:var(--ink); text-decoration:none; }
 .run-item.bad span { color:var(--bad); }
 .run-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; margin:0 0 14px; }
@@ -48,11 +55,13 @@ h1 { font-size:24px; line-height:1.2; font-weight:700; margin:0; }
 .reason { margin:6px 0; font-size:14px; }
 .turn { margin:12px 0 0; padding:10px 0 0; border-top:1px dashed var(--rule); }
 .turn-head { display:flex; justify-content:space-between; gap:12px; font-size:13.5px; color:var(--muted); }
+.turn-stop { flex:1; color:var(--ink); font-weight:600; } .answered-vs { margin:4px 0; font-size:13.5px; color:var(--c); }
 .prompt code { overflow-wrap:anywhere; }
 .now { margin:8px 0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, var(--c) 9%, var(--surface)); display:grid; gap:8px; }
 .now-line { display:flex; gap:10px; } .now-line .k { font-weight:650; }
 .agent { padding-left:10px; border-left:3px solid color-mix(in srgb, var(--c) 45%, transparent); }
 .agent-meta, .agents-done { color:var(--muted); font-size:13px; }
+.agents-ended { list-style:none; margin:6px 0; padding:0; display:grid; gap:2px; color:var(--muted); font-size:13px; }
 .tasks { margin:10px 0 4px; } .tasks-head { font-size:14px; color:var(--muted); margin-bottom:6px; }
 .tasks ol { list-style:none; margin:0; padding:0; display:grid; gap:3px; font-size:14px; }
 .tasks li { display:flex; gap:10px; align-items:baseline; }
@@ -62,6 +71,7 @@ h1 { font-size:24px; line-height:1.2; font-weight:700; margin:0; }
 details > summary { cursor:pointer; }
 .step-reply > summary { color:var(--c); font-size:13.5px; margin-top:4px; }
 .reply { font-size:14px; line-height:1.55; max-width:78ch; }
+.reply-rule { border:0; border-top:1px solid var(--rule); margin:10px 0; max-width:78ch; }
 .open-reply { margin:8px 0; padding:12px 14px; border:1px solid var(--rule); border-radius:10px; background:var(--soft); }
 .reply p { margin:0 0 10px; } .reply h5 { font-size:14.5px; margin:14px 0 6px; }
 .reply pre { background:var(--soft); border:1px solid var(--rule); border-radius:8px; padding:10px 12px; white-space:pre-wrap; overflow-wrap:anywhere; }

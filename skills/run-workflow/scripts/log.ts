@@ -81,9 +81,16 @@ export function resultOf(events: Event[]): Event | null {
   return null;
 }
 
+// The last reply: the finish check reads it alone.
 export function replyOf(events: Event[]): string {
   const result = resultOf(events);
   return result && typeof result.result === 'string' ? result.result : '';
+}
+
+// Every reply of the turn, in order. A turn that pauses for its agents ends a reply each time it pauses, so its
+// questions can sit in any of them.
+export function repliesOf(events: Event[]): string[] {
+  return events.filter((e) => e.type === 'result' && typeof e.result === 'string' && e.result).map((e) => e.result);
 }
 
 // An event's time in seconds, or null when it has none.

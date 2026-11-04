@@ -1,2 +1,4 @@
 .DS_Store
 node_modules/
+.agents/roadmaps/
+.agents/plans/

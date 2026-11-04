@@ -42,6 +42,8 @@ export function useBox(): void {
     delete process.env.RUN_WORKFLOW_PORT;
     // The temp folder may itself sit inside a git checkout; git looks no higher than the test's root.
     process.env.GIT_CEILING_DIRECTORIES = root;
+    // The skills the tests' configs name, installed as personal skills so start finds them.
+    for (const name of STAND_IN_SKILLS) installSkill(join(root, 'claude', 'skills'), name);
     seams.print = (line: string) => void box.printed.push(line);
     seams.spawnDetached = (script: string, args: string[]) => {
       box.spawned.push({ script, args });
@@ -63,6 +65,12 @@ export function useBox(): void {
 
 // ── Configs and runs ──
 
+export const STAND_IN_SKILLS = ['prime', 'plan', 'dk-plan', 'dk-execute-plan', 'dk-review-code'];
+export function installSkill(skills: string, name: string): void {
+  mkdirSync(join(skills, name), { recursive: true });
+  writeFileSync(join(skills, name, 'SKILL.md'), `---\nname: ${name}\n---\n`);
+}
+
 export function writeConfig(config: Record<string, unknown>, name = 'config.json'): string {
   const path = join(box.root, name);
   writeFileSync(path, JSON.stringify(config, null, 2));
@@ -83,7 +91,7 @@ export function fourSteps(over: Record<string, unknown> = {}): Record<string, an
     name: 'first-run', workdir: 'work', runs: 'runs',
     steps: [
       { id: 'prime', label: 'Prime', prompt: '/prime', session: 'new' },
-      { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'continue',
+      { id: 'plan', label: 'Plan', prompt: '/dk-plan {request}', session: 'continue',
         done: { file: '.agents/plans/*.md', says: '/dk-execute-plan' },
         answers: ['take the recommendations', 'approved, go ahead', 'take the recommendations'] },
       { id: 'build', label: 'Build', prompt: '/dk-execute-plan {file:plan}', session: 'new',
@@ -95,10 +103,10 @@ export function fourSteps(over: Record<string, unknown> = {}): Record<string, an
   };
 }
 
-export function newRun(config: Record<string, unknown>, request = 'Drop the progress bar.', slotIn = false): string {
-  const { config: loaded, problems } = loadConfig(writeConfig(config));
+export function newRun(config: Record<string, unknown>, request = 'Drop the progress bar.', humanApproval = false): string {
+  const { config: loaded, problems } = loadConfig(writeConfig(humanApproval ? { ...config, mode: 'human-approval' } : config));
   assert.deepEqual(problems, []);
-  return makeRun(loaded, join(box.root, 'config.json'), request, slotIn);
+  return makeRun(loaded, join(box.root, 'config.json'), request);
 }
 
 // Example 1's run, with the stand-in's replies for all four steps.
@@ -173,6 +181,34 @@ export const temp = () => {
   return dir;
 };
 export const removeTemps = () => made.splice(0).forEach((dir) => rmSync(dir, { recursive: true, force: true }));
+
+// An agent's files in a session's subagents folder, as the CLI writes them: its meta file and, unless `noTranscript`,
+// a transcript of `calls` Read calls over `minutes`, ending on its own text when `ended`, on a tool call otherwise.
+export function writeAgent(folder: string, id: string, opts: { type?: string; description?: string; model?: string; calls?: number;
+  minutes?: number; ended?: boolean; finished?: boolean; noTranscript?: boolean } = {}): void {
+  const { type = 'Explore', description = 'Inventory forms', model = 'claude-opus-5-5', calls = 3, minutes = 2, ended = true } = opts;
+  mkdirSync(folder, { recursive: true });
+  const meta: Record<string, unknown> = { agentType: type, description, toolUseId: id };
+  if (opts.finished !== undefined) meta.finished = opts.finished;
+  writeFileSync(join(folder, `agent-${id}.meta.json`), JSON.stringify(meta));
+  if (opts.noTranscript) return;
+  const t0 = Date.parse('2026-11-04T10:00:00Z');
+  const at = (k: number) => new Date(t0 + (k / (calls + 1)) * minutes * 60000).toISOString();
+  const rows: unknown[] = [{ type: 'user', timestamp: at(0), message: { role: 'user', content: 'the brief' } }];
+  for (let k = 1; k <= calls; k++) {
+    const last = k === calls && !ended;
+    rows.push({ type: 'assistant', timestamp: last ? at(calls + 1) : at(k), message: { model, stop_reason: 'tool_use',
+      content: [{ type: 'tool_use', id: `${id}-${k}`, name: 'Read', input: { file_path: `/w/file-${k}.ts` } }] } });
+    if (!last) rows.push({ type: 'user', timestamp: at(k), message: { content: [{ type: 'tool_result', tool_use_id: `${id}-${k}`, content: 'ok' }] } });
+  }
+  if (ended) rows.push({ type: 'assistant', timestamp: at(calls + 1), message: { model, stop_reason: 'end_turn', content: [{ type: 'text', text: 'Done.' }] } });
+  writeFileSync(join(folder, `agent-${id}.jsonl`), rows.map((r) => JSON.stringify(r)).join('\n') + '\n');
+}
+
+// A turn's own assistant event that starts the agents named.
+export const startsAgents = (...ids: string[]) => ({
+  type: 'assistant', message: { content: ids.map((id) => ({ type: 'tool_use', id, name: 'Agent', input: { subagent_type: 'Explore', description: 'x' } })) }
+});
 
 // A copy of a sample with its lines changed, so lines() reads a file of its own.
 export function variant(name: string, change: (rows: string[]) => string[]): string {

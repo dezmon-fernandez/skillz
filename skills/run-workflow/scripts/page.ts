@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The one status page for every workflow run on this Mac: the run list, newest first, and the open run's steps,
-// decisions, notes and report. A step waiting on the developer shows an answer box, and the header carries the
-// Speed / Slot in switch. view.ts reads a run and render.ts draws it; this file serves it.
+// decisions, notes and report, or several runs side by side in columns (`/?runs=<id>&runs=<id>`). A step waiting on the developer shows an answer box, and the header carries the
+// Autonomous / Human approval switch. view.ts reads a run and render.ts draws it; this file serves it.
 //
 //   node --no-warnings <skill>/scripts/page.ts [--port 8790]
 //
@@ -41,10 +41,14 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   // Reads too: a page that rebinds its own name to 127.0.0.1 could otherwise read every run's replies.
   if (!thisMachine(req)) return reply(res, 403, 'refused: not addressed to 127.0.0.1 or localhost');
   const open = runFolder(url.searchParams.get('run')) ?? registered()[0] ?? null;
+  // The runs on screen: those `runs` names, each its folder, or its id alone when it is not registered, which the
+  // page shows as a problem and never reads; else the one `run` opens.
+  const named = url.searchParams.getAll('runs');
+  const shown = named.length ? named.map((id) => runFolder(id) ?? id) : open ? [open] : [];
   if (req.method === 'GET') {
     if (url.pathname === '/whoami') return reply(res, 200, JSON.stringify({ app: 'run-workflow' }), 'application/json');
-    if (url.pathname === '/') return reply(res, 200, pageHtml(open), 'text/html; charset=utf-8');
-    if (url.pathname === '/live') return reply(res, 200, liveHtml(open), 'text/html; charset=utf-8');
+    if (url.pathname === '/') return reply(res, 200, pageHtml(shown), 'text/html; charset=utf-8');
+    if (url.pathname === '/live') return reply(res, 200, liveHtml(shown), 'text/html; charset=utf-8');
     if (url.pathname === '/report') {
       let text: string;
       try {
@@ -92,7 +96,7 @@ export function handleAnswer(form: URLSearchParams): [number, string] {
   const text = kind === 'reply' ? (form.get('text') ?? '').replace(/\r\n/g, '\n') : '';
   if (kind === 'reply' && !text.trim()) return [400, 'empty answer'];
   if (!saveAnswer(dir, step.id, turn, { kind, text, at: new Date().toISOString() })) return [409, 'already sent'];
-  return back(id);
+  return back(id, form.get('view'));
 }
 
 export function handleMode(form: URLSearchParams): [number, string] {
@@ -100,9 +104,9 @@ export function handleMode(form: URLSearchParams): [number, string] {
   const dir = runFolder(id);
   if (!dir || !loadRun(dir)) return [404, 'no such run'];
   const mode = form.get('mode');
-  if (mode !== 'speed' && mode !== 'slot-in') return [400, 'mode must be speed or slot-in'];
+  if (mode !== 'autonomous' && mode !== 'human-approval') return [400, 'mode must be autonomous or human-approval'];
   writeMode(dir, mode);
-  return back(id);
+  return back(id, form.get('view'));
 }
 
 // The registered run folder with this id, or null. An id is a folder name, never a path.
@@ -111,7 +115,12 @@ export function runFolder(id: string | null): string | null {
   return registered().find((dir) => basename(dir) === id) ?? null;
 }
 
-const back = (id: string): [number, string] => [303, `/?run=${encodeURIComponent(id)}`];
+// Back to the view the form was sent from: `view` is the ids of the runs on screen, joined by commas.
+function back(id: string, view: string | null): [number, string] {
+  const ids = (view ?? '').split(',').filter(Boolean);
+  if (ids.length > 1) return [303, `/?${ids.map((one) => `runs=${encodeURIComponent(one)}`).join('&')}`];
+  return [303, `/?run=${encodeURIComponent(id)}`];
+}
 
 // ── The request and the response ──
 

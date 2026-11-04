@@ -5,10 +5,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 {{{css}}}</style></head><body><main>
-<div id="live" data-run="{{run}}">{{{live}}}</div>
+<div id="live" data-query="{{query}}">{{{live}}}</div>
 </main><script>
 const live = document.getElementById('live');
-const run = live.dataset.run;
+const query = live.dataset.query;
 const chosen = new Map();
 live.addEventListener('toggle', e => { if (e.target.dataset && e.target.dataset.key) chosen.set(e.target.dataset.key, e.target.open); }, true);
 async function tick() {
@@ -17,13 +17,19 @@ async function tick() {
   const active = document.activeElement;
   if (active && live.contains(active) && active.matches('textarea, input, button')) return;
   const typed = new Map([...live.querySelectorAll('textarea[data-key]')].filter(t => t.value).map(t => [t.dataset.key, t.value]));
+  // Safari and Firefox on macOS do not focus a checkbox on click, so the focus check above misses a tick.
+  const ticked = new Map([...live.querySelectorAll('input[name=runs]')].map(b => [b.value, b.checked]));
+  const across = live.querySelector('.columns')?.scrollLeft ?? 0;
   try {
-    const r = await fetch('/live?run=' + encodeURIComponent(run), {cache: 'no-store'});
+    const r = await fetch('/live?' + query, {cache: 'no-store'});
     if (!r.ok) return;
     live.innerHTML = await r.text();
     live.querySelectorAll('details[data-key]').forEach(d => { if (chosen.has(d.dataset.key)) d.open = chosen.get(d.dataset.key); });
     live.querySelectorAll('textarea[data-key]').forEach(t => { if (typed.has(t.dataset.key)) t.value = typed.get(t.dataset.key); });
+    live.querySelectorAll('input[name=runs]').forEach(b => { if (ticked.has(b.value)) b.checked = ticked.get(b.value); });
+    const columns = live.querySelector('.columns');
+    if (columns) columns.scrollLeft = across;
   } catch (e) {}
 }
-if (run) setInterval(tick, 5000);
+if (query) setInterval(tick, 5000);
 </script></body></html>

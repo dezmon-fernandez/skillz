@@ -1,6 +1,6 @@
 // node --no-warnings --test tests/run-workflow/driver.test.ts
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { closeSync, mkdirSync, openSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -9,19 +9,19 @@ import { drive } from '../../skills/run-workflow/scripts/driver.ts';
 import { exitOf } from '../../skills/run-workflow/scripts/turn.ts';
 import { aliveAs, loadRun, saveRun } from '../../skills/run-workflow/scripts/run-folder.ts';
 import {
-  PRIMED, answered, bin, box, decisions, exampleOne, flag, fourSteps, init, newRun, promptOf, reply, sampleLines, stepCalls,
+  PRIMED, answered, bin, box, decisions, exampleOne, flag, fourSteps, init, newRun, promptOf, reply, result, sampleLines, stepCalls,
   until, useBox
 } from './helpers.ts';
 
 useBox();
 
-describe('the driver in speed mode', () => {
-  it("speed answers the plan's stops from the config and moves on when it finishes", async () => {
+describe('the driver in autonomous mode', () => {
+  it("autonomous answers the plan's stops from the config and moves on when it finishes", async () => {
     const dir = exampleOne();
     await drive(dir);
     const run = loadRun(dir)!;
     const plan = run.steps[1];
-    assert.deepEqual(plan.turns.map((t) => t.prompt), ['/dk-generate-plan Drop the progress bar.', 'take the recommendations', 'approved, go ahead', 'take the recommendations']);
+    assert.deepEqual(plan.turns.map((t) => t.prompt), ['/dk-plan Drop the progress bar.', 'take the recommendations', 'approved, go ahead', 'take the recommendations']);
     assert.deepEqual(plan.turns.map((t) => t.by), ['config', 'config', 'config', 'config']);
     assert.equal(plan.state, 'done');
     assert.equal(plan.file, '.agents/plans/p.md');
@@ -41,7 +41,7 @@ describe('the driver in speed mode', () => {
     const run = loadRun(dir)!;
     assert.equal(run.steps[0].turns.length, 1);
     assert.equal(run.steps[0].state, 'done');
-    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the progress bar.');
+    assert.equal(run.steps[1].turns[0].prompt, '/dk-plan Drop the progress bar.');
     const found = decisions(dir).filter((d) => d.step === 'prime');
     assert.equal(found.filter((d) => d.kind === 'decided-alone').length, 3);
     assert.equal(answered(found).length, 0);
@@ -91,7 +91,7 @@ describe('the driver in speed mode', () => {
       seconds: ended ? 1 : null, exit: ended ? 0 : null, sessionCost: ended ? 0.5 : null, cost: ended ? 0.5 : null, watched: 'noted' as const
     });
     run.steps[0] = { ...run.steps[0], state: 'running', session: 'd927ec62-fc1a-4016-9073-c3b01d3098bc',
-      turns: [turn(0, '/dk-generate-plan Drop the progress bar.', true), turn(1, 'take the recommendations', false)] };
+      turns: [turn(0, '/dk-plan Drop the progress bar.', true), turn(1, 'take the recommendations', false)] };
     saveRun(dir, run);
     writeFileSync(join(dir, 'steps/01-plan-0.jsonl'), sampleLines('plan-asks.jsonl').join('\n') + '\n');
     writeFileSync(join(dir, 'steps/01-plan-1.jsonl'), logLines.join('\n') + '\n');
@@ -104,7 +104,7 @@ describe('the driver in speed mode', () => {
     await drive(ended);
     let run = loadRun(ended)!;
     assert.deepEqual(stepCalls().map((c) => promptOf(c.args)), ['approved, go ahead']);
-    assert.deepEqual(run.steps[0].turns.map((t) => t.prompt), ['/dk-generate-plan Drop the progress bar.', 'take the recommendations', 'approved, go ahead']);
+    assert.deepEqual(run.steps[0].turns.map((t) => t.prompt), ['/dk-plan Drop the progress bar.', 'take the recommendations', 'approved, go ahead']);
     assert.equal(run.steps[0].turns[1].exit, 0);
     assert.equal(run.steps[0].turns[1].sessionCost, 0.9228997999999999);
     assert.equal(run.steps[0].state, 'done');
@@ -198,6 +198,57 @@ describe('the driver in speed mode', () => {
     assert.match(run.reason, /Plan/);
     assert.equal(run.steps[1].turns.length, 0);
     assert.equal(stepCalls().length, 1);
+  });
+
+  it("a grill turn's open questions are logged with the answer sent", async () => {
+    reply(1, PRIMED);
+    reply(2, 'grill-paused.jsonl');
+    reply(3, [init('s-grill'), result('Nothing is left open.', 6, 's-grill')]);
+    const dir = newRun(fourSteps({ steps: [fourSteps().steps[0],
+      { id: 'grill', label: 'Grill', prompt: '/grill-me {request}', session: 'continue', done: { says: 'Nothing is left open' },
+        answers: ['take recommendation'] }] }));
+    await drive(dir);
+    const first = decisions(dir)[0];
+    assert.equal(first.kind, 'answered');
+    assert.equal(first.answer, 'take recommendation');
+    assert.equal(first.questions.length, 3);
+    assert.ok(first.questions.every(([q, rec]) => q && rec), JSON.stringify(first.questions));
+    assert.equal(loadRun(dir)!.steps[1].state, 'done');
+  });
+
+  it('the finish check reads the last reply only', async () => {
+    reply(1, [init('s-plan'), result('Next: /dk-execute-plan .agents/plans/p.md', 1, 's-plan'), result('Still reading.', 1, 's-plan')]);
+    const step = { ...fourSteps().steps[1], session: 'new', done: { says: '/dk-execute-plan' }, answers: [] };
+    const dir = newRun(fourSteps({ steps: [step] }));
+    await drive(dir);
+    const run = loadRun(dir)!;
+    assert.equal(run.steps[0].state, 'waiting');
+    assert.equal(run.steps[0].reason, "the config's 0 answers ran out without “/dk-execute-plan” in its reply");
+  });
+
+  it('two runs driven at once each end with their own times and costs', async () => {
+    const arm = (name: string, cost: number) => {
+      const fake = join(box.root, `fake-${name}`);
+      const workdir = join(box.root, `work-${name}`);
+      mkdirSync(fake);
+      mkdirSync(workdir);
+      spawnSync('git', ['-C', workdir, 'init', '-q']);
+      writeFileSync(join(fake, 'reply-1.jsonl'), [init(`s-${name}`), result(`Primed ${name}.`, cost, `s-${name}`)].join('\n') + '\n');
+      writeFileSync(join(fake, 'reply-1.sleep'), '0.3');
+      const config = { ...fourSteps(), name, workdir: `work-${name}`, runs: `runs-${name}`, env: { FAKE_CLAUDE_DIR: fake } };
+      config.steps = config.steps.slice(0, 1);
+      return newRun(config);
+    };
+    const a = arm('a', 1.25);
+    const b = arm('b', 2.5);
+    await Promise.all([drive(a), drive(b)]);
+    const [ra, rb] = [loadRun(a)!, loadRun(b)!];
+    assert.deepEqual([ra.state, rb.state], ['done', 'done']);
+    assert.equal(ra.steps[0].turns[0].cost, 1.25);
+    assert.equal(rb.steps[0].turns[0].cost, 2.5);
+    assert.ok(ra.steps[0].turns[0].seconds! > 0 && rb.steps[0].turns[0].seconds! > 0);
+    assert.equal(ra.steps[0].session, 's-a');
+    assert.equal(rb.steps[0].session, 's-b');
   });
 
   it('snapshots keep the plan as it was after each turn', async () => {

@@ -1,6 +1,6 @@
 // node --no-warnings --test tests/run-workflow/answers.test.ts
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { after, beforeEach, describe, it } from 'node:test';
 import { readAnswer, readMode, saveAnswer, writeMode } from '../../skills/run-workflow/scripts/answers.ts';
@@ -24,17 +24,25 @@ describe('the answer files and the mode', () => {
     assert.deepEqual(readdirSync(join(dir, 'answers')), ['plan-1.json']);
   });
 
-  it('an unknown or missing mode reads as speed', () => {
+  it('a missing or unknown mode file reads as autonomous', () => {
     const dir = temp();
-    assert.equal(readMode(dir), 'speed');
+    assert.equal(readMode(dir), 'autonomous');
     writeFileSync(join(dir, 'mode'), 'fast\n');
-    assert.equal(readMode(dir), 'speed');
-    writeMode(dir, 'slot-in');
-    assert.equal(readMode(dir), 'slot-in');
+    assert.equal(readMode(dir), 'autonomous');
+    writeMode(dir, 'human-approval');
+    assert.equal(readMode(dir), 'human-approval');
+  });
+
+  it('a run started before the rename keeps its mode', () => {
+    const dir = temp();
+    writeFileSync(join(dir, 'mode'), 'speed\n');
+    assert.equal(readMode(dir), 'autonomous');
+    writeFileSync(join(dir, 'mode'), 'slot-in\n');
+    assert.equal(readMode(dir), 'human-approval');
   });
 });
 
-describe('the driver in speed mode', () => {
+describe('the driver in autonomous mode', () => {
   it('every answer sent is logged with the questions it accepted', async () => {
     const dir = exampleOne();
     await drive(dir);
@@ -54,7 +62,7 @@ describe('the driver in speed mode', () => {
     reply(1, 'plan-asks.jsonl');
     reply(2, 'plan-asks.jsonl');
     reply(3, PRIMED);
-    const step = { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'new',
+    const step = { id: 'plan', label: 'Plan', prompt: '/dk-plan {request}', session: 'new',
       done: { file: '.agents/plans/*.md' }, answers: ['take the recommendations'] };
     const dir = newRun(fourSteps({ steps: [step] }));
     await drive(dir);
@@ -68,21 +76,21 @@ describe('the driver in speed mode', () => {
   });
 });
 
-describe('the developer slots in', () => {
+describe('human approval', () => {
   beforeEach(() => {
     seams.patience = 8000;
   });
   const planOnly = (over: Record<string, unknown> = {}) =>
     fourSteps({ steps: [{ ...fourSteps().steps[1], session: 'new', ...over }, { ...fourSteps().steps[2] }] });
 
-  it("slotted in, a stop waits, and the developer's words go to the step exactly", async () => {
+  it("in human approval, a stop waits, and the developer's words go to the step exactly", async () => {
     reply(1, 'plan-asks.jsonl');
     reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     reply(3, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });
     const dir = newRun(planOnly(), 'Drop the progress bar.', true);
     const running = drive(dir);
     const waiting = await until(dir, (r) => r.steps[0].state === 'waiting');
-    assert.match(waiting.steps[0].reason, /^slotted in/);
+    assert.match(waiting.steps[0].reason, /^human approval/);
     assert.equal(stepCalls().length, 1);
     const words = 'Top out at 90%.\nKeep 50–59% strong, “as now”.';
     saveAnswer(dir, 'plan', 0, { kind: 'reply', text: words, at: new Date().toISOString() });
@@ -96,7 +104,7 @@ describe('the developer slots in', () => {
     assert.equal(run.steps[0].state, 'done');
   });
 
-  it('slotted in, a finished step that asks still waits', async () => {
+  it('in human approval, a finished step that asks still waits', async () => {
     reply(1, 'requirements-stop.jsonl');
     const config = fourSteps();
     config.steps = config.steps.slice(0, 2);
@@ -105,11 +113,11 @@ describe('the developer slots in', () => {
     await drive(dir);
     const run = loadRun(dir)!;
     assert.equal(run.steps[0].state, 'waiting');
-    assert.equal(run.steps[0].reason, 'slotted in: its reply asks');
+    assert.equal(run.steps[0].reason, 'human approval: its reply asks');
     assert.equal(stepCalls().length, 1);
   });
 
-  it('switching to speed answers a stop already waiting', async () => {
+  it('switching to autonomous answers a stop already waiting', async () => {
     seams.pollMs = 2000;
     reply(1, 'plan-asks.jsonl');
     reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
@@ -119,7 +127,7 @@ describe('the developer slots in', () => {
     await until(dir, (r) => r.steps[0].state === 'waiting');
     await new Promise((done) => setTimeout(done, 300));
     assert.equal(stepCalls().length, 1);
-    writeMode(dir, 'speed');
+    writeMode(dir, 'autonomous');
     const t0 = Date.now();
     await until(dir, (r) => r.steps[0].turns.length === 2, 4000);
     assert.ok(Date.now() - t0 < 4000);
@@ -130,7 +138,7 @@ describe('the developer slots in', () => {
     assert.deepEqual(answered(decisions(dir)).map((d) => [d.answer, d.by]), [['take the recommendations', 'config']]);
   });
 
-  it('switching to speed moves on a finished step that slot-in held', async () => {
+  it('switching to autonomous moves on a finished step that human approval held', async () => {
     reply(1, 'requirements-stop.jsonl');
     reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     const config = fourSteps();
@@ -138,14 +146,26 @@ describe('the developer slots in', () => {
     const dir = newRun(config, 'Drop the progress bar.', true);
     const running = drive(dir);
     await until(dir, (r) => r.steps[0].state === 'waiting');
-    writeMode(dir, 'speed');
+    writeMode(dir, 'autonomous');
     await running;
     const run = loadRun(dir)!;
     assert.equal(run.steps[0].state, 'done');
     assert.equal(run.steps[0].reason, '');
     assert.equal(run.steps[0].turns.length, 1);
-    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the progress bar.');
+    assert.equal(run.steps[1].turns[0].prompt, '/dk-plan Drop the progress bar.');
     assert.equal(answered(decisions(dir)).length, 0);
+  });
+
+  it('a config with human-approval starts in human approval', async () => {
+    reply(1, 'plan-asks.jsonl');
+    const dir = newRun({ ...planOnly(), mode: 'human-approval' });
+    assert.equal(readFileSync(join(dir, 'mode'), 'utf8'), 'human-approval\n');
+    seams.patience = 400;
+    await drive(dir);
+    const run = loadRun(dir)!;
+    assert.equal(run.steps[0].state, 'waiting');
+    assert.match(run.steps[0].reason, /^human approval/);
+    assert.equal(stepCalls().length, 1);
   });
 
   it("a stop the developer answered uses its entry of the config's answers", async () => {
@@ -158,11 +178,11 @@ describe('the developer slots in', () => {
     await until(dir, (r) => r.steps[0].state === 'waiting');
     saveAnswer(dir, 'plan', 0, { kind: 'reply', text: 'mine', at: new Date().toISOString() });
     await until(dir, (r) => r.steps[0].turns.length === 2 && r.steps[0].state === 'waiting');
-    writeMode(dir, 'speed');
+    writeMode(dir, 'autonomous');
     await running;
     // Its second stop takes the config's second answer, not its first.
     assert.deepEqual(loadRun(dir)!.steps[0].turns.map((t) => [t.prompt, t.by]),
-      [['/dk-generate-plan Drop the progress bar.', 'config'], ['mine', 'developer'], ['approved, go ahead', 'config']]);
+      [['/dk-plan Drop the progress bar.', 'config'], ['mine', 'developer'], ['approved, go ahead', 'config']]);
   });
 
   it('go on moves to the next step', async () => {
@@ -214,6 +234,6 @@ describe('the developer slots in', () => {
     saveAnswer(dir, 'plan', 1, { kind: 'retry', text: '', at: new Date().toISOString() });
     await running;
     assert.deepEqual(loadRun(dir)!.steps[0].turns.map((t) => t.prompt),
-      ['/dk-generate-plan Drop the progress bar.', 'take the recommendations', 'take the recommendations', 'approved, go ahead']);
+      ['/dk-plan Drop the progress bar.', 'take the recommendations', 'take the recommendations', 'approved, go ahead']);
   });
 });

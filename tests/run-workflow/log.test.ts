@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
-import { initOf, lines, resultOf, transcriptPath, turnOver } from '../../skills/run-workflow/scripts/log.ts';
+import { initOf, lines, repliesOf, replyOf, resultOf, transcriptPath, turnOver } from '../../skills/run-workflow/scripts/log.ts';
+import { openQuestions } from '../../skills/run-workflow/scripts/questions.ts';
 import { seams } from '../../skills/run-workflow/scripts/launch.ts';
 import { raw, removeTemps, sample, temp, variant } from './helpers.ts';
 
@@ -46,6 +47,29 @@ describe('the step log readers', () => {
     } finally {
       seams.cacheBytes = before;
     }
+  });
+});
+
+describe("a turn's replies", () => {
+  it("a paused turn's five replies are all read, in order", () => {
+    const replies = repliesOf(lines(sample('grill-paused.jsonl')));
+    assert.equal(replies.length, 5);
+    assert.deepEqual(replies.map((r) => (r.match(/❓/g) ?? []).length), [3, 0, 4, 0, 3]);
+    const results = raw('grill-paused.jsonl').map((row) => JSON.parse(row)).filter((e) => e.type === 'result');
+    assert.deepEqual(replies, results.map((e) => e.result));
+  });
+
+  it('a turn with one reply reads as it did', () => {
+    const events = lines(sample('plan-asks.jsonl'));
+    assert.deepEqual(repliesOf(events), [replyOf(events)]);
+  });
+
+  it('a turn with no result line has no reply and no open question', () => {
+    const path = join(temp(), 'init-only.jsonl');
+    writeFileSync(path, JSON.stringify({ type: 'system', subtype: 'init', session_id: 's' }) + '\n');
+    const replies = repliesOf(lines(path));
+    assert.deepEqual(replies, []);
+    assert.deepEqual(openQuestions(replies), []);
   });
 });
 

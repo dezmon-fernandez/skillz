@@ -7,14 +7,18 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { appendDecision, saveAnswer } from '../../skills/run-workflow/scripts/answers.ts';
 import { drive } from '../../skills/run-workflow/scripts/driver.ts';
+import { lines, repliesOf, subagentsOf, transcriptPath } from '../../skills/run-workflow/scripts/log.ts';
+import { md } from '../../skills/run-workflow/scripts/markdown.ts';
+import { openQuestions } from '../../skills/run-workflow/scripts/questions.ts';
 import { loadRun, saveRun } from '../../skills/run-workflow/scripts/run-folder.ts';
+import { startsAgents, writeAgent } from './helpers.ts';
 import { aRun, get, idOf, samples, turn, usePage } from './page-helpers.ts';
 
 usePage();
 
 // The part of the page under one step: from its row to the next step's.
 function under(html: string, step: string): string {
-  const start = html.indexOf(`id="step-${step}"`);
+  const start = html.search(new RegExp(`id="step-[^"]*-${step}"`));
   assert.ok(start >= 0, `no step ${step} on the page`);
   const next = html.indexOf('id="step-', start + 1);
   return html.slice(start, next < 0 ? undefined : next);
@@ -44,7 +48,7 @@ describe("the run's view", () => {
     assert.ok(opened < 0 || html.lastIndexOf('</details>', at) > opened || /^<details[^>]*\bopen\b/.test(html.slice(opened)), 'the reply is folded');
   });
 
-  it('a speed answer shows as answered for you, with its questions', async () => {
+  it('an autonomous answer shows as answered for you, with its questions', async () => {
     const dir = aRun('first-run', { state: 'done', reason: '', turns: [turn(0, '02-plan-0', 'p'), turn(1, '02-plan-1', 'take the recommendations')] });
     appendDecision(dir, {
       at: '2026-11-04T10:02:00Z', step: 'plan', turn: 0, kind: 'answered', answer: 'take the recommendations', by: 'config',
@@ -55,6 +59,109 @@ describe("the run's view", () => {
     assert.ok(html.includes('Where does the percent reach full colour?'));
     assert.doesNotMatch(under(await live(dir), 'plan'), /<textarea/);
     assert.ok(!visible(under(await live(dir), 'prime')).includes('answered for you'));
+  });
+
+  it('a paused turn shows every reply in order on the page', async () => {
+    const dir = aRun();
+    writeFileSync(join(dir, 'steps', '02-plan-0.jsonl'), readFileSync(join(samples, 'grill-paused.jsonl')));
+    const html = under(await live(dir), 'plan');
+    const replies = repliesOf(lines(join(dir, 'steps', '02-plan-0.jsonl')));
+    assert.equal(replies.length, 5);
+    const at = replies.map((r) => html.indexOf(md(r)));
+    assert.ok(at.every((k) => k >= 0), JSON.stringify(at));
+    assert.deepEqual([...at].sort((a, b) => a - b), at);
+    // The last reply, the one the step waits on, is open; the earlier ones are folded above it.
+    assert.match(html.slice(html.lastIndexOf('<div', at[4])), /^<div class="reply open-reply">/);
+  });
+
+  // A plan turn whose log starts the agents named, their files beside the session's transcript.
+  function withAgents(dir: string, ids: string[], ended: boolean): string {
+    const run = loadRun(dir)!;
+    const events = [JSON.stringify({ type: 'system', subtype: 'init', session_id: 's' }), JSON.stringify(startsAgents(...ids))];
+    if (ended) events.push(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, result: 'Here is what I found.', total_cost_usd: 1 }));
+    writeFileSync(join(dir, 'steps', '02-plan-0.jsonl'), events.join('\n') + '\n');
+    if (!ended) {
+      run.steps[1] = { ...run.steps[1], state: 'running', reason: '', turns: [{ ...run.steps[1].turns[0], ended: null, seconds: null }] };
+      run.state = 'running';
+      saveRun(dir, run);
+    }
+    return subagentsOf(transcriptPath(run.workdir, 's'));
+  }
+
+  it('an ended turn lists every agent with its type, task, model, time and calls', async () => {
+    const dir = aRun();
+    const folder = withAgents(dir, ['toolu_1', 'toolu_2'], true);
+    writeAgent(folder, 'toolu_1', { description: 'Inventory forms', calls: 3, minutes: 2 });
+    writeAgent(folder, 'toolu_2', { description: 'Trace the save', calls: 5, minutes: 1.5 });
+    const html = visible(under(await live(dir), 'plan'));
+    assert.ok(html.includes('Explore "Inventory forms" · opus-5-5 · 2.0 min · 3 calls · finished'), html);
+    assert.ok(html.includes('Explore "Trace the save" · opus-5-5 · 1.5 min · 5 calls · finished'), html);
+  });
+
+  it('an agent cut off when its turn ended says it did not finish', async () => {
+    const dir = aRun();
+    writeAgent(withAgents(dir, ['toolu_1'], true), 'toolu_1', { ended: false });
+    assert.match(visible(under(await live(dir), 'plan')), /Explore "Inventory forms" · opus-5-5 · 2\.0 min · 3 calls · did not finish/);
+  });
+
+  it('a running turn shows its agents live, as before', async () => {
+    const dir = aRun();
+    writeAgent(withAgents(dir, ['toolu_1'], false), 'toolu_1', { ended: false, calls: 2 });
+    const html = under(await live(dir), 'plan');
+    assert.match(html, /<div class="agent"><strong>Explore &quot;Inventory forms&quot;<\/strong> <span class="agent-meta">opus-5-5, [^,]+, 2 calls<\/span>/);
+    assert.ok(html.includes('<code>Read file-2.ts</code>'), html);
+    assert.doesNotMatch(visible(html), /did not finish/);
+  });
+
+  // The head of a step's turn n: from its "turn n" to its prompt.
+  const headOf = (html: string, n: number) => {
+    const start = html.indexOf(`turn ${n}`);
+    assert.ok(start >= 0, `no turn ${n}`);
+    return html.slice(start, html.indexOf('class="prompt"', start));
+  };
+
+  it("a stopped turn's head shows its part and why", async () => {
+    const waiting = { ...turn(0, '02-plan-0', '/grill-me Drop the progress bar.'), stop: { part: 'Grill' as const, why: 'asked 4 questions on scope' } };
+    const dir = aRun('first-run', { turns: [waiting] });
+    assert.match(visible(headOf(under(await live(dir), 'plan'), 0)), /Grill · stopped: asked 4 questions on scope/);
+  });
+
+  it('a turn that finished shows no stop tag', async () => {
+    const finished = { ...turn(0, '02-plan-0', '/dk-plan x'), stop: { part: 'Finished' as const, why: 'finished' } };
+    const dir = aRun('first-run', { state: 'done', reason: '', turns: [finished] });
+    assert.doesNotMatch(visible(under(await live(dir), 'plan')), /stopped:/);
+  });
+
+  it("a turn not watched yet shows the runner's reason only", async () => {
+    const dir = aRun('first-run', { turns: [{ ...turn(0, '02-plan-0', '/grill-me x'), watched: 'watching' }] });
+    const html = visible(under(await live(dir), 'plan'));
+    assert.ok(html.includes('human approval: its reply asks'), html);
+    assert.doesNotMatch(html, /stopped:/);
+  });
+
+  it('an answer turn shows how many recommendations it took and where it differed', async () => {
+    const asked = { ...turn(0, '02-plan-0', '/grill-me x'), stop: { part: 'Grill' as const, why: 'asked 4 questions' } };
+    const answer = { ...turn(1, '02-plan-1', 'take recommendation'), answered: { took: 3, of: 4, differed: ['Q2 Edge cases'] } };
+    const dir = aRun('first-run', { turns: [asked, answer] });
+    const html = visible(under(await live(dir), 'plan'));
+    assert.ok(html.includes('took 3 of 4 recommendations · differed on Q2 Edge cases'), html);
+    // Turn 0 has an answer after it, so it stopped.
+    assert.match(visible(headOf(under(await live(dir), 'plan'), 0)), /Grill · stopped: asked 4 questions/);
+  });
+
+  it('an answered turn lists the questions read from its log, though its decision logged none', async () => {
+    const dir = aRun('first-run', { turns: [turn(0, '02-plan-0', '/grill-me x'), turn(1, '02-plan-1', 'take recommendation')] });
+    writeFileSync(join(dir, 'steps', '02-plan-0.jsonl'), readFileSync(join(samples, 'grill-paused.jsonl')));
+    appendDecision(dir, {
+      at: '2026-11-04T10:02:00Z', step: 'plan', turn: 0, kind: 'answered', answer: 'take recommendation', by: 'config',
+      questions: [], evidence: 'steps/02-plan-0.jsonl:604'
+    });
+    const html = visible(under(await live(dir), 'plan'));
+    const open = openQuestions(repliesOf(lines(join(dir, 'steps', '02-plan-0.jsonl'))));
+    assert.equal(open.length, 3);
+    assert.match(html, /asked 3 answered for you: take recommendation/);
+    for (const [q, rec] of open) assert.ok(html.includes(q) && html.includes(rec.slice(0, 60)), q);
+    assert.doesNotMatch(html, /No question found/);
   });
 
   it('a failed step shows its last words and Retry and End run', async () => {
@@ -128,7 +235,7 @@ describe("the run's view", () => {
     writeFileSync(join(broken, 'run.json'), '{"id": ');
     const [status, html] = await get(`/?run=${idOf(good)}`);
     assert.equal(status, 200);
-    assert.ok(html.includes('id="step-prime"') && html.includes('id="step-plan"'));
+    assert.ok(html.includes(`id="step-${idOf(good)}-prime"`) && html.includes(`id="step-${idOf(good)}-plan"`));
     assert.ok(visible(html).includes(`could not read ${join(broken, 'run.json')}`), visible(html));
     const [status2, other] = await get(`/live?run=${broken.split('/').pop()}`);
     assert.equal(status2, 200);
@@ -167,8 +274,8 @@ describe("the run's view", () => {
     const dir = aRun();
     const [, html] = await get(`/?run=${idOf(dir)}`);
     assert.match(html, /<form[^>]*action="\/mode"/);
-    assert.match(html, /<input type="radio" name="mode" value="speed" checked/);
-    assert.match(html, /<input type="radio" name="mode" value="slot-in"(?! checked)/);
+    assert.match(html, /<input type="radio" name="mode" value="autonomous" checked/);
+    assert.match(html, /<input type="radio" name="mode" value="human-approval"(?! checked)/);
     assert.match(visible(html), /\$1\.00/);
     assert.match(visible(html), /waiting/);
   });

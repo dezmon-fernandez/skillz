@@ -25,7 +25,7 @@ describe('a turn', () => {
     const dir = newRun(fourSteps({ steps: [step] }), request);
     await drive(dir);
     const sent = stepCalls().map((c) => promptOf(c.args));
-    assert.deepEqual(sent, [`/dk-generate-plan ${request}`, ...answers]);
+    assert.deepEqual(sent, [`/dk-plan ${request}`, ...answers]);
     // The prompt is the last word, after every option.
     for (const { args } of stepCalls()) assert.deepEqual(args.slice(-2), ['--', promptOf(args)]);
   });

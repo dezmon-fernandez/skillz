@@ -6,7 +6,8 @@ import { copyFileSync, readFileSync, rmSync, statSync, writeFileSync } from 'nod
 import { basename, join, resolve } from 'node:path';
 import { applyAnswer, logDecisions, needsAnswer, nextConfigAnswer, readMode, waitForAnswer } from './answers.ts';
 import { finished, newestMatch } from './finished.ts';
-import { initOf, lines, replyOf, resultOf } from './log.ts';
+import { initOf, lines, repliesOf, replyOf, resultOf } from './log.ts';
+import { openQuestions } from './questions.ts';
 import { seams } from './launch.ts';
 import { aliveAs, driverAlive, loadRun, saveRun, stdout } from './run-folder.ts';
 import { recordEnd, runTurn } from './turn.ts';
@@ -198,7 +199,9 @@ function afterTurn(runDir: string, run: Run, config: Config, i: number, turn: Tu
   const sc = config.steps[i];
   const events = lines(join(runDir, turn.log));
   const result = resultOf(events);
+  // The finish check reads the last reply; the questions come from every reply.
   const reply = replyOf(events);
+  const replies = repliesOf(events);
   const [done, file] = finished(sc, reply, run.workdir, Date.parse(run.started));
   if (file) step.file = file;
   snapshot(runDir, run.workdir, step, turn);
@@ -211,9 +214,9 @@ function afterTurn(runDir: string, run: Run, config: Config, i: number, turn: Tu
     saveRun(runDir, run);
     return null;
   }
-  logDecisions(runDir, step, turn, reply, null, turn.by);
+  logDecisions(runDir, step, turn, replies, null, turn.by);
   const mode = readMode(runDir);
-  if (!needsAnswer(sc, done, reply, mode)) {
+  if (!needsAnswer(sc, done, openQuestions(replies).length > 0, mode)) {
     step.state = 'done';
     step.reason = '';
     run.state = 'running';
@@ -221,21 +224,21 @@ function afterTurn(runDir: string, run: Run, config: Config, i: number, turn: Tu
     saveRun(runDir, run);
     return null;
   }
-  if (mode === 'speed') {
+  if (mode === 'autonomous') {
     const answer = nextConfigAnswer(step, sc);
     if (answer !== null) {
-      logDecisions(runDir, step, turn, reply, answer, 'config');
+      logDecisions(runDir, step, turn, replies, answer, 'config');
       saveRun(runDir, run);
       return { kind: 'send', stepIndex: i, prompt: answer, by: 'config' };
     }
   }
   step.state = 'waiting';
   const k = sc.answers?.length ?? 0;
-  if (mode === 'speed') {
+  if (mode === 'autonomous') {
     step.reason = done ? `its reply asks, and the config's ${plural(k, 'answer')} ran out`
       : `the config's ${plural(k, 'answer')} ran out without ${unmet(sc, run, reply)}`;
   } else {
-    step.reason = done ? 'slotted in: its reply asks' : `slotted in: it has not left ${unmet(sc, run, reply)}`;
+    step.reason = done ? 'human approval: its reply asks' : `human approval: it has not left ${unmet(sc, run, reply)}`;
   }
   run.state = 'waiting';
   run.reason = `${step.label} is waiting on you`;

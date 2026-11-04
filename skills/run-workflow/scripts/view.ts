@@ -6,8 +6,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readDecisions, readMode } from './answers.ts';
 import { filesTouched, testsAdded } from './changes.ts';
-import { contentOf, label, lines, replyOf, stamp, subagentsOf, transcriptPath } from './log.ts';
-import { questions } from './questions.ts';
+import { contentOf, label, lines, repliesOf, stamp, subagentsOf, transcriptPath } from './log.ts';
+import { openQuestions } from './questions.ts';
 import { driverAlive, loadRun } from './run-folder.ts';
 import { agents, planInPrompt, taskState } from './tasks.ts';
 import { noteHeading } from './watcher.ts';
@@ -50,22 +50,16 @@ export function runData(runDir: string, now: number): RunView {
       const file = join(runDir, turn.log);
       if (!existsSync(file)) {
         if (turn.ended) sv.problems.push(`could not read ${turn.log}`);
-        sv.turns.push({ turn, reply: '', questions: [], alerts: [], agents: [], now: '' });
+        sv.turns.push({ turn, replies: [], questions: [], alerts: [], agents: [], now: '' });
         continue;
       }
       const log = lines(file);
-      const reply = replyOf(log);
-      let stepText = '';
-      try {
-        stepText = readFileSync(file, 'utf8');
-      } catch {
-        sv.problems.push(`could not read ${turn.log}`);
-      }
+      const replies = repliesOf(log);
       const mine = log.filter((e) => e.type === 'assistant' && !e.parent_tool_use_id)
         .flatMap((e) => (Array.isArray(e.message?.content) ? e.message.content : [])).filter((b: any) => b?.type === 'tool_use');
       sv.turns.push({
-        turn, reply, questions: reply ? questions(reply) : [], alerts: alertsIn(log, step.label),
-        agents: subagents ? agents(subagents, stepText) : [], now: turn.ended ? '' : mine.length ? label(mine[mine.length - 1]) : ''
+        turn, replies, questions: openQuestions(replies), alerts: alertsIn(log, step.label),
+        agents: subagents ? agents(subagents, log) : [], now: turn.ended ? '' : mine.length ? label(mine[mine.length - 1]) : ''
       });
     }
     const first = step.turns[0];

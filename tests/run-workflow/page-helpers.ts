@@ -45,19 +45,19 @@ export function aRun(name = 'first-run', plan: Partial<Run['steps'][number]> = {
     name, workdir, runs: join(root, 'runs'),
     steps: [
       { id: 'prime', label: 'Prime', prompt: '/prime', session: 'new' },
-      { id: 'plan', label: 'Plan', prompt: '/dk-generate-plan {request}', session: 'continue', answers: ['take the recommendations'] },
+      { id: 'plan', label: 'Plan', prompt: '/dk-plan {request}', session: 'continue', answers: ['take the recommendations'] },
       { id: 'build', label: 'Build', prompt: '/dk-execute-plan {file:plan}', session: 'new' }
     ]
   }));
   const { config, problems } = loadConfig(configPath);
   assert.deepEqual(problems, []);
-  const dir = makeRun(config, configPath, 'Drop the progress bar.', false);
+  const dir = makeRun(config, configPath, 'Drop the progress bar.');
   register(dir);
   const run = loadRun(dir)!;
   if (started) run.started = started;
   run.steps[0] = { ...run.steps[0], state: 'done', session: 's', turns: [turn(0, '01-prime-0', '/prime')] };
-  run.steps[1] = { ...run.steps[1], state: 'waiting', reason: 'slotted in: its reply asks', session: 's',
-    turns: [turn(0, '02-plan-0', '/dk-generate-plan Drop the progress bar.')], ...plan };
+  run.steps[1] = { ...run.steps[1], state: 'waiting', reason: 'human approval: its reply asks', session: 's',
+    turns: [turn(0, '02-plan-0', '/dk-plan Drop the progress bar.')], ...plan };
   run.state = 'waiting';
   saveRun(dir, run);
   writeFileSync(join(dir, 'steps', '02-plan-0.jsonl'), readFileSync(join(samples, 'plan-asks.jsonl')));

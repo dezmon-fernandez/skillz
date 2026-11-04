@@ -7,6 +7,7 @@ import { saveAnswer } from '../../skills/run-workflow/scripts/answers.ts';
 import { drive } from '../../skills/run-workflow/scripts/driver.ts';
 import { loadRun } from '../../skills/run-workflow/scripts/run-folder.ts';
 import { seams } from '../../skills/run-workflow/scripts/launch.ts';
+import { readWatch } from '../../skills/run-workflow/scripts/watcher.ts';
 import { PRIMED, box, calls, flag, fourSteps, init, newRun, promptOf, reply, result, until, useBox } from './helpers.ts';
 
 useBox();
@@ -102,5 +103,71 @@ describe('the watcher and the reporter', () => {
     const text = readFileSync(join(dir, 'report.md'), 'utf8');
     assert.match(text, /reporter failed/);
     assert.match(text, /report\.jsonl/);
+  });
+
+  it("the watcher's stop line becomes the turn's stop, and the notes keep the rest", async () => {
+    const note = '- Brief the agents with a model. Evidence: steps/02-grill-0.jsonl:12';
+    writeFileSync(join(box.fake, 'watch.jsonl'), said(`Stop: Grill · asked 4 questions on scope\n${note}`));
+    const dir = primeAndPlan();
+    await drive(dir);
+    const turn = loadRun(dir)!.steps[1].turns[0];
+    assert.deepEqual(turn.stop, { part: 'Grill', why: 'asked 4 questions on scope' });
+    const notes = readFileSync(join(dir, 'notes.md'), 'utf8');
+    assert.ok(notes.includes(`## 02 Plan, turn 0\n\n${note}\n\n`), notes);
+    assert.ok(!notes.includes('Stop:'), notes);
+  });
+
+  it("the watcher's answer line reaches the turn", async () => {
+    const lines = 'Stop: Grill · asked 5 questions\nAnswer: took 3 of 4 recommendations · differed: Q2 Edge cases, Q5 Leaving mid-save';
+    writeFileSync(join(box.fake, 'watch.jsonl'), said(`${lines}\n- A note.`));
+    const dir = primeAndPlan();
+    await drive(dir);
+    assert.deepEqual(loadRun(dir)!.steps[1].turns[0].answered,
+      { took: 3, of: 4, differed: ['Q2 Edge cases', 'Q5 Leaving mid-save'] });
+  });
+
+  it('a reply with no stop line leaves the turn without one, and the notes whole', async () => {
+    writeFileSync(join(box.fake, 'watch.jsonl'), said('- A note. Evidence: "x"'));
+    const dir = primeAndPlan();
+    await drive(dir);
+    const turn = loadRun(dir)!.steps[1].turns[0];
+    assert.equal(turn.stop, undefined);
+    assert.equal(turn.answered, undefined);
+    assert.ok(readFileSync(join(dir, 'notes.md'), 'utf8').includes('## 02 Plan, turn 0\n\n- A note. Evidence: "x"\n'));
+  });
+
+  it('a failed watcher leaves no stop', async () => {
+    writeFileSync(join(box.fake, 'watch.jsonl'), said('Stop: Grill · asked 4 questions on scope'));
+    writeFileSync(join(box.fake, 'watch.exit'), '1');
+    const dir = primeAndPlan();
+    await drive(dir);
+    const turn = loadRun(dir)!.steps[1].turns[0];
+    assert.equal(turn.watched, 'failed');
+    assert.equal(turn.stop, undefined);
+    assert.equal(existsSync(join(dir, 'notes.md')) ? readFileSync(join(dir, 'notes.md'), 'utf8') : '', '');
+  });
+});
+
+describe("the watcher's first lines", () => {
+  it('a part off the list is unknown part', () => {
+    assert.deepEqual(readWatch('Stop: Planning · asked 2 questions\n- A note.').stop, { part: 'unknown part', why: 'asked 2 questions' });
+  });
+
+  it("the answer line becomes the turn's answered", () => {
+    const got = readWatch('Stop: Grill · asked 5 questions\nAnswer: took 3 of 4 recommendations · differed: Q2 Edge cases, Q5 Leaving mid-save\n- A note.');
+    assert.deepEqual(got.answered, { took: 3, of: 4, differed: ['Q2 Edge cases', 'Q5 Leaving mid-save'] });
+    assert.equal(got.notes, '- A note.');
+  });
+
+  it('an answer that took every recommendation differs on none', () => {
+    assert.deepEqual(readWatch('Stop: Finished · finished\nAnswer: took 4 of 4 recommendations · differed: none\nNothing to note.').answered,
+      { took: 4, of: 4, differed: [] });
+  });
+
+  it('a malformed answer line stays in the notes', () => {
+    const got = readWatch('Stop: Design · asked 1 question\nAnswer: mostly\n- A note.');
+    assert.equal(got.answered, null);
+    assert.deepEqual(got.stop, { part: 'Design', why: 'asked 1 question' });
+    assert.equal(got.notes, 'Answer: mostly\n- A note.');
   });
 });

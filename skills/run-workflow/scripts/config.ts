@@ -4,6 +4,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { seams } from './launch.ts';
 import { stdout } from './run-folder.ts';
@@ -11,7 +12,7 @@ import type { Config } from './types.ts';
 
 const MIN_NODE = [22, 18];
 const TOP = new Set(['name', 'workdir', 'runs', 'steps', 'envFile', 'path', 'env', 'ports', 'watchdogWait', 'deny',
-  'settings', 'note', 'model', 'permissionMode', 'watcher', 'reporter']);
+  'settings', 'note', 'model', 'permissionMode', 'watcher', 'reporter', 'mode']);
 const STEP = new Set(['id', 'label', 'prompt', 'session', 'effort', 'done', 'answers', 'answerIfAsks']);
 
 const isObject = (v: unknown): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -24,10 +25,36 @@ const isDir = (p: string) => {
   }
 };
 
-// The config with its paths made absolute, the missing tools and every problem in it.
+// The config with its paths made absolute, the missing tools, every problem in it and the skills it names that are
+// not installed.
 export function problemsOf(configPath: string): { config: Config; problems: string[] } {
   const { config, problems } = loadConfig(configPath);
-  return { config, problems: [...missingTools().map((t) => `missing: ${t}`), ...problems] };
+  const skills = isObject(config) ? missingSkills(config).map((s) => `missing: ${s}`) : [];
+  return { config, problems: [...missingTools().map((t) => `missing: ${t}`), ...problems, ...skills] };
+}
+
+// Each skill a step prompt opens with ("/<name> ...") that Claude Code would not find for the workdir: a skill in
+// .claude/skills/ or a command in .claude/commands/, of the workdir or a parent up to its repo's root, or of the
+// personal folder. A prompt naming a skill that is not installed is not refused by the CLI; it runs as a plain
+// message, so the step would do something else and look fine. A "<plugin>:<skill>" name is not checked.
+export function missingSkills(config: Config): string[] {
+  if (typeof config.workdir !== 'string' || !isDir(config.workdir) || !Array.isArray(config.steps)) return [];
+  const root = stdout(['git', '-C', config.workdir, 'rev-parse', '--show-toplevel']).trim();
+  const places: string[] = [];
+  for (let dir = resolve(config.workdir); ; dir = dirname(dir)) {
+    places.push(join(dir, '.claude'));
+    if (!root || real(dir) === real(root) || dirname(dir) === dir) break;
+  }
+  places.push(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'));
+  const found = (p: string, name: string) =>
+    existsSync(join(p, 'skills', name, 'SKILL.md')) || existsSync(join(p, 'commands', `${name}.md`));
+  const names = new Set<string>();
+  for (const step of config.steps) {
+    const name = /^\/([^\s/]+)/.exec(typeof step?.prompt === 'string' ? step.prompt.trimStart() : '')?.[1];
+    if (name && !name.includes(':')) names.add(name);
+  }
+  return [...names].filter((name) => !places.some((p) => found(p, name)))
+    .map((name) => `the skill ${name} in ${join(config.workdir, '.claude', 'skills')}`);
 }
 
 // The deny-git-writes hook script every step runs with, or null when it is not installed. Its places are in
@@ -84,6 +111,7 @@ export function loadConfig(path: string): { config: Config; problems: string[] }
     problems.push('watchdogWait must be a number of seconds');
   }
   if (c.settings !== undefined && !isObject(c.settings)) problems.push('settings must be an object');
+  if (c.mode !== undefined && c.mode !== 'autonomous' && c.mode !== 'human-approval') problems.push('mode must be "autonomous" or "human-approval"');
   for (const key of ['watcher', 'reporter']) {
     if (c[key] !== undefined && !(isObject(c[key]) && typeof c[key].model === 'string' && typeof c[key].effort === 'string')) {
       problems.push(`${key} must be {"model": ..., "effort": ...}`);
