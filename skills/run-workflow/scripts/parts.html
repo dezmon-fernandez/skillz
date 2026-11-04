@@ -20,7 +20,7 @@
 <!-- part: run: the open run, under the run list -->
 <header class="run-head"><h1>{{name}} · started {{started}} · {{time}} · {{cost}}</h1>
 <span class="run-state state-{{state}}">{{state}}</span>{{{mode}}}</header>
-{{#driverDown}}<div class="needs on"><strong>driver not running</strong> Restart it with <code>run.ts resume {{dir}}</code>.</div>{{/driverDown}}
+{{#driverDown}}<div class="needs on"><strong>driver not running</strong> {{#reason}}{{reason}}. {{/reason}}Restart it with <code>run.ts resume {{dir}}</code>.</div>{{/driverDown}}
 {{#needsYou}}<div class="needs on"><strong>{{needsWord}}</strong> {{reason}}</div>{{/needsYou}}
 {{{problems}}}
 <section class="arm"><ol class="rail">{{{steps}}}</ol></section>

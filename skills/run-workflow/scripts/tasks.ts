@@ -7,7 +7,7 @@ import { isAbsolute, join } from 'node:path';
 import { contentOf, label, lines, stamp } from './log.ts';
 import type { AgentRow, Event, TaskState } from './types.ts';
 
-type TaskRow = { start: number; end: number; time: number; calls: number; failed: string[] };
+type TaskRow = TaskState['merged'][string];
 
 const TASK = /\bTask (\d+(?:\.\d+)?)\b/g;
 const MENTION = /\btasks? (\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*(\d+(?:\.\d+)?))?/gi;

@@ -14,7 +14,9 @@ const WATCHER: AgentConfig = { model: 'claude-sonnet-5-5', effort: 'medium' };
 const REPORTER: AgentConfig = { model: 'claude-opus-5-5', effort: 'high' };
 const WATCHER_WAIT = 10 * 60 * 1000;
 
-const pad = (n: number) => String(n).padStart(2, '0');
+// A turn's section heading in notes.md, without its "## ". view.ts finds a turn's notes by it.
+export const noteHeading = (stepIndex: number, label: string, turn: number) =>
+  `${String(stepIndex + 1).padStart(2, '0')} ${label}, turn ${turn}`;
 
 export function startWatcher(runDir: string, run: Run, config: Config, stepIndex: number, turn: Turn): Promise<void> {
   const step = run.steps[stepIndex];
@@ -26,7 +28,7 @@ export function startWatcher(runDir: string, run: Run, config: Config, stepIndex
       const [reply, exit] = await runAgent(runDir, 'watcher', `watch run=${runDir} step=${step.id} turn=${turn.n}`,
         config.watcher ?? WATCHER, `watch/${stem}.jsonl`);
       if (exit !== 0 || !reply.trim()) throw new Error(`exit ${exit}`);
-      appendFileSync(join(runDir, 'notes.md'), `## ${pad(stepIndex + 1)} ${step.label}, turn ${turn.n}\n\n${reply.trim()}\n\n`);
+      appendFileSync(join(runDir, 'notes.md'), `## ${noteHeading(stepIndex, step.label, turn.n)}\n\n${reply.trim()}\n\n`);
       turn.watched = 'noted';
     } catch {
       // A watcher that fails never holds the run; the report names it.
@@ -60,9 +62,10 @@ export async function writeReport(runDir: string, run: Run, config: Config, watc
 export async function runAgent(runDir: string, agent: 'watcher' | 'reporter', brief: string, ac: AgentConfig, log: string): Promise<[string, number]> {
   const run = loadRun(runDir);
   const extra = run ? ['--add-dir', dirname(transcriptPath(run.workdir, 'x'))] : [];
-  const args = ['-p', brief, '--model', ac.model, '--settings', JSON.stringify({ modelSettings: { [ac.model]: { effortLevel: ac.effort } } }),
+  // The brief goes last, after `--`, as a step's prompt does (turn.ts).
+  const args = ['-p', '--model', ac.model, '--settings', JSON.stringify({ modelSettings: { [ac.model]: { effortLevel: ac.effort } } }),
     '--append-system-prompt', agentText(agent), '--output-format', 'stream-json', '--verbose', '--permission-mode', 'dontAsk',
-    ...extra, '--allowedTools', 'Read', 'Grep', 'Glob'];
+    ...extra, '--allowedTools', 'Read', 'Grep', 'Glob', '--', brief];
   const file = join(runDir, log);
   mkdirSync(dirname(file), { recursive: true });
   const fd = openSync(file, 'w');

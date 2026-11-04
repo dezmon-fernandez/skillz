@@ -1,8 +1,11 @@
 // node --no-warnings --test tests/run-workflow/log.test.ts
 import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { initOf, lines, resultOf, transcriptPath, turnOver } from '../../skills/run-workflow/scripts/log.ts';
-import { raw, removeTemps, sample, variant } from './helpers.ts';
+import { seams } from '../../skills/run-workflow/scripts/seams.ts';
+import { raw, removeTemps, sample, temp, variant } from './helpers.ts';
 
 after(removeTemps);
 
@@ -21,6 +24,28 @@ describe('the step log readers', () => {
     const events = lines(path);
     assert.equal(events.length, raw('plan-asks.jsonl').length - 1);
     assert.equal(resultOf(events), null);
+  });
+
+  it('the parse cache drops the least recently read log once it holds more than its size', () => {
+    const before = seams.cacheBytes;
+    const row = JSON.stringify({ type: 'system', subtype: 'init', session_id: 's' });
+    const a = join(temp(), 'a.jsonl');
+    const b = join(temp(), 'b.jsonl');
+    writeFileSync(a, row + '\n');
+    writeFileSync(b, row + '\n');
+    // Room for one of the two files.
+    seams.cacheBytes = row.length + 10;
+    try {
+      const first = lines(a);
+      assert.equal(lines(a), first);
+      lines(b);
+      // a was dropped to make room for b, so it is parsed again.
+      const again = lines(a);
+      assert.notEqual(again, first);
+      assert.deepEqual(again, first);
+    } finally {
+      seams.cacheBytes = before;
+    }
   });
 });
 

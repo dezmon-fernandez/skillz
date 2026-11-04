@@ -5,19 +5,30 @@
 import { readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
+import { seams } from './seams.ts';
 import type { Event } from './types.ts';
 
-const parsed = new Map<string, { key: string; out: Event[] }>();
+type Parsed = { key: string; size: number; out: Event[] };
+
+// Parsed logs, the least recently read first. The page lives across runs, so once the files held pass
+// seams.cacheBytes the least recently read is dropped, and parsed again if it is read again.
+const parsed = new Map<string, Parsed>();
+let held = 0;
 
 // A log's events, parsed once per change of the file.
 export function lines(path: string): Event[] {
   let key: string;
+  let size: number;
   let text: string;
   try {
     const st = statSync(path);
     key = `${st.mtimeMs}:${st.size}`;
+    size = st.size;
     const cached = parsed.get(path);
-    if (cached && cached.key === key) return cached.out;
+    if (cached && cached.key === key) {
+      keep(path, cached);
+      return cached.out;
+    }
     text = readFileSync(path, 'utf8');
   } catch {
     return [];
@@ -40,8 +51,25 @@ export function lines(path: string): Event[] {
     }
     out.push(event);
   }
-  parsed.set(path, { key, out });
+  keep(path, { key, size, out });
   return out;
+}
+
+// Holds the file as the most recently read, then drops the least recently read until the rest fit. The file just
+// read is always kept.
+function keep(path: string, entry: Parsed): void {
+  const old = parsed.get(path);
+  if (old) {
+    held -= old.size;
+    parsed.delete(path);
+  }
+  parsed.set(path, entry);
+  held += entry.size;
+  for (const [other, e] of parsed) {
+    if (held <= seams.cacheBytes || other === path) break;
+    parsed.delete(other);
+    held -= e.size;
+  }
 }
 
 export function initOf(events: Event[]): Event {
@@ -81,6 +109,11 @@ export function label(block: Event): string {
   else if (input.file_path) text = `${name} ${basename(String(input.file_path))}`;
   else text = `${name} ${input.description || input.command || input.pattern || input.url || ''}`;
   return text.replace(/\s+/g, ' ').trim().slice(0, 80);
+}
+
+// The folder of a session's agents' transcripts, beside the session's own.
+export function subagentsOf(transcript: string): string {
+  return join(transcript.replace(/\.jsonl$/, ''), 'subagents');
 }
 
 export function transcriptPath(workdir: string, session: string): string {

@@ -6,7 +6,7 @@
 
 import { appendFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { initOf, lines, transcriptPath, turnOver } from './log.ts';
+import { initOf, lines, subagentsOf, transcriptPath, turnOver } from './log.ts';
 import { stdout } from './shell.ts';
 import type { Config, Run, Turn } from './types.ts';
 
@@ -74,7 +74,7 @@ export function freePorts(ports: number[]): number[] {
 function lastWrite(transcript: string): number {
   let newest = 0;
   const files = [transcript];
-  const agentsDir = join(transcript.replace(/\.jsonl$/, ''), 'subagents');
+  const agentsDir = subagentsOf(transcript);
   try {
     for (const name of readdirSync(agentsDir)) if (name.endsWith('.jsonl')) files.push(join(agentsDir, name));
   } catch {

@@ -16,9 +16,13 @@ import { fileURLToPath } from 'node:url';
 
 // Always a write: each changes the repository, its index or working tree, or talks to a remote.
 const ALWAYS = new Set(('add am apply bisect checkout cherry-pick clean clone commit fetch filter-branch gc init merge mv ' +
-  'notes pull push rebase replace reset restore revert rm submodule switch update-index update-ref').split(' '));
+  'notes pull push rebase replace reset restore revert rm submodule switch update-index update-ref ' +
+  // The porcelain's other names and the plumbing under it, and the commands that reach a remote to read it.
+  'stage checkout-index read-tree commit-tree write-tree mktag mktree unpack-objects fast-import merge-file ' +
+  'merge-index mergetool prune prune-packed repack pack-refs maintenance update-server-info rerere bundle ' +
+  'fetch-pack send-pack ls-remote request-pull send-email').split(' '));
 // A write only in some forms; isWrite() tells which.
-const SOMETIMES = new Set('branch tag remote config stash worktree symbolic-ref'.split(' '));
+const SOMETIMES = new Set('branch tag remote config stash worktree symbolic-ref reflog sparse-checkout hash-object'.split(' '));
 // Words that run the command after them.
 const WRAPPERS = new Set(['env', 'command', 'nohup', 'time', 'xargs', 'exec', 'sudo', 'builtin']);
 
@@ -118,9 +122,13 @@ function withoutRedirects(words: string[] | null): string[] | null {
 
 const isGit = (word: string) => word === 'git' || word.endsWith('/git');
 
+// One git invocation. `aliased`: it defines an alias on its own command line (`-c alias.p=push p`), so its
+// subcommand may be any command at all.
+type GitCall = { sub: string; args: string[]; parsed: boolean; aliased?: boolean };
+
 // Each git invocation's subcommand and its arguments.
-export function gitCalls(command: string): { sub: string; args: string[]; parsed: boolean }[] {
-  const out: { sub: string; args: string[]; parsed: boolean }[] = [];
+export function gitCalls(command: string): GitCall[] {
+  const out: GitCall[] = [];
   for (const part of parts(command)) {
     const words = withoutRedirects(splitWords(part));
     if (!words) {
@@ -140,12 +148,15 @@ export function gitCalls(command: string): { sub: string; args: string[]; parsed
     if (i >= words.length || !isGit(words[i])) continue;
     i++;
     // git's own options before the subcommand.
+    let aliased = false;
     while (i < words.length && words[i].startsWith('-')) {
       const w = words[i];
-      if (w === '-C' || w === '-c' || w === '--git-dir' || w === '--work-tree' || w === '--namespace') i += 2;
+      const value = /^--config-env=/.test(w) ? w.slice('--config-env='.length) : words[i + 1] ?? '';
+      if ((w === '-c' || w.startsWith('--config-env')) && /^alias\./i.test(value)) aliased = true;
+      if (w === '-C' || w === '-c' || w === '--config-env' || w === '--git-dir' || w === '--work-tree' || w === '--namespace') i += 2;
       else i += 1;
     }
-    if (i < words.length) out.push({ sub: words[i], args: words.slice(i + 1), parsed: true });
+    if (i < words.length) out.push({ sub: words[i], args: words.slice(i + 1), parsed: true, aliased });
   }
   return out;
 }
@@ -184,6 +195,14 @@ export function isWrite(sub: string, args: string[]): boolean {
       return positional(args)[0] !== 'list';
     case 'symbolic-ref':
       return has('-d', '--delete') || positional(args).length >= 2;
+    case 'reflog': {
+      const first = positional(args)[0];
+      return first === 'expire' || first === 'delete';
+    }
+    case 'sparse-checkout':
+      return positional(args)[0] !== 'list';
+    case 'hash-object':
+      return has('-w');
   }
   return false;
 }
@@ -204,6 +223,7 @@ const ALLOWED = 'only git commands that read run during a workflow (diff, log, s
 export function verdict(command: string): string | null {
   for (const call of gitCalls(command)) {
     if (!call.parsed) return `deny-git-writes: blocked: the command could not be parsed and looks like a git write (git ${call.sub}); ${ALLOWED}.`;
+    if (call.aliased) return `deny-git-writes: blocked git -c alias.*: an alias defined on the command line could run any git command; ${ALLOWED}.`;
     if (isWrite(call.sub, call.args)) return `deny-git-writes: blocked git ${call.sub}: ${ALLOWED}.`;
   }
   const loose = looseWrite(command);

@@ -6,11 +6,12 @@ import { copyFileSync, readFileSync, rmSync, statSync, writeFileSync } from 'nod
 import { basename, join, resolve } from 'node:path';
 import { applyAnswer, logDecisions, needsAnswer, nextConfigAnswer, readMode, waitForAnswer } from './answers.ts';
 import { finished, newestMatch } from './finished.ts';
-import { lines, replyOf, resultOf } from './log.ts';
-import { driverAlive, loadRun, saveRun } from './run-folder.ts';
+import { initOf, lines, replyOf, resultOf } from './log.ts';
+import { aliveAs, driverAlive, loadRun, saveRun } from './run-folder.ts';
 import { seams } from './seams.ts';
 import { stdout } from './shell.ts';
 import { recordEnd, runTurn } from './turn.ts';
+import { watchdog } from './watchdog.ts';
 import { startWatcher, writeReport } from './watcher.ts';
 import type { Action, Config, Event, Run, Step, StepConfig, Turn } from './types.ts';
 
@@ -40,11 +41,12 @@ export async function drive(runDir: string): Promise<number> {
     console.error(`no run in ${runDir}`);
     return 1;
   }
-  const config = configOf(runDir);
   const watchers: Promise<void>[] = [];
   run.driverPid = process.pid;
   saveRun(runDir, run);
   try {
+    // Read inside the try, so a config.json that cannot be read fails the run with its reason.
+    const config = configOf(runDir);
     let queued: Action | null = null;
     for (;;) {
       const action: Action = queued ?? nextAction(run, runDir);
@@ -55,6 +57,14 @@ export async function drive(runDir: string): Promise<number> {
         break;
       }
       const i = action.stepIndex!;
+      if (action.kind === 'running') {
+        // The driver that started the turn took its watchdog with it: a dev server the turn left running would
+        // hold it forever.
+        const step = run.steps[i];
+        watchdog(runDir, run, config, i, step.turns[step.turns.length - 1]);
+        await new Promise((done) => setTimeout(done, seams.pollMs));
+        continue;
+      }
       if (action.kind === 'send' || action.kind === 'ended') {
         const turn = action.kind === 'send'
           ? await runTurn(runDir, run, config, i, action.prompt, action.by, action.retryOf)
@@ -155,6 +165,11 @@ export function nextAction(run: Run, runDir: string): Action {
       saveRun(runDir, run);
       return { kind: 'ended', stepIndex: i, prompt: '', by: turn.by };
     }
+    // A driver killed mid-turn leaves the turn's claude running and writing to the same log: wait for it.
+    if (turn.pid && aliveAs(turn.pid, 'claude -p')) return { kind: 'running', stepIndex: i, prompt: '', by: turn.by };
+    // Retry resumes the session the cut-off turn started, as a turn that ended would have recorded it.
+    const session = initOf(events).session_id;
+    if (typeof session === 'string' && session) step.session = session;
     turn.ended = new Date().toISOString();
     step.state = 'failed';
     step.reason = 'cut off when the driver stopped';

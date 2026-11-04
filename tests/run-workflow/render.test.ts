@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { appendDecision, saveAnswer } from '../../skills/run-workflow/scripts/answers.ts';
+import { drive } from '../../skills/run-workflow/scripts/driver.ts';
 import { loadRun, saveRun } from '../../skills/run-workflow/scripts/run-folder.ts';
 import { aRun, get, idOf, samples, turn, usePage } from './page-helpers.ts';
 
@@ -102,6 +103,21 @@ describe("the run's view", () => {
     run.report = 'written';
     saveRun(dir, run);
     assert.doesNotMatch(visible(await live(dir)), /driver not running/);
+  });
+
+  it('a driver that failed says why', async () => {
+    const dir = aRun();
+    writeFileSync(join(dir, 'config.json'), '{ not json');
+    // The driver prints the stack for driver.log; the test keeps it out of its output.
+    const print = console.error;
+    console.error = () => {};
+    try {
+      assert.equal(await drive(dir), 0);
+    } finally {
+      console.error = print;
+    }
+    const page = visible(await live(dir));
+    assert.match(page, /driver not running the driver failed: [^.]*JSON[^]*; see driver\.log\. Restart it with/);
   });
 
   it('a malformed log and an unreadable run.json never blank the page', async () => {

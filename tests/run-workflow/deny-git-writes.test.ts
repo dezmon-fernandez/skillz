@@ -81,6 +81,25 @@ describe('deny-git-writes', () => {
     }
   });
 
+  it('blocks the other writers, the plumbing, a remote read, and an alias defined on the command line', () => {
+    for (const command of ['git stage .', 'git checkout-index -a -f', 'git read-tree HEAD', 'git reflog expire --all',
+      'git reflog delete HEAD@{1}', 'git sparse-checkout set a', 'git hash-object -w f', 'git merge-file a b c',
+      'git ls-remote origin', 'git -c alias.p=push p', 'git --config-env=alias.p=X p', 'git --config-env alias.p=X p',
+      'git --config-env core.x=X commit -m y']) {
+      const r = bash(command);
+      assert.equal(r.code, 2, command);
+      // Found as a git call, not only by the text backstop.
+      assert.match(r.err, /^deny-git-writes: blocked git [^:]+:/, command);
+    }
+  });
+
+  it('lets the reading forms of reflog, sparse-checkout and hash-object through', () => {
+    for (const command of ['git reflog', 'git reflog show main', 'git sparse-checkout list', 'git hash-object f',
+      'git -c color.ui=never log']) {
+      assert.deepEqual(bash(command), { code: 0, out: '', err: '' }, command);
+    }
+  });
+
   it('a conditional write is found past git options and paths', () => {
     for (const command of ['/usr/bin/git stash pop', 'git -c a=b branch -D x', 'git -C /tmp/r stash', 'git status && git tag v1']) {
       assert.equal(bash(command).code, 2, command);

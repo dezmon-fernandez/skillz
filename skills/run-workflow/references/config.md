@@ -69,7 +69,7 @@ Relative paths are relative to the config file's folder.
 | `done` | | none | What the step leaves when it has finished. Absent: it has finished when its first turn ends. |
 | `done.file` | | | A glob under `workdir` (`**` any depth, `*` within a folder, `?` one character). A matching file written since the run started; the newest is the step's file. |
 | `done.says` | | | Text the step's last reply contains. With `file`, both must hold. |
-| `answers` | | `[]` | In speed mode, sent in order, one at each stop before the step has finished. Used up, or slotted in, the step waits on the page. |
+| `answers` | | `[]` | In speed mode, one at each stop before the step has finished: the second stop gets the second answer, even when you answered the first on the page. Used up, or slotted in, the step waits on the page. |
 | `answerIfAsks` | | `false` | Also answer when the step has finished but its reply asks something, such as a review that asks after it writes. Slotted in, a reply that asks always waits. |
 
 A skill stops for an answer by ending its turn, and nothing in the stream tells that stop from a finish. So a step

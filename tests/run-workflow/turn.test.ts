@@ -15,13 +15,19 @@ useBox();
 describe('a turn', () => {
   it('the prompt and an answer reach claude exactly', async () => {
     reply(1, 'plan-asks.jsonl');
-    reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
+    reply(2, 'plan-asks.jsonl');
+    reply(3, 'plan-asks.jsonl');
+    reply(4, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
     const request = 'a “quoted” line\nand a second line $& $1 \\n \'single\'';
-    const step = { ...fourSteps().steps[1], session: 'new', answers: ['take "all" reccs\n  — and “this”'] };
+    // An answer that starts with "-" is a bulleted list to the developer and an option to the CLI.
+    const answers = ['take "all" reccs\n  — and “this”', '- Top out at 90%\n- Keep 50–59% strong', '--help'];
+    const step = { ...fourSteps().steps[1], session: 'new', answers };
     const dir = newRun(fourSteps({ steps: [step] }), request);
     await drive(dir);
     const sent = stepCalls().map((c) => promptOf(c.args));
-    assert.deepEqual(sent, [`/dk-generate-plan ${request}`, 'take "all" reccs\n  — and “this”']);
+    assert.deepEqual(sent, [`/dk-generate-plan ${request}`, ...answers]);
+    // The prompt is the last word, after every option.
+    for (const { args } of stepCalls()) assert.deepEqual(args.slice(-2), ['--', promptOf(args)]);
   });
 
   it('every turn carries the guards, resumed or not', async () => {
@@ -51,7 +57,7 @@ describe('a turn', () => {
       assert.equal(flag(args, '--model'), 'claude-opus-5-5');
       assert.equal(flag(args, '--output-format'), 'stream-json');
       assert.ok(args.includes('--verbose'));
-      assert.deepEqual(args.slice(args.indexOf('--disallowedTools') + 1), ['Read(//elsewhere/**)', 'Bash(ssh:*)']);
+      assert.deepEqual(args.slice(args.indexOf('--disallowedTools') + 1, args.indexOf('--')), ['Read(//elsewhere/**)', 'Bash(ssh:*)']);
     }
     assert.equal(flag(first, '--resume'), undefined);
     assert.equal(flag(second, '--resume'), 's-1');

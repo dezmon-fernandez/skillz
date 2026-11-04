@@ -6,6 +6,7 @@
 
 import { appendFileSync, linkSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { finished } from './finished.ts';
 import { lines, replyOf } from './log.ts';
 import { decided, questions } from './questions.ts';
 import { saveRun, writeAtomic } from './run-folder.ts';
@@ -123,19 +124,31 @@ export function needsAnswer(step: StepConfig, done: boolean, reply: string, mode
   return !!step.answerIfAsks && questions(reply).length > 0;
 }
 
-// The config's next answer for the step, or null when they are used up. A retried turn resends an answer, so it
-// uses none.
+// The config's answer for the step's next stop, or null when they are used up. The k-th stop takes answers[k],
+// whoever answered the stops before it, so a stop the developer answered uses its entry. A retried turn resends
+// an answer, so it is no new stop.
 export function nextConfigAnswer(step: Step, sc: StepConfig): string | null {
-  const used = step.turns.filter((t) => t.n > 0 && t.by === 'config' && t.retryOf === undefined).length;
-  return sc.answers?.[used] ?? null;
+  const stops = step.turns.filter((t) => t.n > 0 && t.retryOf === undefined).length;
+  return sc.answers?.[stops] ?? null;
 }
 
-// Polls every pollMs: the page's answer file for the waiting turn; and, for a waiting step in speed mode with a
-// config answer left, that answer (a switch to speed answers a stop already waiting). A failed step takes only
-// Retry or End. Null when the driver's patience runs out first.
+// Whether the waiting step's last turn needs an answer in speed mode. Slot-in holds a finished step whose reply
+// asks; speed moves it on, unless the step answers when its reply asks.
+function asksInSpeed(runDir: string, run: Run, sc: StepConfig, step: Step): boolean {
+  const turn = step.turns[step.turns.length - 1];
+  if (!turn) return true;
+  const reply = replyOf(lines(join(runDir, turn.log)));
+  return needsAnswer(sc, finished(sc, reply, run.workdir, Date.parse(run.started))[0], reply, 'speed');
+}
+
+// Polls every pollMs: the page's answer file for the waiting turn; and, for a waiting step in speed mode, what
+// speed would have done when its turn ended: move on, or send the config's answer if one is left (a switch to
+// speed answers a stop already waiting). A failed step takes only Retry or End. Null when the driver's patience
+// runs out first.
 export async function waitForAnswer(runDir: string, run: Run, config: Config, stepIndex: number):
   Promise<{ answer: Answer; by: By } | null> {
   const step = run.steps[stepIndex];
+  const sc = config.steps[stepIndex];
   const n = waitingTurn(step);
   const until = Date.now() + seams.patience;
   for (;;) {
@@ -144,8 +157,10 @@ export async function waitForAnswer(runDir: string, run: Run, config: Config, st
       if (answer.kind !== 'reply' || answer.text) return { answer, by: 'developer' };
     }
     if (step.state === 'waiting' && readMode(runDir) === 'speed') {
-      const text = nextConfigAnswer(step, config.steps[stepIndex]);
-      if (text !== null) return { answer: { kind: 'reply', text, at: new Date().toISOString() }, by: 'config' };
+      const at = new Date().toISOString();
+      if (!asksInSpeed(runDir, run, sc, step)) return { answer: { kind: 'go-on', text: '', at }, by: 'config' };
+      const text = nextConfigAnswer(step, sc);
+      if (text !== null) return { answer: { kind: 'reply', text, at }, by: 'config' };
     }
     if (Date.now() >= until) return null;
     await new Promise((done) => setTimeout(done, Math.min(seams.pollMs, Math.max(1, until - Date.now()))));
@@ -165,7 +180,7 @@ export function applyAnswer(runDir: string, run: Run, i: number, answer: Answer,
   }
   if (answer.kind === 'go-on') {
     step.state = 'done';
-    step.reason = 'moved on by the developer';
+    step.reason = by === 'developer' ? 'moved on by the developer' : '';
     run.state = 'running';
     run.reason = '';
     saveRun(runDir, run);

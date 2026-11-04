@@ -1,6 +1,7 @@
 // node --no-warnings --test tests/run-workflow/page.test.ts
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { request } from 'node:http';
 import { join, relative } from 'node:path';
 import { describe, it } from 'node:test';
 import { readAnswer, readMode } from '../../skills/run-workflow/scripts/answers.ts';
@@ -90,6 +91,26 @@ describe('the page server', () => {
     assert.equal((await post('/mode', { run: idOf(dir), mode: 'slot-in' }, { 'sec-fetch-site': 'cross-site' }))[0], 403);
     assert.equal(readAnswer(dir, 'plan', 0), null);
     assert.equal(readMode(dir), 'speed');
+  });
+
+  it('a request addressed to another name is refused, reads included', async () => {
+    const dir = aRun();
+    const port = (server.address() as { port: number }).port;
+    // fetch() will not set Host, so the request is made by hand, as a rebound name would make it.
+    const as = (host: string, path: string) => new Promise<[number, string]>((done, fail) => {
+      request({ host: '127.0.0.1', port, path, headers: { host } }, (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => (body += chunk));
+        res.on('end', () => done([res.statusCode!, body]));
+      }).on('error', fail).end();
+    });
+    for (const path of ['/', `/live?run=${idOf(dir)}`, `/report?run=${idOf(dir)}`, '/whoami']) {
+      const [status, body] = await as(`rebound.example:${port}`, path);
+      assert.equal(status, 403, path);
+      assert.doesNotMatch(body, /Drop the bar|Plan/, path);
+    }
+    assert.equal((await as(`localhost:${port}`, `/live?run=${idOf(dir)}`))[0], 200);
   });
 
   it('reading the page changes nothing', async () => {

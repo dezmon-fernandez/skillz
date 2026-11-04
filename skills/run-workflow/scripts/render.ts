@@ -3,6 +3,7 @@
 // the values each part is filled with.
 
 import { basename, join, resolve } from 'node:path';
+import { waitingTurn } from './answers.ts';
 import { md } from './markdown.ts';
 import { loadRun, registered } from './run-folder.ts';
 import { page, part } from './template.ts';
@@ -73,12 +74,11 @@ function runList(open: string | null): string {
 function renderStep(view: RunView, sv: StepView, now: number): string {
   const s = sv.step;
   const runId = view.run!.id;
-  const seconds = s.turns.reduce((a, t) => a + (t.seconds ?? (t.ended ? 0 : Math.max(0, (now - Date.parse(t.started)) / 1000))), 0);
   const asked = sv.decisions.filter((d) => d.kind === 'answered').length;
   const open = s.state === 'waiting' || s.state === 'failed';
   return part('step', {
     state: s.state, id: s.id, label: s.label, icon: s.state === 'done' ? '✓' : s.state === 'failed' ? '✕' : '',
-    started: s.state !== 'pending', time: minutes(seconds), cost: money(s.turns.reduce((a, t) => a + (t.cost ?? 0), 0)),
+    started: s.state !== 'pending', time: minutes(sv.seconds), cost: money(s.turns.reduce((a, t) => a + (t.cost ?? 0), 0)),
     stateWords: STATE_WORDS[s.state],
     waitingSince: s.state === 'waiting' && s.turns.length > 0, since: s.turns.length ? clock(s.turns[s.turns.length - 1].ended ?? '') : '',
     manyTurns: s.turns.length > 1, turnCount: s.turns.length,
@@ -146,7 +146,8 @@ function renderTasks(sv: StepView): string {
 
 function answerForm(runId: string, sv: StepView): string {
   const s = sv.step;
-  const n = s.turns.length ? s.turns[s.turns.length - 1].n : 0;
+  // The turn page.ts checks an answer against.
+  const n = waitingTurn(s);
   const hidden = part('answer-hidden', { run: runId, step: s.id, turn: n });
   if (s.state === 'failed') return part('answer-failed', { hidden });
   return part('answer-reply', { hidden, id: `answer-${s.id}`, label: s.label, key: `${runId}-${s.id}-${n}` });

@@ -61,8 +61,7 @@ export function writeAtomic(file: string, text: string): void {
   renameSync(temp, file);
 }
 
-// Node has no flock, so the lock is a pid file and this check. A pid the system reused for another program fails
-// the command check, so it reads as stale rather than alive.
+// Node has no flock, so the lock is a pid file and this check.
 export function driverAlive(runDir: string): boolean {
   let pid: number;
   try {
@@ -70,6 +69,12 @@ export function driverAlive(runDir: string): boolean {
   } catch {
     return false;
   }
+  return aliveAs(pid, 'run.ts drive', resolve(runDir));
+}
+
+// Whether the process is alive and its command line holds every word given. A pid the system reused for another
+// program fails the command check, so it reads as gone rather than alive.
+export function aliveAs(pid: number, ...words: string[]): boolean {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
     process.kill(pid, 0);
@@ -77,5 +82,5 @@ export function driverAlive(runDir: string): boolean {
     if ((error as NodeJS.ErrnoException).code !== 'EPERM') return false;
   }
   const command = stdout(['ps', '-o', 'command=', '-p', String(pid)]);
-  return command.includes('run.ts drive') && command.includes(resolve(runDir));
+  return words.every((word) => command.includes(word));
 }

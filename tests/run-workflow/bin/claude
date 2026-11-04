@@ -2,7 +2,7 @@
 # A stand-in for the claude CLI, for the runner's tests. Everything it does is set by files in $FAKE_CLAUDE_DIR.
 #
 # Every call records its arguments, NUL-separated, to call-<k>.args and its environment to call-<k>.env, k counting
-# from 1. A prompt (the argument after -p) starting "watch " or "report " is the watcher or the reporter: it prints
+# from 1. A prompt (the argument after `--`) starting "watch " or "report " is the watcher or the reporter: it prints
 # watch.jsonl or report.jsonl and exits with watch.exit or report.exit, or 0 (watch.sleep or report.sleep first
 # makes it slow, and the reporter copies the notes.md in its folder to report-saw-notes.md). Any other call is step reply n,
 # counting from 1 in the file `count`:
@@ -22,7 +22,7 @@ mkdir -p "$dir"
 until mkdir "$dir/.lock" 2>/dev/null; do sleep 0.01; done
 k=$(( $(cat "$dir/calls" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$dir/calls"
 prompt=""; prev=""
-for a in "$@"; do [[ $prev == -p ]] && prompt=$a; prev=$a; done
+for a in "$@"; do [[ $prev == -- && -z $prompt ]] && prompt=$a; prev=$a; done
 kind=step
 case $prompt in watch\ *) kind=watch ;; report\ *) kind=report ;; esac
 if [[ $kind == step ]]; then n=$(( $(cat "$dir/count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$dir/count"; fi

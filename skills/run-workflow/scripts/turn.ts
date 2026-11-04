@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { closeSync, openSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { constants as osConstants } from 'node:os';
 import { join } from 'node:path';
-import { initOf, lines, resultOf, transcriptPath } from './log.ts';
+import { initOf, lines, resultOf, subagentsOf, transcriptPath } from './log.ts';
 import { saveRun } from './run-folder.ts';
 import { seams } from './seams.ts';
 import { Ticker, watchdog } from './watchdog.ts';
@@ -61,11 +61,17 @@ export async function runTurn(runDir: string, run: Run, config: Config, stepInde
   let ticker: Ticker | null = null;
   try {
     const child = spawn(cmd[0], cmd.slice(1), { cwd: run.workdir, env: stepEnv(config, runDir), stdio: ['ignore', fd, fd] });
+    // A driver killed now leaves the child running; resume finds it by this pid and waits for it.
+    if (child.pid) {
+      turn.pid = child.pid;
+      saveRun(runDir, run);
+    }
     ticker = new Ticker({ every: seams.tickMs, now: seams.now, onTick: () => watchdog(runDir, run, config, stepIndex, turn) });
     exit = await exitOf(child);
   } finally {
     ticker?.stop();
     closeSync(fd);
+    delete turn.pid;
   }
   const seconds = (seams.now() - began - (ticker?.asleep ?? 0)) / 1000;
   recordEnd(run, stepIndex, turn, lines(join(runDir, turn.log)), exit, seconds);
@@ -111,7 +117,7 @@ function totalBefore(run: Run, i: number, turn: Turn): number {
 // ── The command and its environment ──
 
 export function buildCommand(config: Config, step: StepConfig, prompt: string, session: string | null): string[] {
-  const cmd = ['bash', '-c', ENV_LINE, 'bash', 'caffeinate', '-dims', 'claude', '-p', prompt];
+  const cmd = ['bash', '-c', ENV_LINE, 'bash', 'caffeinate', '-dims', 'claude', '-p'];
   if (session) cmd.push('--resume', session);
   cmd.push('--model', config.model || 'claude-opus-5-5', '--settings', JSON.stringify(settingsFor(config, step)));
   // A resumed session ignores a system prompt it is given, so the note goes only to a new one.
@@ -119,6 +125,9 @@ export function buildCommand(config: Config, step: StepConfig, prompt: string, s
   // --settings and --permission-mode are not restored on resume, so every turn carries them.
   cmd.push('--output-format', 'stream-json', '--verbose', '--permission-mode', config.permissionMode || 'bypassPermissions');
   if (config.deny?.length) cmd.push('--disallowedTools', ...config.deny);
+  // The prompt goes last, after `--`: claude reads a prompt that starts with "-" (a bulleted answer) as an
+  // unknown option and exits.
+  cmd.push('--', prompt);
   return cmd;
 }
 
@@ -161,7 +170,7 @@ function writeEffort(runDir: string, run: Run, stem: string, session: string | n
   };
   const transcript = transcriptPath(run.workdir, session);
   const rows = ['main:', count(transcript)];
-  const agentsDir = join(transcript.replace(/\.jsonl$/, ''), 'subagents');
+  const agentsDir = subagentsOf(transcript);
   try {
     for (const name of readdirSync(agentsDir).filter((f) => f.endsWith('.jsonl')).sort()) rows.push(`agent ${name}:`, count(join(agentsDir, name)));
   } catch {

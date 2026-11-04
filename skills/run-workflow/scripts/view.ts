@@ -7,10 +7,11 @@ import { join } from 'node:path';
 import { alertsIn } from './alerts.ts';
 import { readDecisions, readMode } from './answers.ts';
 import { filesTouched, testsAdded } from './changes.ts';
-import { label, lines, replyOf, stamp, transcriptPath } from './log.ts';
+import { label, lines, replyOf, stamp, subagentsOf, transcriptPath } from './log.ts';
 import { questions } from './questions.ts';
 import { driverAlive, loadRun } from './run-folder.ts';
 import { agents, planInPrompt, taskState } from './tasks.ts';
+import { noteHeading } from './watcher.ts';
 import type { RunView, StepView } from './types.ts';
 
 export function runData(runDir: string, now: number): RunView {
@@ -32,16 +33,21 @@ export function runData(runDir: string, now: number): RunView {
   run.steps.forEach((step, i) => {
     const sv: StepView = {
       step, turns: [], tasks: null, plan: '', decisions: decisions.filter((d) => d.step === step.id),
-      notes: [], events: [], problems: []
+      notes: [], events: [], problems: [], seconds: 0
     };
-    const head = `${String(i + 1).padStart(2, '0')} ${step.label}, turn `;
-    sv.notes = notes.filter(([h]) => h.startsWith(head)).map(([h, body]) => [Number(h.slice(head.length)), body]);
+    sv.notes = notes.flatMap(([heading, body]): [number, string][] => {
+      const turn = step.turns.find((t) => noteHeading(i, step.label, t.n) === heading);
+      return turn ? [[turn.n, body]] : [];
+    });
     sv.events = events.map((e) => e.replace(/^\S+ /, '')).filter((e) => e.startsWith(`${step.id} turn `));
     const transcript = step.session ? lines(transcriptPath(run.workdir, step.session)) : [];
-    const subagents = step.session ? join(transcriptPath(run.workdir, step.session).replace(/\.jsonl$/, ''), 'subagents') : '';
+    const subagents = step.session ? subagentsOf(transcriptPath(run.workdir, step.session)) : '';
     for (const turn of step.turns) {
+      // A turn still running counts up to now.
+      const seconds = turn.seconds ?? (turn.ended ? 0 : Math.max(0, (now - Date.parse(turn.started)) / 1000));
+      sv.seconds += seconds;
+      view.seconds += seconds;
       view.cost += turn.cost ?? 0;
-      view.seconds += turn.seconds ?? (turn.ended ? 0 : Math.max(0, (now - Date.parse(turn.started)) / 1000));
       const file = join(runDir, turn.log);
       if (!existsSync(file)) {
         if (turn.ended) sv.problems.push(`could not read ${turn.log}`);
@@ -83,7 +89,7 @@ export function runData(runDir: string, now: number): RunView {
   return view;
 }
 
-// notes.md's sections, "## <nn> <label>, turn <n>", as (heading, body).
+// notes.md's sections, "## <noteHeading>", as (heading, body).
 function noteSections(text: string): [string, string][] {
   const out: [string, string][] = [];
   for (const part of text.split(/^## /m).slice(1)) {

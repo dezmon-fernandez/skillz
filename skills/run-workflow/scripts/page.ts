@@ -38,6 +38,8 @@ export function serve(port: number): Promise<Server> {
 
 function handle(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url ?? '/', 'http://127.0.0.1');
+  // Reads too: a page that rebinds its own name to 127.0.0.1 could otherwise read every run's replies.
+  if (!thisMachine(req)) return reply(res, 403, 'refused: not addressed to 127.0.0.1 or localhost');
   const open = runFolder(url.searchParams.get('run')) ?? registered()[0] ?? null;
   if (req.method === 'GET') {
     if (url.pathname === '/whoami') return reply(res, 200, JSON.stringify({ app: 'run-workflow' }), 'application/json');
@@ -113,11 +115,15 @@ const back = (id: string): [number, string] => [303, `/?run=${encodeURIComponent
 
 // ── The request and the response ──
 
+// A Host that is not this machine is a rebinding: another site's name pointed at 127.0.0.1.
+function thisMachine(req: IncomingMessage): boolean {
+  return /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host ?? '');
+}
+
 // A form posted from another site would put its words into a session that can run commands. The browser says
-// where a post came from; only this page's own address is taken. A Host that is not this machine is a rebinding.
+// where a post came from; only this page's own address is taken. handle() has checked the Host.
 function sameSite(req: IncomingMessage): boolean {
   const host = req.headers.host ?? '';
-  if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return false;
   const site = req.headers['sec-fetch-site'];
   if (site && site !== 'same-origin' && site !== 'none') return false;
   const origin = req.headers.origin;

@@ -85,6 +85,7 @@ export interface Turn {
   cost: number | null;
   watched: 'no' | 'watching' | 'noted' | 'failed';
   retryOf?: number;             // set on a Retry: the turn it resends. A retry uses none of the config's answers
+  pid?: number;                 // the turn's process while it runs, so a resumed driver can wait for it
 }
 
 export interface Answer {
@@ -105,9 +106,10 @@ export interface Decision {
 }
 
 // What the driver does next. `ended`: the step's last turn ended while no driver watched it (R17), so it is judged
-// as if it had just ended.
+// as if it had just ended. `running`: that turn's process, left by a stopped driver, is still working; the driver
+// waits for it.
 export interface Action {
-  kind: 'send' | 'ended' | 'wait' | 'report' | 'stop';
+  kind: 'send' | 'ended' | 'running' | 'wait' | 'report' | 'stop';
   stepIndex: number | null;
   prompt: string;
   by: By;
@@ -167,4 +169,5 @@ export interface StepView {
   notes: [number, string][];
   events: string[];
   problems: string[];
+  seconds: number;              // its turns' time, a turn still running counted up to now
 }

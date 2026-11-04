@@ -130,6 +130,41 @@ describe('the developer slots in', () => {
     assert.deepEqual(answered(decisions(dir)).map((d) => [d.answer, d.by]), [['take all reccs', 'config']]);
   });
 
+  it('switching to speed moves on a finished step that slot-in held', async () => {
+    reply(1, 'requirements-stop.jsonl');
+    reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
+    const config = fourSteps();
+    config.steps = config.steps.slice(0, 2);
+    const dir = newRun(config, 'Drop the bar.', true);
+    const running = drive(dir);
+    await until(dir, (r) => r.steps[0].state === 'waiting');
+    writeMode(dir, 'speed');
+    await running;
+    const run = loadRun(dir)!;
+    assert.equal(run.steps[0].state, 'done');
+    assert.equal(run.steps[0].reason, '');
+    assert.equal(run.steps[0].turns.length, 1);
+    assert.equal(run.steps[1].turns[0].prompt, '/dk-generate-plan Drop the bar.');
+    assert.equal(answered(decisions(dir)).length, 0);
+  });
+
+  it("a stop the developer answered uses its entry of the config's answers", async () => {
+    reply(1, 'plan-asks.jsonl');
+    reply(2, 'plan-asks.jsonl');
+    reply(3, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
+    reply(4, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });
+    const dir = newRun(planOnly(), 'Drop the bar.', true);
+    const running = drive(dir);
+    await until(dir, (r) => r.steps[0].state === 'waiting');
+    saveAnswer(dir, 'plan', 0, { kind: 'reply', text: 'mine', at: new Date().toISOString() });
+    await until(dir, (r) => r.steps[0].turns.length === 2 && r.steps[0].state === 'waiting');
+    writeMode(dir, 'speed');
+    await running;
+    // Its second stop takes the config's second answer, not its first.
+    assert.deepEqual(loadRun(dir)!.steps[0].turns.map((t) => [t.prompt, t.by]),
+      [['/dk-generate-plan Drop the bar.', 'config'], ['mine', 'developer'], ['approve lets go', 'config']]);
+  });
+
   it('go on moves to the next step', async () => {
     reply(1, 'plan-asks.jsonl', { touch: ['.agents/plans/p.md'] });
     reply(2, [init('s-build'), result('Built.', 1, 's-build')], { touch: ['.agents/execution-reports/r.md'] });

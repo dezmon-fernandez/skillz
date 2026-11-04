@@ -1,12 +1,16 @@
 // node --no-warnings --test tests/run-workflow/driver.test.ts
 import assert from 'node:assert/strict';
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { closeSync, mkdirSync, openSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { saveAnswer } from '../../skills/run-workflow/scripts/answers.ts';
 import { drive } from '../../skills/run-workflow/scripts/driver.ts';
-import { loadRun, saveRun } from '../../skills/run-workflow/scripts/run-folder.ts';
+import { exitOf } from '../../skills/run-workflow/scripts/turn.ts';
+import { aliveAs, loadRun, saveRun } from '../../skills/run-workflow/scripts/run-folder.ts';
 import {
-  PRIMED, answered, box, decisions, exampleOne, fourSteps, init, newRun, promptOf, reply, sampleLines, stepCalls, useBox
+  PRIMED, answered, bin, box, decisions, exampleOne, flag, fourSteps, init, newRun, promptOf, reply, sampleLines, stepCalls,
+  until, useBox
 } from './helpers.ts';
 
 useBox();
@@ -112,6 +116,57 @@ describe('the driver in speed mode', () => {
     assert.equal(run.steps[0].reason, 'cut off when the driver stopped');
     assert.equal(run.steps[0].turns.length, 2);
     assert.equal(stepCalls().length, 1);
+  });
+
+  it('a turn whose claude outlived its driver is waited for, not cut off', async () => {
+    reply(1, 'plan-asks.jsonl', { sleep: 0.6 });
+    reply(2, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
+    const dir = stoppedAt([]);
+    // The turn's claude, still working after its driver was killed, writing to the turn's log.
+    const fd = openSync(join(dir, 'steps/01-plan-1.jsonl'), 'w');
+    const orphan = spawn(join(bin, 'claude'), ['-p', '--', 'take all reccs'], { cwd: box.workdir, stdio: ['ignore', fd, fd] });
+    const gone = exitOf(orphan);
+    closeSync(fd);
+    const run = loadRun(dir)!;
+    run.steps[0].turns[1].pid = orphan.pid;
+    saveRun(dir, run);
+    try {
+      await drive(dir);
+    } finally {
+      orphan.kill();
+      await gone;
+    }
+    const after = loadRun(dir)!;
+    assert.equal(after.steps[0].turns[1].exit, 0);
+    assert.deepEqual(stepCalls().map((c) => promptOf(c.args)), ['take all reccs', 'approve lets go']);
+    assert.equal(after.steps[0].state, 'done');
+  });
+
+  it('a running turn records its process, and drops it once it ends', async () => {
+    reply(1, PRIMED, { sleep: 0.6 });
+    const config = fourSteps();
+    config.steps = config.steps.slice(0, 1);
+    const dir = newRun(config);
+    const running = drive(dir);
+    const during = await until(dir, (r) => r.steps[0].turns[0]?.pid !== undefined);
+    assert.ok(aliveAs(during.steps[0].turns[0].pid!, 'claude -p'));
+    await running;
+    assert.equal(loadRun(dir)!.steps[0].turns[0].pid, undefined);
+  });
+
+  it('a cut-off turn is retried in the session it started', async () => {
+    reply(1, 'plan-finished.jsonl', { touch: ['.agents/plans/p.md'] });
+    const dir = stoppedAt(sampleLines('plan-asks.jsonl').slice(0, -1));
+    // The turn started the step's session: none was recorded before it was cut off.
+    const run = loadRun(dir)!;
+    run.steps[0].session = null;
+    saveRun(dir, run);
+    await drive(dir);
+    assert.equal(loadRun(dir)!.steps[0].state, 'failed');
+    saveAnswer(dir, 'plan', 1, { kind: 'retry', text: '', at: new Date().toISOString() });
+    await drive(dir);
+    assert.equal(flag(stepCalls()[0].args, '--resume'), 'd927ec62-fc1a-4016-9073-c3b01d3098bc');
+    assert.equal(loadRun(dir)!.steps[0].state, 'done');
   });
 
   it('a second driver exits while the first is alive', async () => {

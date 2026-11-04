@@ -155,7 +155,8 @@ export function calls(): { args: string[]; env: Record<string, string> }[] {
   }
   return out;
 }
-export const promptOf = (args: string[]) => args[args.indexOf('-p') + 1];
+// The prompt is the word after `--`, as the real CLI reads it.
+export const promptOf = (args: string[]) => args[args.indexOf('--') + 1];
 export const stepCalls = () => calls().filter((c) => !/^(watch|report) /.test(promptOf(c.args)));
 export const flag = (args: string[], name: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
 
